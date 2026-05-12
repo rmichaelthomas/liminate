@@ -4,7 +4,7 @@
 
 Inscript is a prose-as-syntax programming language designed by Rob Thomas (R. Michael Thomas). You are the builder. Rob is the architect. All design decisions are locked in the specification documents.
 
-**Current state (May 12, 2026):** v1 interpreter + v2a (`keep` verb, `of` connective, multi-field `each show`, descriptor preservation) + UX polish (`--quiet` flag, named-offender error wording, auto-show truncation) + v2.1-patches (duplicate-field rejection, `of`-on-list suggestion, list-operations-only error). The v2b addendum (`composition return values`, `generalized of`) is **drafted in `docs/spec/inscript_addendum_v2b_composition_returns.md` but not yet implemented**. 418 tests passing. The pipeline architecture from §8–§9 is unchanged through all extensions.
+**Current state (May 12, 2026):** v1 interpreter + v2a (`keep` verb, `of` connective, multi-field `each show`, descriptor preservation) + UX polish (`--quiet` flag, named-offender error wording, auto-show truncation) + v2.1-patches (duplicate-field rejection, `of`-on-list suggestion, list-operations-only error) + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings). The pipeline architecture from §8–§9 is unchanged through all extensions.
 
 ## Critical Rules
 
@@ -37,13 +37,15 @@ Located in `docs/spec/`. Read the relevant section before writing code that touc
 **v2 extensions (May 12, 2026):**
 
 - `inscript_addendum_v2a_dogfooding_resolutions.md` — **LOCKED + IMPLEMENTED.** §67 `keep` verb (non-destructive filter), §68 `of` connective (`show <field> of <record>`, single-level), §69 fifth `and` context rule (multi-field `each show`), §70 composition-chaining error message, §71 descriptor preservation, §72 D7 (multi-word strings) deferral. Vocabulary: 8 verbs, 10 connectives, 31 reserved words.
-- `inscript_addendum_v2b_composition_returns.md` — **LOCKED, NOT YET IMPLEMENTED.** §76 composition return values (Path A: implicit return of last op; error at call site for void-result), §77 generalize `of` to any value position (single-level only), §78 list/iteration model clarification, §79–§81 UX items (U7/U8/U9). No vocabulary changes. Test sentences 60–68 are spec'd but not yet wired into the test suite — implement first, then mark spec-completed.
+- `inscript_addendum_v2b_composition_returns.md` — §76 composition return values (Path A: implicit return of last op; error at call site for void-result), §77 generalize `of` to any value position (single-level only), §78 list/iteration model clarification, §79–§81 UX items (U7/U8/U9). No vocabulary changes. Test sentences 60–68.
+- `inscript_addendum_v2c_multi_word_strings.md` — D7 resolution: quoting mechanism for multi-word string values. §86 lexer quote-state, §87 `QUOTED_STRING` in value positions only (rejected in name/field positions with hyphenation guidance), §88 literal display via `show "..."`, §89 quoted reserved words bypass vocabulary exclusion, §90 conditional rendering (quote only multi-word or reserved-word values), §91 case normalization inside quotes, §92 empty quotes rejected. No new vocabulary. Test sentences 69–80.
+- `inscript_checkpoint_v2c_multi_word_strings.md` — D7 analysis (context for the v2c addendum: three approaches evaluated; not a locked spec).
 
 **Test specification:**
 
-- `inscript_v1_thirty_sentences.md` — Test specification (sentences 1–30 + design questions). Additional sentences 31–34 in v1c §53, 35–48 in v1d §65, 49–59 in v2a §74. Sentences 60–68 are drafted in v2b §83.
+- `inscript_v1_thirty_sentences.md` — Test specification (sentences 1–30 + design questions). Additional sentences 31–34 in v1c §53, 35–48 in v1d §65, 49–59 in v2a §74, 60–68 in v2b §83, 69–80 in v2c §94.
 
-**Reading order for a fresh session:** inception checkpoint → v1a/v1b/v1c/v1d in order → v2a → v2b. Each addendum locks decisions on top of all prior; nothing is retracted.
+**Reading order for a fresh session:** inception checkpoint → v1a/v1b/v1c/v1d in order → v2a → v2b → v2c. Each addendum locks decisions on top of all prior; nothing is retracted.
 
 ## Commands
 
