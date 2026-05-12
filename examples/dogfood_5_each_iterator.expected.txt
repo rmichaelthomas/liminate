@@ -1,0 +1,13 @@
+PROGRAM 5 — each Iterator Depth
+PREDICTED:
+
+each the nums show       (flat list of numbers, no field)    -> 1 / 2 / 3 / 4 / 5
+each the names show      (flat list of strings, no field)    -> mobius / inscript / instrument
+each the docs show words (record list, single field)         -> 1000 / 2000
+each the docs show class (record list, different field)      -> checkpoint / addendum
+each the docs show       (record list, NO field)             -> ??? — undefined in spec.
+                                                                Spec §49: "show with no field name displays the current item directly."
+                                                                Was that only for flat lists, or also records?
+                                                                Likely outcomes: (a) prints each record as field:value pairs;
+                                                                                  (b) parse error;
+                                                                                  (c) ambiguity amber.

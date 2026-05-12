@@ -1,0 +1,33 @@
+I understand this as: remember a record called d1 with class as checkpoint and words as 10000
+I understand this as: remember a record called d2 with class as checkpoint and words as 3000
+I understand this as: remember a record called d3 with class as addendum and words as 8000
+I understand this as: remember a record called d4 with class as addendum and words as 2000
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where class is checkpoint and words is above 5000
+I understand this as: count the docs
+1
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where class is checkpoint or words is above 5000
+I understand this as: count the docs
+3
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where words is not above 5000
+I understand this as: count the docs
+2
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where words is not below 5000
+I understand this as: count the docs
+2
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where class is not equal to checkpoint
+I understand this as: count the docs
+2
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where class is checkpoint and words is above 5000 or class is addendum
+I'll read this as: filter the docs where (class is checkpoint and words is above 5000) or class is addendum. Is that what you mean? If not, split it into two statements.
+I understand this as: count the docs
+3
+I understand this as: remember a list called docs with d1 and d2 and d3 and d4
+I understand this as: filter the docs where class is checkpoint and words is above 5000 and words is below 20000
+I understand this as: count the docs
+1

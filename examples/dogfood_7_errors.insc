@@ -1,0 +1,39 @@
+orders total above 50
+
+show nonexistent
+
+remember a list called items with filter and blue
+
+remember a thing called each with 5
+
+remember a list called colors with red and blue and green
+combine the colors
+
+remember a doc called d1 with words as 100
+remember a list called docs with d1
+filter the docs where nonexistent is above 5
+
+remember a list called mixed with 5 and hello
+
+gather the numbers from 10 to 1
+
+gather the numbers from 1 to 20000
+
+remember a number called age with 30
+filter age where each is above 5
+
+remember a number called age2 with 30
+each the age2 show
+
+remember an order called order1 with total as 75 and status as active
+remember an item called item1 with price as 30 and color as red
+remember a list called mixed-records with order1 and item1
+filter the mixed-records where total is above 50
+
+remember how to show-missing: show ghost
+show-missing
+
+remember an order called o1 with total as 75 and status as active
+remember a list called orders with o1
+filter the orders where total is above 50 and show missingname
+show orders

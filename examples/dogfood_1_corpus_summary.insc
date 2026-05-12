@@ -1,0 +1,50 @@
+remember a domain called mobius with docs as 91 and words as 381476
+remember a domain called inscript with docs as 6 and words as 30230
+remember a domain called instrument with docs as 4 and words as 19438
+remember a domain called markings with docs as 2 and words as 14672
+remember a domain called drum with docs as 1 and words as 5880
+remember a domain called cnxct with docs as 1 and words as 5057
+remember a domain called lemma with docs as 1 and words as 4535
+remember a domain called forme with docs as 1 and words as 1352
+
+remember a list called domains with mobius and inscript and instrument and markings and drum and cnxct and lemma and forme
+
+count the domains
+show domains
+each the domains show words
+
+remember a list called domain-words with 381476 and 30230 and 19438 and 14672 and 5880 and 5057 and 4535 and 1352
+combine the domain-words
+
+remember a list called domain-docs with 91 and 6 and 4 and 2 and 1 and 1 and 1 and 1
+combine the domain-docs
+
+remember a class called checkpoint with docs as 60 and words as 275542
+remember a class called addendum with docs as 24 and words as 86152
+remember a class called inception with docs as 4 and words as 24145
+remember a class called gap-inventory with docs as 4 and words as 24116
+remember a class called resonance with docs as 4 and words as 13119
+remember a class called binder with docs as 1 and words as 10399
+remember a class called spec with docs as 2 and words as 9728
+remember a class called thesis with docs as 2 and words as 5776
+remember a class called pitch with docs as 3 and words as 5594
+remember a class called insight with docs as 1 and words as 5267
+remember a class called misc with docs as 2 and words as 2802
+
+remember a list called classes with checkpoint and addendum and inception and gap-inventory and resonance and binder and spec and thesis and pitch and insight and misc
+
+count the classes
+each the classes show words
+
+remember a list called class-words with 275542 and 86152 and 24145 and 24116 and 13119 and 10399 and 9728 and 5776 and 5594 and 5267 and 2802
+combine the class-words
+
+remember how to find-major-domains: filter the domains where docs is above 3
+
+find-major-domains
+count the domains
+each the domains show words
+
+filter the classes where words is above 20000
+count the classes
+each the classes show docs

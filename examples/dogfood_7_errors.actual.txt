@@ -1,0 +1,38 @@
+Error: I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'combine', or 'each'.
+I understand this as: show nonexistent
+Error: I can't find 'nonexistent'. You might need to 'remember' it first.
+Error: The word 'filter' is a verb in Inscript and can't be used as a value. Try a different word.
+Error: The word 'each' is reserved in Inscript — it's used as a verb. Please choose a different name.
+I understand this as: remember a list called colors with red and blue and green
+I understand this as: combine the colors
+Error: I can only combine numbers. 'colors' contains text.
+I understand this as: remember a record called d1 with words as 100
+I understand this as: remember a list called docs with d1
+I understand this as: filter the docs where nonexistent is above 5
+Error: Not every item in 'docs' has a field called 'nonexistent'.
+I understand this as: remember a list called mixed with 5 and hello
+Error: A list can't mix numbers and text. '5' is a number but 'hello' is text.
+I understand this as: gather the numbers from 10 to 1
+Error: The 'from' value (10) must be less than or equal to the 'to' value (1). Try: gather the numbers from 1 to 10.
+I understand this as: gather the numbers from 1 to 20000
+Error: That range is too large. The maximum is 10,000 items.
+I understand this as: remember a value called age with 30
+I understand this as: filter the age where each is above 5
+Error: I can only filter a list. 'age' is a number.
+I understand this as: remember a value called age2 with 30
+I understand this as: each the age2 show
+Error: I can only iterate over a list. 'age2' is a number.
+I understand this as: remember a record called order1 with total as 75 and status as active
+I understand this as: remember a record called item1 with price as 30 and color as red
+I understand this as: remember a list called mixed-records with order1 and item1
+I understand this as: filter the mixed-records where total is above 50
+Error: Not every item in 'mixed-records' has a field called 'total'.
+I understand this as: remember how to show-missing: show ghost
+I understand this as: show-missing
+Error: I can't find 'ghost'. You might need to 'remember' it first.
+I understand this as: remember a record called o1 with total as 75 and status as active
+I understand this as: remember a list called orders with o1
+I understand this as: filter the orders where total is above 50 and show missingname
+Error: I completed 'filter the orders where total is above 50' but then I can't find 'missingname'. You might need to 'remember' it first. The filter has already been applied.
+I understand this as: show orders
+total: 75, status: active

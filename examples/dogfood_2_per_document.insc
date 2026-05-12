@@ -1,0 +1,44 @@
+remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
+remember a doc called doc-3 with domain as mobius and class as checkpoint and words as 10190
+remember a doc called doc-4 with domain as mobius and class as checkpoint and words as 8077
+remember a doc called doc-5 with domain as mobius and class as checkpoint and words as 7654
+remember a doc called doc-6 with domain as mobius and class as checkpoint and words as 7506
+remember a doc called doc-7 with domain as mobius and class as checkpoint and words as 7439
+remember a doc called doc-8 with domain as markings and class as addendum and words as 7417
+remember a doc called doc-9 with domain as mobius and class as checkpoint and words as 7297
+remember a doc called doc-10 with domain as markings and class as checkpoint and words as 7255
+remember a doc called doc-11 with domain as mobius and class as checkpoint and words as 7132
+remember a doc called doc-12 with domain as mobius and class as gap-inventory and words as 7128
+remember a doc called doc-13 with domain as mobius and class as checkpoint and words as 6984
+remember a doc called doc-14 with domain as instrument and class as checkpoint and words as 6852
+remember a doc called doc-15 with domain as mobius and class as checkpoint and words as 6851
+remember a doc called doc-16 with domain as mobius and class as checkpoint and words as 6818
+remember a doc called doc-17 with domain as mobius and class as checkpoint and words as 6600
+remember a doc called doc-18 with domain as mobius and class as gap-inventory and words as 6413
+remember a doc called doc-19 with domain as mobius and class as spec and words as 6293
+remember a doc called doc-20 with domain as mobius and class as addendum and words as 6151
+remember a doc called doc-21 with domain as mobius and class as checkpoint and words as 5880
+remember a doc called doc-22 with domain as mobius and class as checkpoint and words as 5777
+remember a doc called doc-23 with domain as mobius and class as checkpoint and words as 5574
+remember a doc called doc-24 with domain as mobius and class as checkpoint and words as 5523
+remember a doc called doc-25 with domain as mobius and class as checkpoint and words as 5513
+remember a doc called doc-26 with domain as mobius and class as addendum and words as 5193
+remember a doc called doc-27 with domain as instrument and class as addendum and words as 5166
+remember a doc called doc-28 with domain as cnxct and class as inception and words as 5057
+remember a doc called doc-29 with domain as mobius and class as checkpoint and words as 5038
+remember a doc called doc-30 with domain as mobius and class as addendum and words as 4989
+
+remember a list called docs with doc-1 and doc-2 and doc-3 and doc-4 and doc-5 and doc-6 and doc-7 and doc-8 and doc-9 and doc-10 and doc-11 and doc-12 and doc-13 and doc-14 and doc-15 and doc-16 and doc-17 and doc-18 and doc-19 and doc-20 and doc-21 and doc-22 and doc-23 and doc-24 and doc-25 and doc-26 and doc-27 and doc-28 and doc-29 and doc-30
+
+count the docs
+
+filter the docs where domain is equal to mobius
+count the docs
+
+filter the docs where class is checkpoint
+count the docs
+
+filter the docs where words is above 7000
+count the docs
+each the docs show words

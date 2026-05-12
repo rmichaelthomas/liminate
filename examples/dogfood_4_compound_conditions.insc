@@ -1,0 +1,32 @@
+remember a doc called d1 with class as checkpoint and words as 10000
+remember a doc called d2 with class as checkpoint and words as 3000
+remember a doc called d3 with class as addendum and words as 8000
+remember a doc called d4 with class as addendum and words as 2000
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where class is checkpoint and words is above 5000
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where class is checkpoint or words is above 5000
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where words is not above 5000
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where words is not below 5000
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where class is not equal to checkpoint
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where class is checkpoint and words is above 5000 or class is addendum
+count the docs
+
+remember a list called docs with d1 and d2 and d3 and d4
+filter the docs where class is checkpoint and words is above 5000 and words is below 20000
+count the docs

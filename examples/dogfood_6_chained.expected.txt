@@ -1,0 +1,24 @@
+PROGRAM 6 — Chained Operations
+PREDICTED:
+
+remember the total called sum from combine the nums   -> captures 150
+show sum                                              -> 150
+
+remember the howmany called n from count the nums     -> captures 5
+show n                                                -> 5
+
+remember the copy called nums-copy from nums          -> simple reference: copies the list
+show nums-copy                                        -> 10, 20, 30, 40, 50
+
+gather the numbers from 1 to 5                        -> [1, 2, 3, 4, 5] (auto-shows)
+combine the numbers                                   -> 15 (auto-shows)
+remember the rangesum called rangesum from combine the numbers   -> captures 15
+show rangesum                                         -> 15
+
+filter the nums where each is above 25                -> destructive, nums = [30, 40, 50]
+show nums                                             -> 30, 40, 50
+remember the after called nums-after from count the nums  -> captures 3
+show nums-after                                       -> 3
+
+count the docs as captured                            -> 3
+show doc-count                                        -> 3

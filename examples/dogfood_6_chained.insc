@@ -1,0 +1,27 @@
+remember a list called nums with 10 and 20 and 30 and 40 and 50
+
+remember the total called sum from combine the nums
+show sum
+
+remember the howmany called n from count the nums
+show n
+
+remember the copy called nums-copy from nums
+show nums-copy
+
+gather the numbers from 1 to 5
+combine the numbers
+remember the rangesum called rangesum from combine the numbers
+show rangesum
+
+filter the nums where each is above 25
+show nums
+remember the after called nums-after from count the nums
+show nums-after
+
+remember a doc called d1 with words as 100
+remember a doc called d2 with words as 200
+remember a doc called d3 with words as 300
+remember a list called docs with d1 and d2 and d3
+remember the howmany called doc-count from count the docs
+show doc-count

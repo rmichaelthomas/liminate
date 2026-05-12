@@ -1,0 +1,3 @@
+I understand this as: remember a value called age with 30
+I understand this as: each the age show
+Error: I can only iterate over a list. 'age' is a number.

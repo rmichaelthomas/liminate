@@ -9,6 +9,7 @@ Usage:
     python -m inscript                  # Interactive REPL
     python -m inscript <file.insc>      # Execute a file
     python -m inscript --test <file>    # Test mode (auto-confirm amber)
+    python -m inscript <file> --test    # --test may appear in any position
 """
 
 from __future__ import annotations
@@ -62,13 +63,14 @@ def display_result(
     *,
     auto_confirm_amber: bool = False,
     out=None,
+    _suppress_canonical: bool = False,
 ) -> None:
     """Render an InscriptResult to stdout per v1c §50 + v1a §33."""
     if result is None:
         return
     write = (out.write if out is not None else lambda s: print(s, end=""))
 
-    if result.canonical:
+    if result.canonical and not _suppress_canonical:
         write(f"I understand this as: {result.canonical}\n")
 
     if result.status is ResultStatus.SUCCESS:
@@ -89,11 +91,14 @@ def display_result(
             confirm = response.strip().lower().startswith("y")
         if confirm and result.pending_ast is not None:
             new_result = execute(result.pending_ast, session.symtab)
+            # The canonical was already shown above (and in the amber
+            # message). Don't echo it a second time.
             display_result(
                 new_result,
                 session,
                 auto_confirm_amber=auto_confirm_amber,
                 out=out,
+                _suppress_canonical=True,
             )
         return
 
@@ -144,11 +149,19 @@ def repl() -> None:
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     auto = False
-    if args and args[0] == "--test":
-        auto = True
-        args = args[1:]
-    if args:
-        run_file(args[0], auto_confirm_amber=auto)
+    # Accept --test in any position. Unknown flags (starting with --) are
+    # rejected so typos don't silently change behavior.
+    positional: list[str] = []
+    for a in args:
+        if a == "--test":
+            auto = True
+        elif a.startswith("--"):
+            print(f"Error: unknown flag '{a}'", file=sys.stderr)
+            return 2
+        else:
+            positional.append(a)
+    if positional:
+        run_file(positional[0], auto_confirm_amber=auto)
     else:
         repl()
     return 0

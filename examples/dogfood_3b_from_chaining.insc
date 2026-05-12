@@ -1,0 +1,7 @@
+remember a doc called doc-a with words as 10000
+remember a doc called doc-b with words as 4000
+remember a list called docs with doc-a and doc-b
+
+remember how to find-large: filter the docs where words is above 5000
+
+find-large from docs

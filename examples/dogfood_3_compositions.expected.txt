@@ -1,0 +1,15 @@
+PROGRAM 3 — Named Compositions
+PREDICTED:
+
+count-them                       -> 5 (initial)
+show-words                       -> 10000 / 8000 / 6000 / 4000 / 2000
+
+find-large                       -> destructive filter: keeps words > 5000 (doc-a, doc-b, doc-c)
+count-them                       -> 3
+show-words                       -> 10000 / 8000 / 6000
+
+find-large (SECOND call)         -> filter again on already-filtered list. words > 5000 still keeps doc-a, doc-b, doc-c (no change).
+count-them                       -> 3
+show-words                       -> 10000 / 8000 / 6000
+
+KEY PROBE: Second call to a destructive composition is idempotent only if the predicate is monotone over already-passed elements. To demonstrate the single-use problem, you'd need a composition whose result depends on initial state (e.g., "filter where words is above 5000" twice, where second call would re-filter the already-narrow list and possibly produce empty/unexpected results if predicate changes meaning). With monotone predicates, double-call works fine — the gap is silent: user has no signal whether the second call did anything.

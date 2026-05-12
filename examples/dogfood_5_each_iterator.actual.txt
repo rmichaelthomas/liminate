@@ -1,0 +1,24 @@
+I understand this as: remember a list called nums with 1 and 2 and 3 and 4 and 5
+I understand this as: each the nums show
+1
+2
+3
+4
+5
+I understand this as: remember a list called names with mobius and inscript and instrument
+I understand this as: each the names show
+mobius
+inscript
+instrument
+I understand this as: remember a record called d1 with class as checkpoint and words as 1000
+I understand this as: remember a record called d2 with class as addendum and words as 2000
+I understand this as: remember a list called docs with d1 and d2
+I understand this as: each the docs show words
+1000
+2000
+I understand this as: each the docs show class
+checkpoint
+addendum
+I understand this as: each the docs show
+class: checkpoint, words: 1000
+class: addendum, words: 2000

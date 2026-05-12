@@ -1,0 +1,4 @@
+I understand this as: remember a record called d1 with class as checkpoint and words as 1000
+I understand this as: remember a record called d2 with class as addendum and words as 2000
+I understand this as: remember a list called docs with d1 and d2
+Error: I didn't expect 'and' here.

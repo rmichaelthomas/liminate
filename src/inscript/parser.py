@@ -558,9 +558,16 @@ def _parse_show(stream: TokenStream) -> ShowNode:
         return ShowNode(target=NameRef(name=peek.value))
     cat = reserved_category(peek.value)
     if cat:
+        if peek.value == "each":
+            raise _ParseError(
+                "'each' is a verb in Inscript — it iterates a list, or "
+                "acts as a self-reference pronoun inside a 'where' "
+                "clause. It can't appear as a target on its own."
+            )
         raise _ParseError(
-            f"The word '{peek.value}' is reserved in Inscript — "
-            f"it's used as a {cat}. Please choose a different name."
+            f"I expected a target after 'show', but '{peek.value}' is a "
+            f"{cat} in Inscript. Targets must be names you've created "
+            f"with 'remember' or 'gather'."
         )
     raise _ParseError(f"I didn't expect '{peek.value}' after 'show'.")
 
@@ -632,8 +639,9 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
         cat = reserved_category(coll_tok.value)
         if cat:
             raise _ParseError(
-                f"The word '{coll_tok.value}' is reserved in Inscript — "
-                f"it's used as a {cat}. Please choose a different name."
+                f"I expected a collection after 'each', but "
+                f"'{coll_tok.value}' is a {cat} in Inscript. Collections "
+                f"must be names you've created with 'remember' or 'gather'."
             )
         raise _ParseError(f"I expected a collection after 'each'.")
     collection = NameRef(name=coll_tok.value)
@@ -802,9 +810,18 @@ def _consume_target(stream: TokenStream, *, verb: str) -> NameRef:
     if tok.type is not TokenType.UNKNOWN:
         cat = reserved_category(tok.value)
         if cat:
+            # 'each' is both a verb and the in-`where` pronoun (v1b §37) —
+            # surface that distinction when it appears as a target.
+            if tok.value == "each":
+                raise _ParseError(
+                    "'each' is a verb in Inscript — it iterates a list, or "
+                    "acts as a self-reference pronoun inside a 'where' "
+                    "clause. It can't appear as a target on its own."
+                )
             raise _ParseError(
-                f"The word '{tok.value}' is reserved in Inscript — "
-                f"it's used as a {cat}. Please choose a different name."
+                f"I expected a target after '{verb}', but '{tok.value}' "
+                f"is a {cat} in Inscript. Targets must be names you've "
+                f"created with 'remember' or 'gather'."
             )
         raise _ParseError(f"I expected a target after '{verb}', not '{tok.value}'.")
     return NameRef(name=tok.value)

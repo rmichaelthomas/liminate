@@ -161,7 +161,12 @@ def _stepwise_error(
     """Build the v1d §56 stepwise-failure message."""
     inner = (failure.message or "").strip()
     # Trim leading capital so the inner message blends after "but then".
-    inner_lower = inner[:1].lower() + inner[1:] if inner else inner
+    # Exception: preserve the pronoun "I" (e.g., "I can't find ..."), which
+    # would otherwise read as "but then i can't find ...".
+    if inner.startswith("I ") or inner == "I":
+        inner_lower = inner
+    else:
+        inner_lower = inner[:1].lower() + inner[1:] if inner else inner
 
     if completed_canonicals:
         prior = completed_canonicals[-1]

@@ -1,0 +1,14 @@
+PROGRAM 2 — Per-Document Scale
+PREDICTED DATA OUTPUTS:
+
+count the docs                                  -> 30
+filter where domain is equal to mobius          -> destructive; 24 records remain (24 of 30 have domain=mobius)
+count the docs                                  -> 24
+filter where class is checkpoint                -> tests `is` as equality (no `equal to`). 17 of 24 remain.
+count the docs                                  -> 17
+filter where words is above 7000                -> 7 of 17 remain (doc-3..doc-7, doc-9, doc-11)
+count the docs                                  -> 7
+each the docs show words                        -> 10190 / 8077 / 7654 / 7506 / 7439 / 7297 / 7132
+
+KEY PROBE: Does `is equal to mobius` work? Spec §22 line 438 says tokens after operator are values.
+KEY PROBE: Does bare `is checkpoint` work as equality? Spec §21 line 414 says yes (is + value = equality).

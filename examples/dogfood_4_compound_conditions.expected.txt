@@ -1,0 +1,18 @@
+PROGRAM 4 — Compound Conditions
+PREDICTED:
+
+class is checkpoint AND words > 5000             -> 1 (d1 only)
+class is checkpoint OR words > 5000              -> 3 (d1, d2, d3)
+words is not above 5000   (means <= 5000)        -> 2 (d2, d4)
+words is not below 5000   (means >= 5000)        -> 2 (d1, d3)
+class is not equal to checkpoint                 -> 2 (d3, d4)
+
+Mixed and/or: class is checkpoint AND words>5000 OR class is addendum
+  Spec §21/v1a §30: and binds tighter than or. Mixed expr triggers Amber Light.
+  Parser interpretation: (class=chkpt AND words>5000) OR class=addendum
+  Should produce: AMBER prompt — with --test it auto-confirms
+  Result: d1, d3, d4 -> count 3
+
+Three-way AND chain (single-operator, no amber):
+  class=chkpt AND words>5000 AND words<20000
+  Only d1 satisfies all three. -> count 1
