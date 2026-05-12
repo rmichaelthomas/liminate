@@ -1,8 +1,8 @@
-"""Phase 2 gate tests: lexer (inception §22, v1c §47-§48, v1d §57)."""
+"""Phase 2 gate tests: lexer (inception §22, v1c §47-§48, v1d §57, v2c §86/§89/§91/§92)."""
 
 import pytest
 
-from inscript.lexer import tokenize
+from inscript.lexer import LexError, tokenize
 from inscript.vocabulary import TokenType
 
 
@@ -409,3 +409,91 @@ def test_sentence_47_compound_sequencing():
         (TokenType.VERB, "show"),
         (TokenType.UNKNOWN, "missingname"),
     ]
+
+
+# ---------- v2c §86: quoted strings ----------
+
+
+def test_quoted_string_emits_single_token():
+    toks = tokenize('with status as "in progress"')
+    assert [t.type for t in toks] == [
+        TokenType.CONNECTIVE,    # with
+        TokenType.UNKNOWN,       # status
+        TokenType.CONNECTIVE,    # as
+        TokenType.QUOTED_STRING, # "in progress"
+    ]
+    assert toks[-1].value == "in progress"
+
+
+def test_quoted_string_preserves_internal_punctuation():
+    """v2c §86: commas/periods/colons inside quotes are content, not
+    decoration. Punctuation stripping (inception §22) is bypassed."""
+    toks = tokenize('show "Hello, world!"')
+    assert toks[-1].type is TokenType.QUOTED_STRING
+    assert toks[-1].value == "hello, world!"
+
+
+def test_quoted_string_lowercases_content():
+    """v2c §91: case normalization applies inside quotes too."""
+    toks = tokenize('with status as "In Progress"')
+    assert toks[-1].type is TokenType.QUOTED_STRING
+    assert toks[-1].value == "in progress"
+
+
+def test_quoted_string_can_contain_reserved_words():
+    """v2c §89: quoted reserved words are data, not vocabulary."""
+    toks = tokenize('with label as "filter"')
+    assert toks[-1].type is TokenType.QUOTED_STRING
+    assert toks[-1].value == "filter"
+
+
+def test_multiple_quoted_strings_on_one_line():
+    """v2c §86: quote-state is per-pair, not line-level."""
+    toks = tokenize(
+        'with status as "in progress" and label as "high priority"'
+    )
+    quoted = [t for t in toks if t.type is TokenType.QUOTED_STRING]
+    assert [t.value for t in quoted] == ["in progress", "high priority"]
+
+
+def test_unclosed_quote_raises_lexerror():
+    """v2c §86: an opening quote with no closer is a parse error."""
+    with pytest.raises(LexError) as exc:
+        tokenize('with text as "hello world')
+    assert "opening quote mark" in exc.value.message
+    assert "closing" in exc.value.message
+
+
+def test_empty_quotes_raise_lexerror():
+    """v2c §92: `""` rejected — no empty-string semantics in v1/v2."""
+    with pytest.raises(LexError) as exc:
+        tokenize('with text as ""')
+    assert "nothing between" in exc.value.message
+
+
+def test_quoted_equal_does_not_combine_with_to():
+    """v2c §86 + §22: the `equal to` multi-word lookahead only fires on
+    unquoted tokens. `"equal" to` keeps two tokens."""
+    toks = tokenize('"equal" to')
+    assert toks[0].type is TokenType.QUOTED_STRING
+    assert toks[0].value == "equal"
+    assert toks[1].type is TokenType.CONNECTIVE
+    assert toks[1].value == "to"
+
+
+def test_quoted_colon_is_preserved():
+    """The colon delimiter (composition body marker) is bypassed inside
+    quotes — `"Section A: counts"` is one QUOTED_STRING token, not
+    QUOTED_STRING + DELIMITER + UNKNOWN."""
+    toks = tokenize('show "Section A: counts before filtering"')
+    assert [t.type for t in toks] == [TokenType.VERB, TokenType.QUOTED_STRING]
+    assert toks[-1].value == "section a: counts before filtering"
+
+
+def test_quoted_string_position_points_at_opening_quote():
+    """Quoted tokens carry the position of the opening `"` so error
+    messages can refer back to the source location."""
+    line = 'with status as "in progress"'
+    toks = tokenize(line)
+    quoted = next(t for t in toks if t.type is TokenType.QUOTED_STRING)
+    assert line[quoted.position] == '"'

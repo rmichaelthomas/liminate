@@ -1,0 +1,33 @@
+show "=== v2b: composition return values ==="
+remember an order called o1 with total as 75 and status as active
+remember an order called o2 with total as 150 and status as pending
+remember an order called o3 with total as 30 and status as active
+remember a list called orders with o1 and o2 and o3
+remember how to find-big: keep the orders where total is above 50
+remember the results called big from find-big
+count the big
+count the orders
+
+show "=== v2b: generalized of ==="
+remember a baseline called base with threshold as 100
+keep the orders where total is above threshold of base
+
+show "=== v2c: multi-word string values ==="
+remember a task called t1 with status as "in progress" and priority as high
+remember a task called t2 with status as shipped and priority as "not applicable"
+show t1
+show status of t1
+show priority of t2
+
+show "=== v2c: literal display + each show ==="
+each the orders show total and status
+
+show "=== v2c: composition with quoted where value ==="
+remember a task called t3 with status as "in progress"
+remember a task called t4 with status as done
+remember a list called tasks with t3 and t4
+keep the tasks where status is "in progress"
+
+show "=== v2c: reserved word value (round-trip via quoting) ==="
+remember a tag called t5 with label as "filter"
+show t5

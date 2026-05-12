@@ -119,6 +119,26 @@ class RememberCompositionNode(ASTNode):
 
 
 @dataclass
+class QuotedString(ASTNode):
+    """v2c §86/§87/§88 — a quoted-string literal. Always evaluates to its
+    content as a string in value positions (no symbol-table fallback,
+    unlike BareWord). When it appears as a `show` target, the interpreter
+    displays the literal text (§88)."""
+    content: str
+
+
+@dataclass
+class FieldAccessNode(ASTNode):
+    """v2b §77 — `<field> of <record>` as a value expression at any value
+    position (after `with`, after `as`, after operators in `where`).
+    Single-level only; chained `of` (a of b of c) is a parse error.
+    Existing v2a §68 `show <field> of <record>` is still represented on
+    ShowNode (a special case of the general rule)."""
+    field: str
+    record_name: str
+
+
+@dataclass
 class ShowNode(ASTNode):
     target: ASTNode | None  # None = display the current iterator item
     # v2a §68 (D4) — `of` field access: when present, `target` is the
@@ -543,6 +563,12 @@ def _parse_record_field(stream: TokenStream) -> tuple[str, ASTNode]:
     field_tok = stream.consume()
     if field_tok is None:
         raise _ParseError("I expected a field name.")
+    if field_tok.type is TokenType.QUOTED_STRING:
+        # v2c §87 — field names can't be quoted (no spaces).
+        raise _ParseError(
+            f"Field names can't have spaces. Try a hyphenated name like "
+            f"'{_hyphenate(field_tok.value)}' instead."
+        )
     if field_tok.type is not TokenType.UNKNOWN:
         cat = reserved_category(field_tok.value)
         if cat:
@@ -588,6 +614,11 @@ def _parse_remember_from(
                 descriptor=descriptor,
             )
         stream.consume()
+        # v2b §77: `from <field> of <record>` — field-access value.
+        after = stream.peek()
+        if after and after.type is TokenType.CONNECTIVE and after.value == "of":
+            access = _maybe_field_access(stream, peek.value)
+            return RememberValueNode(name=name, value=access, descriptor=descriptor)
         return RememberValueNode(
             name=name, value=NameRef(name=peek.value), descriptor=descriptor,
         )
@@ -616,6 +647,31 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
         nxt = stream.peek(1)
         if nxt and nxt.type is TokenType.VERB:
             return ShowNode(target=None)
+    if peek.type is TokenType.QUOTED_STRING:
+        # v2c §87/§88 — `show "text"` is literal display. But if followed
+        # by `of`, the user wrote a quoted field name (rejected). And
+        # inside `each ... show`, a quoted target is also intended as a
+        # field name (rejected by the same rule).
+        stream.consume()
+        after = stream.peek()
+        if after and after.type is TokenType.CONNECTIVE and after.value == "of":
+            rec_peek = stream.peek(1)
+            rec = (
+                rec_peek.value
+                if rec_peek and rec_peek.type is TokenType.UNKNOWN
+                else "<record>"
+            )
+            raise _ParseError(
+                f"Field names can't have spaces. Try "
+                f"'show {_hyphenate(peek.value)} of {rec}' instead."
+            )
+        if in_each:
+            raise _ParseError(
+                f"Field names can't have spaces. Try a hyphenated name "
+                f"like '{_hyphenate(peek.value)}' instead."
+            )
+        # v2c §88 — literal display target carried into the AST.
+        return ShowNode(target=QuotedString(content=peek.value))
     if peek.type is TokenType.UNKNOWN:
         stream.consume()
         # v2a §68 (D4) — `show <field> of <record>` accesses a single
@@ -639,6 +695,15 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
                     f"I expected a record name after 'of', not "
                     f"'{rec_tok.value}'."
                 )
+            # v2b §77 sub-decision I: chained `of` is a parse error
+            # (no nested records in v2b).
+            chain = stream.peek()
+            if chain and chain.type is TokenType.CONNECTIVE and chain.value == "of":
+                raise _ParseError(
+                    "Field access uses one record at a time: "
+                    "<field> of <record>. Chained forms (a of b of c) "
+                    "need nested records, which v2b doesn't yet have."
+                )
             return ShowNode(
                 target=NameRef(name=peek.value),
                 record_name=rec_tok.value,
@@ -659,6 +724,14 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
                 # (operation-sequencing §21 rule 3 still applies).
                 if nx2 and nx2.type is TokenType.VERB:
                     break
+                if nx2 and nx2.type is TokenType.QUOTED_STRING:
+                    # v2c §87 — field names can't have spaces; quoted in
+                    # this position is rejected with hyphenation guidance.
+                    raise _ParseError(
+                        f"Field names can't have spaces. Try a "
+                        f"hyphenated name like '{_hyphenate(nx2.value)}' "
+                        f"instead."
+                    )
                 if not (nx2 and nx2.type is TokenType.UNKNOWN):
                     break
                 stream.consume()  # eat `and`
@@ -849,6 +922,12 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
         field_node: ASTNode = EachPronoun()
     elif head.type is TokenType.UNKNOWN:
         field_node = NameRef(name=head.value)
+    elif head.type is TokenType.QUOTED_STRING:
+        # v2c §87 — field names can't have spaces.
+        raise _ParseError(
+            f"Field names can't have spaces. Try a hyphenated name like "
+            f"'{_hyphenate(head.value)}' instead."
+        )
     else:
         cat = reserved_category(head.value)
         if cat:
@@ -900,9 +979,11 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
 
 
 def _parse_value(stream: TokenStream) -> ASTNode:
-    """Consume a single value token (NUMBER or UNKNOWN).
+    """Consume a single value token (NUMBER, UNKNOWN, or QUOTED_STRING),
+    optionally extended by `of <record>` for field access (v2b §77).
 
-    Vocabulary words in value position are rejected per v1c §46.
+    Vocabulary words in value position are rejected per v1c §46 (extended
+    by v2c §89 — the error message now suggests quoting as the fix).
     """
     tok = stream.consume()
     if tok is None:
@@ -910,14 +991,69 @@ def _parse_value(stream: TokenStream) -> ASTNode:
     if tok.type is TokenType.NUMBER:
         return NumberLiteral(value=_parse_number(tok.value))
     if tok.type is TokenType.UNKNOWN:
-        return BareWord(word=tok.value)
+        # v2b §77: `<field> of <record>` field-access value expression.
+        return _maybe_field_access(stream, tok.value)
+    if tok.type is TokenType.QUOTED_STRING:
+        # v2c §87 — quoted multi-word/reserved-word literal. §89: the
+        # vocabulary check is bypassed for quoted tokens. Reject a
+        # following `of` (field names can't be quoted, §87).
+        after = stream.peek()
+        if after and after.type is TokenType.CONNECTIVE and after.value == "of":
+            raise _ParseError(
+                f"Field names can't have spaces. Try '{_hyphenate(tok.value)}' "
+                f"instead of \"{tok.value}\"."
+            )
+        return QuotedString(content=tok.value)
     cat = reserved_category(tok.value)
     if cat:
         raise _ParseError(
             f"The word '{tok.value}' is a {cat} in Inscript and can't be "
-            f"used as a value. Try a different word."
+            f"used as a value. Try a different word, or wrap it in quotes: "
+            f'"{tok.value}".'
         )
     raise _ParseError(f"I didn't expect '{tok.value}' as a value.")
+
+
+def _hyphenate(quoted_content: str) -> str:
+    """v2c §87 — turn the content of a quoted string into a hyphenated
+    name suggestion: spaces become hyphens. `"my big list"` → `my-big-list`.
+    Used by all "names can't have spaces" / "field names can't have
+    spaces" error messages."""
+    return quoted_content.replace(" ", "-")
+
+
+def _maybe_field_access(stream: TokenStream, first_unknown: str) -> ASTNode:
+    """v2b §77 — if the next token is the connective `of`, consume the
+    field-access tail and return FieldAccessNode. Otherwise return a
+    BareWord with the already-consumed UNKNOWN. Single-level only:
+    a second `of` after the record name is a parse error.
+    """
+    after = stream.peek()
+    if not (after and after.type is TokenType.CONNECTIVE and after.value == "of"):
+        return BareWord(word=first_unknown)
+    stream.consume()  # eat `of`
+    rec_tok = stream.consume()
+    if rec_tok is None:
+        raise _ParseError("I expected a record name after 'of'.")
+    if rec_tok.type is not TokenType.UNKNOWN:
+        rcat = reserved_category(rec_tok.value)
+        if rcat:
+            raise _ParseError(
+                f"The word '{rec_tok.value}' is reserved in "
+                f"Inscript — it's used as a {rcat} and can't be "
+                f"used as a record name."
+            )
+        raise _ParseError(
+            f"I expected a record name after 'of', not '{rec_tok.value}'."
+        )
+    chain = stream.peek()
+    if chain and chain.type is TokenType.CONNECTIVE and chain.value == "of":
+        raise _ParseError(
+            "Field access uses one record at a time: <field> of <record>. "
+            "Chained forms (a of b of c) need nested records, which v2b "
+            "doesn't yet have."
+        )
+    return FieldAccessNode(field=first_unknown, record_name=rec_tok.value)
 
 
 def _parse_number(s: str) -> int | float:
@@ -978,6 +1114,20 @@ def _consume_name(stream: TokenStream, *, after: str) -> str:
     tok = stream.consume()
     if tok is None:
         raise _ParseError(f"I expected a name after {after}.")
+    if tok.type is TokenType.QUOTED_STRING:
+        # v2c §87 — names can't have spaces. Distinguish composition
+        # names (after `how to`) from value names (after `called`) so
+        # the error message matches what the user wrote.
+        suggestion = _hyphenate(tok.value)
+        if "how to" in after:
+            raise _ParseError(
+                f"Composition names can't have spaces. Try a hyphenated "
+                f"name like '{suggestion}' instead."
+            )
+        raise _ParseError(
+            f"Names can't have spaces. Try a hyphenated name like "
+            f"'{suggestion}' instead."
+        )
     if tok.type is not TokenType.UNKNOWN:
         cat = reserved_category(tok.value)
         if cat:

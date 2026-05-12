@@ -22,7 +22,7 @@ from pathlib import Path
 
 from .analyzer import SymbolEntry
 from .interpreter import execute
-from .lexer import tokenize
+from .lexer import LexError, tokenize
 from .parser import parse
 from .reorderer import reorder
 from .result import InscriptResult, ResultStatus
@@ -42,7 +42,16 @@ class Session:
 
     def run_line(self, line: str) -> InscriptResult | None:
         """Execute one source line. Returns the result, or None for blank."""
-        tokens = tokenize(line)
+        try:
+            tokens = tokenize(line)
+        except LexError as e:
+            # v2c §86/§92 — unclosed or empty quoted strings surface as
+            # ERROR_PARSE (Outcome 4 per v1c §50).
+            return InscriptResult(
+                status=ResultStatus.ERROR_PARSE,
+                message=e.message,
+                executed=False,
+            )
         if not tokens:
             return None
         reordered = reorder(tokens)

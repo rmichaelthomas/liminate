@@ -28,11 +28,13 @@ from .parser import (
     CountNode,
     EachNode,
     EachPronoun,
+    FieldAccessNode,
     FilterNode,
     GatherNode,
     KeepNode,
     NameRef,
     NumberLiteral,
+    QuotedString,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -40,6 +42,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
 )
+from .vocabulary import ALL_RESERVED
 
 
 def render(node: ASTNode) -> str:
@@ -47,11 +50,22 @@ def render(node: ASTNode) -> str:
     if isinstance(node, NumberLiteral):
         return _fmt_number(node.value)
     if isinstance(node, BareWord):
-        return node.word
+        # v2c §90: conditional quoting — quote multi-word or reserved-word
+        # values to preserve round-trip integrity. Single-word non-reserved
+        # values remain bare (v1 behavior unchanged).
+        return _emit_string(node.word)
+    if isinstance(node, QuotedString):
+        # v2c §90: same conditional-quoting rule applies regardless of
+        # whether the source used quotes — `"active"` and `active` both
+        # render bare; `"in progress"` keeps its quotes.
+        return _emit_string(node.content)
     if isinstance(node, NameRef):
         return node.name
     if isinstance(node, EachPronoun):
         return "each"
+    if isinstance(node, FieldAccessNode):
+        # v2b §77: <field> of <record> renders verbatim.
+        return f"{node.field} of {node.record_name}"
 
     if isinstance(node, RememberValueNode):
         # v2a §71 / D6: preserve the user's descriptor verbatim. When the
@@ -211,3 +225,14 @@ def _fmt_number(v: int | float) -> str:
     if v.is_integer():
         return str(int(v))
     return str(v)
+
+
+def _emit_string(s: str) -> str:
+    """v2c §90 — conditional quoting. Emit quotes around a string value
+    iff it contains a space (multi-word) or matches a reserved word.
+    This preserves round-trip integrity: `with label as "filter"` keeps
+    its quotes; `with status as active` stays bare.
+    """
+    if " " in s or s in ALL_RESERVED:
+        return f'"{s}"'
+    return s

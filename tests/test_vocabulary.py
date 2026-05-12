@@ -117,6 +117,8 @@ def test_token_type_enum_members():
     assert members == {
         "VERB", "CONNECTIVE", "OPERATOR", "ARTICLE",
         "DELIMITER", "NUMBER", "UNKNOWN",
+        # v2c §86: quoted strings emitted as a single token.
+        "QUOTED_STRING",
     }
 
 

@@ -36,11 +36,13 @@ from .parser import (
     CountNode,
     EachNode,
     EachPronoun,
+    FieldAccessNode,
     FilterNode,
     GatherNode,
     KeepNode,
     NameRef,
     NumberLiteral,
+    QuotedString,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -205,7 +207,7 @@ def _check_value_expr(
     symtab: dict[str, SymbolEntry],
     iterator: IteratorContext | None,
 ) -> None:
-    if isinstance(value_node, (NumberLiteral, BareWord, EachPronoun)):
+    if isinstance(value_node, (NumberLiteral, BareWord, EachPronoun, QuotedString)):
         return
     if isinstance(value_node, NameRef):
         if value_node.name not in symtab:
@@ -214,7 +216,114 @@ def _check_value_expr(
                 f"You might need to 'remember' it first."
             )
         return
+    if isinstance(value_node, FieldAccessNode):
+        _check_field_access(value_node, symtab)
+        return
+    if isinstance(value_node, CompositionCallNode):
+        # v2b §76 — composition call in value position. Validate the
+        # composition resolves, analyze its body, then verify the body's
+        # last operation produces a value. The void-result error fires
+        # here at analyze time (before exec) so that side effects of the
+        # body don't run.
+        if (
+            value_node.name not in symtab
+            or symtab[value_node.name].type != "composition"
+        ):
+            raise _SemanticError(
+                f"I can't find a composition called '{value_node.name}'."
+            )
+        body = symtab[value_node.name].value
+        _check(body, symtab, iterator=None)
+        verb = _composition_void_result_verb(value_node.name, symtab)
+        if verb is not None:
+            raise _SemanticError(
+                f"Composition '{value_node.name}' doesn't return a value — "
+                f"its last operation is '{verb}', which only has side effects."
+            )
+        return
     _check(value_node, symtab, iterator)
+
+
+def _composition_void_result_verb(
+    name: str,
+    symtab: dict[str, SymbolEntry],
+    visited: set[str] | None = None,
+) -> str | None:
+    """v2b §76 — return the verb name of a composition body's last op if
+    that op is side-effect-only, else None. Resolves nested composition
+    calls recursively."""
+    if visited is None:
+        visited = set()
+    if name in visited:
+        return None  # defensive: cycles shouldn't trigger a structural error
+    visited.add(name)
+    if name not in symtab or symtab[name].type != "composition":
+        return None
+    body = symtab[name].value
+    last = body.operations[-1] if isinstance(body, SequenceNode) else body
+    return _side_effect_verb(last, symtab, visited)
+
+
+def _side_effect_verb(
+    node: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    visited: set[str],
+) -> str | None:
+    """Return the verb name if this AST node is side-effect-only at
+    value position; None if it produces a value (v2b §76 table)."""
+    if isinstance(node, ShowNode):
+        return "show"
+    if isinstance(node, FilterNode):
+        return "filter"
+    if isinstance(node, EachNode):
+        return "each"
+    if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
+        return "remember"
+    if isinstance(node, RememberValueNode):
+        # `remember ... from <verb-phrase>` is value-producing iff the
+        # captured inner verb-phrase itself produces a value (§76 table).
+        inner = node.value
+        if isinstance(inner, (KeepNode, CombineNode, CountNode, GatherNode)):
+            return None
+        if isinstance(inner, CompositionCallNode):
+            return _composition_void_result_verb(inner.name, symtab, visited)
+        return "remember"
+    if isinstance(node, CompositionCallNode):
+        return _composition_void_result_verb(node.name, symtab, visited)
+    # Bare value-producing verbs: keep, combine, count, gather.
+    return None
+
+
+def _check_field_access(
+    node: FieldAccessNode, symtab: dict[str, SymbolEntry],
+) -> None:
+    """v2b §77 — three semantic checks for `<field> of <record>` at any
+    value position (same as v2a §68 in `show` target position):
+    1. The record name resolves to a symbol.
+    2. The symbol is a record (with U8 list-of-records guidance).
+    3. The record's schema contains the field.
+    """
+    if node.record_name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{node.record_name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[node.record_name]
+    if entry.type != "record":
+        if entry.type == "list_of_records":
+            raise _SemanticError(
+                f"'of' needs a single record. '{node.record_name}' "
+                f"is a list of records — did you mean: "
+                f"each the {node.record_name} show {node.field}?"
+            )
+        raise _SemanticError(
+            f"'of' needs a record. '{node.record_name}' is "
+            f"{_singular(entry.type)}."
+        )
+    if entry.schema is None or node.field not in entry.schema:
+        raise _SemanticError(
+            f"'{node.record_name}' doesn't have a field called '{node.field}'."
+        )
 
 
 def _check_remember_list(
@@ -256,6 +365,14 @@ def _infer_item_type(item: ASTNode, symtab: dict[str, SymbolEntry]) -> tuple[str
         if item.word in symtab:
             return symtab[item.word].type, item.word
         return "string", item.word
+    if isinstance(item, QuotedString):
+        # v2c §87: a quoted item in a list always contributes a string.
+        return "string", item.content
+    if isinstance(item, FieldAccessNode):
+        # v2b §77: same semantic checks at list-item position.
+        _check_field_access(item, symtab)
+        entry = symtab[item.record_name]
+        return entry.schema[item.field], f"{item.field} of {item.record_name}"
     raise _SemanticError(f"Unexpected list item {type(item).__name__}.")
 
 
@@ -263,10 +380,16 @@ def _check_remember_record(
     node: RememberRecordNode,
     symtab: dict[str, SymbolEntry],
 ) -> None:
-    # Field values are single tokens (v1d §61). Validation of field
-    # value types beyond "single token" is not in the v1 spec.
+    # Field values are single tokens (v1d §61), or v2b §77 field-access
+    # expressions. NumberLiteral and BareWord field values are trivially
+    # accepted (BareWords resolve at execution time per existing v1
+    # semantics). FieldAccessNode values get the same three semantic
+    # checks as any other v2b field access.
     if not node.fields:
         raise _SemanticError("A record needs at least one field.")
+    for _fname, fexpr in node.fields:
+        if isinstance(fexpr, FieldAccessNode):
+            _check_field_access(fexpr, symtab)
 
 
 # ---------------------------------------------------------------------------
@@ -282,6 +405,9 @@ def _check_show(
     if node.target is None:
         if iterator is None:
             raise _SemanticError("I need something to show.")
+        return
+    if isinstance(node.target, QuotedString):
+        # v2c §88: literal display — no symbol resolution.
         return
     if not isinstance(node.target, NameRef):
         raise _SemanticError("Unexpected target for 'show'.")
@@ -514,10 +640,23 @@ def _resolve_value(
             entry = symtab[value_node.word]
             return entry.type, value_node.word
         return "string", value_node.word
+    if isinstance(value_node, QuotedString):
+        # v2c §87: quoted value in a where comparison is always a string.
+        return "string", value_node.content
     if isinstance(value_node, EachPronoun):
         if iterator.record_schemas is not None:
             return "record", "each"
         return iterator.scalar_type or "unknown", "each"
+    if isinstance(value_node, FieldAccessNode):
+        # v2b §77: <field> of <record> at the value position after an
+        # operator. Same semantic checks; resolved type is the field's
+        # scalar type from the record's schema.
+        _check_field_access(value_node, symtab)
+        entry = symtab[value_node.record_name]
+        return (
+            entry.schema[value_node.field],
+            f"{value_node.field} of {value_node.record_name}",
+        )
     raise _SemanticError("Unexpected value in condition.")
 
 
