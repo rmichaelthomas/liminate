@@ -15,6 +15,7 @@ from .adapter import (
 from .analyzer import SymbolEntry, analyze
 from .cli import Session
 from .interpreter import execute
+from .listener import listen
 from .lexer import leading_indent, tokenize
 from .parser import parse, parse_when_block
 from .renderer import render
@@ -39,6 +40,7 @@ __all__ = [
     "analyze",
     "execute",
     "leading_indent",
+    "listen",
     "parse",
     "parse_when_block",
     "render",
