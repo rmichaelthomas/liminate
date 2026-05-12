@@ -24,6 +24,7 @@ A prose-as-syntax programming language designed from the human end.
 - [Design principles](#design-principles)
 - [Project structure](#project-structure)
 - [The forty-eight test sentences](#the-forty-eight-test-sentences)
+- [Guides](#guides)
 - [Specification documents](#specification-documents)
 - [Lineage](#lineage)
 - [Architects and builders](#architects-and-builders)
@@ -354,7 +355,7 @@ The v1 interpreter passes all 48 locked test sentences. Larger scope is intentio
 
 **v1 is NOT.** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Domain packs. Event-driven execution (`when`/`unless`). The verbs `transform`, `choose`, `compare`. Symbolic syntax surface. External data sources. Multi-word strings (no quoting in v1). Composition parameters. Negative numbers. Scope isolation beyond the iterator context. Mixed-type lists. Descending ranges. Ranges over 10,000 items.
 
-The deferrals are not "TODO when we get to it." Each has a specific reason and a documented v2 grammar plan — see `docs/spec/inscript_addendum_v1d_build_boundary.md` §66.
+The deferrals are not "TODO when we get to it." Each has a specific reason and a documented v2 grammar plan — see [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) for a readable walkthrough, or `docs/spec/inscript_addendum_v1d_build_boundary.md` §66 for the locked source.
 
 ---
 
@@ -438,6 +439,22 @@ Of the 48:
 - **14 are hostile cases.** They exercise the error paths: reserved word violations, missing names, type errors, mixed-type lists, descending ranges, range cap exceeded, missing fields on records, malformed records, stepwise-failure context messages.
 
 Every sentence is exercised end-to-end in `tests/test_integration.py`.
+
+---
+
+## Guides
+
+Human-readable guides live under `docs/`. They are derived from the
+locked specifications but written for fluent reading rather than
+authority. The specifications remain the source of truth when wording
+matters.
+
+| Guide | What it covers |
+|---|---|
+| [`docs/language/quickstart.md`](docs/language/quickstart.md) | Install, run tests, run an example, start the REPL, and try a three-line demo program. |
+| [`docs/language/syntax.md`](docs/language/syntax.md) | Full v1 syntax tour: source-file rules, all seven verbs, lists, records, conditions, `each`, named compositions, and the v1 limits. |
+| [`docs/architecture/pipeline.md`](docs/architecture/pipeline.md) | Stage-by-stage walkthrough of how a source line becomes a result, plus the five-outcome trust model and the I/O boundary. |
+| [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) | What v1 includes and what it intentionally does not, with each deferral framed as a design boundary. |
 
 ---
 
