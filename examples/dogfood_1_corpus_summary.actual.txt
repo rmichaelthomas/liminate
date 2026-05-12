@@ -1,11 +1,11 @@
-I understand this as: remember a record called mobius with docs as 91 and words as 381476
-I understand this as: remember a record called inscript with docs as 6 and words as 30230
-I understand this as: remember a record called instrument with docs as 4 and words as 19438
-I understand this as: remember a record called markings with docs as 2 and words as 14672
-I understand this as: remember a record called drum with docs as 1 and words as 5880
-I understand this as: remember a record called cnxct with docs as 1 and words as 5057
-I understand this as: remember a record called lemma with docs as 1 and words as 4535
-I understand this as: remember a record called forme with docs as 1 and words as 1352
+I understand this as: remember a domain called mobius with docs as 91 and words as 381476
+I understand this as: remember a domain called inscript with docs as 6 and words as 30230
+I understand this as: remember a domain called instrument with docs as 4 and words as 19438
+I understand this as: remember a domain called markings with docs as 2 and words as 14672
+I understand this as: remember a domain called drum with docs as 1 and words as 5880
+I understand this as: remember a domain called cnxct with docs as 1 and words as 5057
+I understand this as: remember a domain called lemma with docs as 1 and words as 4535
+I understand this as: remember a domain called forme with docs as 1 and words as 1352
 I understand this as: remember a list called domains with mobius and inscript and instrument and markings and drum and cnxct and lemma and forme
 I understand this as: count the domains
 8
@@ -33,17 +33,17 @@ I understand this as: combine the domain-words
 I understand this as: remember a list called domain-docs with 91 and 6 and 4 and 2 and 1 and 1 and 1 and 1
 I understand this as: combine the domain-docs
 107
-I understand this as: remember a record called checkpoint with docs as 60 and words as 275542
-I understand this as: remember a record called addendum with docs as 24 and words as 86152
-I understand this as: remember a record called inception with docs as 4 and words as 24145
-I understand this as: remember a record called gap-inventory with docs as 4 and words as 24116
-I understand this as: remember a record called resonance with docs as 4 and words as 13119
-I understand this as: remember a record called binder with docs as 1 and words as 10399
-I understand this as: remember a record called spec with docs as 2 and words as 9728
-I understand this as: remember a record called thesis with docs as 2 and words as 5776
-I understand this as: remember a record called pitch with docs as 3 and words as 5594
-I understand this as: remember a record called insight with docs as 1 and words as 5267
-I understand this as: remember a record called misc with docs as 2 and words as 2802
+I understand this as: remember a class called checkpoint with docs as 60 and words as 275542
+I understand this as: remember a class called addendum with docs as 24 and words as 86152
+I understand this as: remember a class called inception with docs as 4 and words as 24145
+I understand this as: remember a class called gap-inventory with docs as 4 and words as 24116
+I understand this as: remember a class called resonance with docs as 4 and words as 13119
+I understand this as: remember a class called binder with docs as 1 and words as 10399
+I understand this as: remember a class called spec with docs as 2 and words as 9728
+I understand this as: remember a class called thesis with docs as 2 and words as 5776
+I understand this as: remember a class called pitch with docs as 3 and words as 5594
+I understand this as: remember a class called insight with docs as 1 and words as 5267
+I understand this as: remember a class called misc with docs as 2 and words as 2802
 I understand this as: remember a list called classes with checkpoint and addendum and inception and gap-inventory and resonance and binder and spec and thesis and pitch and insight and misc
 I understand this as: count the classes
 11

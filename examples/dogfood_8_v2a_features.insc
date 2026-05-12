@@ -1,0 +1,26 @@
+remember a domain called inscript with docs as 6 and words as 30230
+remember a domain called mobius with docs as 91 and words as 381476
+remember a domain called instrument with docs as 4 and words as 19438
+remember a domain called drum with docs as 1 and words as 5880
+
+remember a list called domains with mobius and inscript and instrument and drum
+
+each the domains show docs and words
+
+show docs of mobius
+show words of inscript
+
+keep the domains where docs is above 3
+count the domains
+show domains
+
+remember the heavy called heavy from keep the domains where words is above 10000
+show heavy
+count the domains
+
+remember how to find-major: keep the domains where docs is above 3
+find-major
+find-major
+
+remember how to chained: keep the domains where docs is above 3
+chained from domains

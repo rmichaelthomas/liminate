@@ -595,7 +595,10 @@ def test_examples_run_without_error(capsys):
     from inscript.cli import run_file
     run_file(str(ROOT / "examples" / "program1_basics.insc"), auto_confirm_amber=True)
     out = capsys.readouterr().out
-    assert "I understand this as: remember a value called age with 30" in out
+    # v2a §71 (D6): the user wrote `a number called age`, so the canonical
+    # rendering preserves the descriptor `number` rather than substituting
+    # the inferred type label `value`.
+    assert "I understand this as: remember a number called age with 30" in out
     assert "I understand this as: show age" in out
     assert "30" in out
     assert "red, blue, green" in out

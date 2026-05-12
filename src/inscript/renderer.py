@@ -30,6 +30,7 @@ from .parser import (
     EachPronoun,
     FilterNode,
     GatherNode,
+    KeepNode,
     NameRef,
     NumberLiteral,
     RememberCompositionNode,
@@ -53,26 +54,48 @@ def render(node: ASTNode) -> str:
         return "each"
 
     if isinstance(node, RememberValueNode):
+        # v2a §71 / D6: preserve the user's descriptor verbatim. When the
+        # user wrote no descriptor, fall back to the inferred type label
+        # ("value" for a scalar; "list"/"record" for the other node types).
+        desc = node.descriptor or "value"
+        art = _article_for(desc)
         # Literals/strings go through `with`; name references and verb-phrase
         # results go through `from` (v1b §43). Vocabulary words cannot
         # appear after `with` (v1c §46), so verb-phrase values must use
         # `from` for the canonical form to be re-parseable.
         if isinstance(node.value, (NumberLiteral, BareWord)):
-            return f"remember a value called {node.name} with {render(node.value)}"
-        return f"remember a value called {node.name} from {render(node.value)}"
+            return f"remember {art} {desc} called {node.name} with {render(node.value)}"
+        return f"remember {art} {desc} called {node.name} from {render(node.value)}"
     if isinstance(node, RememberListNode):
         items = " and ".join(render(i) for i in node.items)
-        return f"remember a list called {node.name} with {items}"
+        desc = node.descriptor or "list"
+        art = _article_for(desc)
+        return f"remember {art} {desc} called {node.name} with {items}"
     if isinstance(node, RememberRecordNode):
         fields = " and ".join(f"{n} as {render(v)}" for n, v in node.fields)
-        return f"remember a record called {node.name} with {fields}"
+        desc = node.descriptor or "record"
+        art = _article_for(desc)
+        return f"remember {art} {desc} called {node.name} with {fields}"
     if isinstance(node, RememberCompositionNode):
         return f"remember how to {node.name}: {render(node.body)}"
 
     if isinstance(node, ShowNode):
-        return "show" if node.target is None else f"show {render(node.target)}"
+        if node.target is None:
+            return "show"
+        # v2a §68 (D4): `show <field> of <record>` renders back exactly
+        # as the user wrote it.
+        if node.record_name is not None:
+            return f"show {render(node.target)} of {node.record_name}"
+        # v2a §69 (D1): multi-field display inside `each ... show`.
+        if node.extra_fields:
+            fields = " and ".join([render(node.target), *node.extra_fields])
+            return f"show {fields}"
+        return f"show {render(node.target)}"
     if isinstance(node, FilterNode):
         return f"filter the {render(node.target)} where {render(node.condition)}"
+    if isinstance(node, KeepNode):
+        # v2a §67: `keep` shares filter's canonical shape.
+        return f"keep the {render(node.target)} where {render(node.condition)}"
     if isinstance(node, CountNode):
         return f"count the {render(node.target)}"
     if isinstance(node, GatherNode):
@@ -123,6 +146,11 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
             f"filter the {render(node.target)} where "
             f"{render_with_explicit_precedence(node.condition)}"
         )
+    if isinstance(node, KeepNode):
+        return (
+            f"keep the {render(node.target)} where "
+            f"{render_with_explicit_precedence(node.condition)}"
+        )
     if isinstance(node, EachNode):
         return f"each the {render(node.collection)} {render_with_explicit_precedence(node.action)}"
     if isinstance(node, SequenceNode):
@@ -159,6 +187,19 @@ def _render_condition(node: ConditionNode) -> str:
     if node.op in _NEGATED_OPS:
         return f"{field} is {_NEGATED_OPS[node.op]} {value}"
     raise ValueError(f"unknown condition operator '{node.op}'")
+
+
+def _article_for(descriptor: str) -> str:
+    """Return 'an' before vowel-initial descriptors, 'a' otherwise (v2a §71).
+
+    Operates on the leading character of the first word of the descriptor.
+    Multi-word descriptors (e.g., `remember a big number called ...`) are
+    keyed on the first word, since that's what English speakers articulate.
+    """
+    if not descriptor:
+        return "a"
+    first = descriptor.split()[0] if descriptor.split() else descriptor
+    return "an" if first[:1].lower() in "aeiou" else "a"
 
 
 def _fmt_number(v: int | float) -> str:

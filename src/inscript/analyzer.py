@@ -38,6 +38,7 @@ from .parser import (
     EachPronoun,
     FilterNode,
     GatherNode,
+    KeepNode,
     NameRef,
     NumberLiteral,
     RememberCompositionNode,
@@ -157,6 +158,10 @@ def _check(
         _check_show(node, symtab, iterator)
     elif isinstance(node, FilterNode):
         _check_filter(node, symtab)
+    elif isinstance(node, KeepNode):
+        # v2a §67: same semantic checks as filter — target must be a list,
+        # condition fields must resolve. No new constraint.
+        _check_keep(node, symtab)
     elif isinstance(node, CountNode):
         _check_count(node, symtab)
     elif isinstance(node, GatherNode):
@@ -273,18 +278,60 @@ def _check_show(
     if not isinstance(node.target, NameRef):
         raise _SemanticError("Unexpected target for 'show'.")
     name = node.target.name
+
+    # v2a §68 (D4): `show <field> of <record>` — verify the record exists,
+    # is a record (not a list/scalar/composition), and contains the field.
+    if node.record_name is not None:
+        if node.record_name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{node.record_name}'. "
+                f"You might need to 'remember' it first."
+            )
+        entry = symtab[node.record_name]
+        if entry.type != "record":
+            raise _SemanticError(
+                f"'of' needs a record. '{node.record_name}' is "
+                f"{_singular(entry.type)}."
+            )
+        if entry.schema is None or name not in entry.schema:
+            raise _SemanticError(
+                f"'{node.record_name}' doesn't have a field called '{name}'."
+            )
+        return
+
     # Iterator-first resolution (v1c §49).
     if iterator is not None and iterator.record_schemas is not None:
-        in_all = all(name in s for s in iterator.record_schemas)
-        in_any = any(name in s for s in iterator.record_schemas)
-        if in_all:
+        # Each field referenced (target + any v2a §69 extras) must exist
+        # on every record in the iterated list.
+        all_field_names = [name, *node.extra_fields]
+        for fname in all_field_names:
+            in_all = all(fname in s for s in iterator.record_schemas)
+            in_any = any(fname in s for s in iterator.record_schemas)
+            if in_all:
+                continue
+            if in_any:
+                raise _SemanticError(
+                    f"Not every item in '{iterator.collection_name}' "
+                    f"has a field called '{fname}'."
+                )
+            # If we're iterating records and the name matches nothing,
+            # fall through to symbol-table lookup only for the *first*
+            # field (target) — extras are only legal as record fields.
+            if fname != name:
+                raise _SemanticError(
+                    f"Not every item in '{iterator.collection_name}' "
+                    f"has a field called '{fname}'."
+                )
+        if all(name in s for s in iterator.record_schemas):
             return
-        if in_any:
-            raise _SemanticError(
-                f"Not every item in '{iterator.collection_name}' "
-                f"has a field called '{name}'."
-            )
         # Field missing from every record — fall through to symbol-table lookup.
+    elif node.extra_fields:
+        # v2a §69 (D1): multi-field show only makes sense over a list of
+        # records. Reject the construct on flat lists / outside of each.
+        raise _SemanticError(
+            "Multiple fields in 'show' only work inside an 'each' loop "
+            "over a list of records."
+        )
     if name in symtab:
         return
     raise _SemanticError(
@@ -300,6 +347,14 @@ def _check_show(
 def _check_filter(node: FilterNode, symtab: dict[str, SymbolEntry]) -> None:
     name = node.target.name
     entry = _require_list(name, symtab, verb="filter")
+    iterator = _make_iterator(name, entry)
+    _check_condition(node.condition, symtab, iterator)
+
+
+def _check_keep(node: KeepNode, symtab: dict[str, SymbolEntry]) -> None:
+    """v2a §67. Validation mirrors filter — only execution semantics differ."""
+    name = node.target.name
+    entry = _require_list(name, symtab, verb="keep")
     iterator = _make_iterator(name, entry)
     _check_condition(node.condition, symtab, iterator)
 
@@ -479,15 +534,17 @@ def _require_list(
         )
     entry = symtab[name]
     if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
-        verb_phrase = "filter" if verb == "filter" else verb
-        if verb_phrase == "filter":
+        if verb == "filter":
             msg = f"I can only filter a list. '{name}' is {_singular(entry.type)}."
-        elif verb_phrase == "count":
+        elif verb == "keep":
+            # v2a §67: error path for keep on a non-list mirrors filter.
+            msg = f"I can only keep from a list. '{name}' is {_singular(entry.type)}."
+        elif verb == "count":
             msg = f"I can only count a list. '{name}' is {_singular(entry.type)}."
-        elif verb_phrase == "iterate over":
+        elif verb == "iterate over":
             msg = f"I can only iterate over a list. '{name}' is {_singular(entry.type)}."
         else:
-            msg = f"I expected a list for '{verb_phrase}'. '{name}' is {_singular(entry.type)}."
+            msg = f"I expected a list for '{verb}'. '{name}' is {_singular(entry.type)}."
         raise _SemanticError(msg)
     return entry
 

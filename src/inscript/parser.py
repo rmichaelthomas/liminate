@@ -87,18 +87,29 @@ class EachPronoun(ASTNode):
 class RememberValueNode(ASTNode):
     name: str
     value: ASTNode
+    # The user's descriptor between article and `called` (v2a §71 / D6).
+    # Preserved verbatim in canonical rendering. None when the user wrote
+    # nothing between article and `called` (or omitted the article); the
+    # renderer falls back to the inferred type label ("value").
+    # Excluded from __eq__ because descriptors are semantically decorative
+    # (v1b §36) — two ASTs that differ only in descriptor are equivalent.
+    descriptor: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class RememberListNode(ASTNode):
     name: str
     items: list[ASTNode]
+    # v2a §71 / D6 — see RememberValueNode for rationale.
+    descriptor: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class RememberRecordNode(ASTNode):
     name: str
     fields: list[tuple[str, ASTNode]]
+    # v2a §71 / D6 — see RememberValueNode for rationale.
+    descriptor: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -110,10 +121,32 @@ class RememberCompositionNode(ASTNode):
 @dataclass
 class ShowNode(ASTNode):
     target: ASTNode | None  # None = display the current iterator item
+    # v2a §68 (D4) — `of` field access: when present, `target` is the
+    # field name (NameRef) and `record_name` is the record symbol to
+    # look it up on. e.g. `show total of order1` → target=NameRef("total"),
+    # record_name="order1".
+    record_name: str | None = None
+    # v2a §69 (D1) — multi-field display inside `each ... show`.
+    # When non-empty, lists *additional* field names after the first
+    # (which lives in `target`). Per-record output is rendered as
+    # `field1: value1, field2: value2, ...`. Only valid when this
+    # ShowNode is the body of an EachNode and `target` is a NameRef.
+    extra_fields: list[str] = field(default_factory=list)
 
 
 @dataclass
 class FilterNode(ASTNode):
+    target: NameRef
+    condition: ASTNode
+
+
+@dataclass
+class KeepNode(ASTNode):
+    """v2a §67 — non-destructive sibling of FilterNode. Same shape: a
+    target list and a condition. Difference is purely semantic: keep
+    returns a new list without modifying the source's symbol-table
+    entry. Compositions wrapping `keep` are reusable on the same data
+    (resolving D3)."""
     target: NameRef
     condition: ASTNode
 
@@ -306,6 +339,16 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
         # v1b §41 fallback: named composition call.
         if t.value in comp:
             stream.consume()
+            # Composition chaining (`<name> from <name>`) is deferred to v2
+            # alongside composition parameters (v1b §41, Q9). v2a §70: detect
+            # this case and emit the specific deferral message rather than
+            # the generic "I didn't expect 'from' here."
+            after = stream.peek()
+            if after and after.type is TokenType.CONNECTIVE and after.value == "from":
+                raise _ParseError(
+                    f"Composition chaining isn't supported yet. "
+                    f"Call '{t.value}' on its own line."
+                )
             return CompositionCallNode(name=t.value)
         raise _ParseError(
             "I don't recognize a command here. Every sentence needs a verb "
@@ -320,9 +363,13 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
     if verb.value == "remember":
         return _parse_remember(stream, comp)
     if verb.value == "show":
-        return _parse_show(stream)
+        # v2a §69 (D1): multi-field display is only valid as the body of
+        # an `each` loop. The parser tracks that via clause context.
+        return _parse_show(stream, in_each=stream.in_clause("each"))
     if verb.value == "filter":
         return _parse_filter(stream)
+    if verb.value == "keep":
+        return _parse_keep(stream)
     if verb.value == "count":
         return _parse_count(stream)
     if verb.value == "gather":
@@ -352,7 +399,7 @@ def _parse_remember(stream: TokenStream, comp: set[str]) -> ASTNode:
     if peek and peek.type is TokenType.CONNECTIVE and peek.value == "how":
         return _parse_composition_definition(stream, comp)
 
-    descriptor = _consume_remember_intro(stream)
+    descriptor, saw_list = _consume_remember_intro(stream)
 
     called = stream.consume()
     if not (called and called.type is TokenType.CONNECTIVE and called.value == "called"):
@@ -369,8 +416,8 @@ def _parse_remember(stream: TokenStream, comp: set[str]) -> ASTNode:
         raise _ParseError(f"I expected 'with' or 'from', not '{intro.value}'.")
 
     if intro.value == "with":
-        return _parse_remember_with(stream, name, descriptor)
-    return _parse_remember_from(stream, name, comp)
+        return _parse_remember_with(stream, name, descriptor, saw_list)
+    return _parse_remember_from(stream, name, comp, descriptor)
 
 
 def _parse_composition_definition(stream: TokenStream, comp: set[str]) -> RememberCompositionNode:
@@ -389,26 +436,36 @@ def _parse_composition_definition(stream: TokenStream, comp: set[str]) -> Rememb
     return RememberCompositionNode(name=name, body=body)
 
 
-def _consume_remember_intro(stream: TokenStream) -> str | None:
+def _consume_remember_intro(stream: TokenStream) -> tuple[str | None, bool]:
     """Consume zero+ articles and zero+ descriptor UNKNOWNs before `called`.
 
-    Returns the captured descriptor `list` if it appeared (used to force
-    list construction for singleton `with X`); other descriptors are
-    discarded as decorative per v1b §36.
+    Returns a tuple of (descriptor, saw_list):
+      - descriptor: the verbatim sequence of descriptor words the user
+        wrote between the article and `called`, joined by spaces; None
+        if no descriptor was present. Preserved for canonical rendering
+        per v2a §71 (D6) — descriptors remain semantically decorative
+        (v1b §36) but are now rendered back to the user.
+      - saw_list: True if the descriptor sequence contains the word
+        `list` (forces singleton-list construction in
+        `_parse_remember_with` so `remember a list called orders with
+        order1` produces a 1-item list, not a flat value — see v1d §65
+        sentence 38).
     """
-    descriptor: str | None = None
+    parts: list[str] = []
+    saw_list = False
     while True:
         t = stream.peek()
         if t is None:
             raise _ParseError("I expected 'called' to introduce the name.")
         if t.type is TokenType.CONNECTIVE and t.value == "called":
-            return descriptor
+            return (" ".join(parts) if parts else None, saw_list)
         if t.type is TokenType.ARTICLE:
             stream.consume()
             continue
         if t.type is TokenType.UNKNOWN:
+            parts.append(t.value)
             if t.value == "list":
-                descriptor = "list"
+                saw_list = True
             stream.consume()
             continue
         # Vocabulary word at a position that should have been a descriptor.
@@ -422,7 +479,7 @@ def _consume_remember_intro(stream: TokenStream) -> str | None:
 
 
 def _parse_remember_with(
-    stream: TokenStream, name: str, descriptor: str | None,
+    stream: TokenStream, name: str, descriptor: str | None, saw_list: bool,
 ) -> ASTNode:
     first = stream.peek()
     if first is None:
@@ -441,7 +498,7 @@ def _parse_remember_with(
             fields = _parse_record_fields(stream)
         finally:
             stream.pop_clause()
-        return RememberRecordNode(name=name, fields=fields)
+        return RememberRecordNode(name=name, fields=fields, descriptor=descriptor)
 
     # Otherwise: value, possibly followed by `and <value>` for list construction.
     stream.push_clause("with")
@@ -462,11 +519,9 @@ def _parse_remember_with(
     finally:
         stream.pop_clause()
 
-    if is_list:
-        return RememberListNode(name=name, items=items)
-    if descriptor == "list":
-        return RememberListNode(name=name, items=items)
-    return RememberValueNode(name=name, value=items[0])
+    if is_list or saw_list:
+        return RememberListNode(name=name, items=items, descriptor=descriptor)
+    return RememberValueNode(name=name, value=items[0], descriptor=descriptor)
 
 
 def _parse_record_fields(stream: TokenStream) -> list[tuple[str, ASTNode]]:
@@ -510,7 +565,9 @@ def _parse_record_field(stream: TokenStream) -> tuple[str, ASTNode]:
     return field_name, value
 
 
-def _parse_remember_from(stream: TokenStream, name: str, comp: set[str]) -> ASTNode:
+def _parse_remember_from(
+    stream: TokenStream, name: str, comp: set[str], descriptor: str | None = None,
+) -> ASTNode:
     """`from` in `remember` (v1b §43):
        next token is VERB  -> result capture via recursive descent
        next token is UNKNOWN -> simple reference (copy semantics)
@@ -520,14 +577,20 @@ def _parse_remember_from(stream: TokenStream, name: str, comp: set[str]) -> ASTN
         raise _ParseError("I expected an expression after 'from'.")
     if peek.type is TokenType.VERB:
         sub = _parse_verb_statement(stream, comp)
-        return RememberValueNode(name=name, value=sub)
+        return RememberValueNode(name=name, value=sub, descriptor=descriptor)
     if peek.type is TokenType.UNKNOWN:
         # Could be a composition call (v1b §41 fallback inside the from-expr).
         if peek.value in comp:
             stream.consume()
-            return RememberValueNode(name=name, value=CompositionCallNode(name=peek.value))
+            return RememberValueNode(
+                name=name,
+                value=CompositionCallNode(name=peek.value),
+                descriptor=descriptor,
+            )
         stream.consume()
-        return RememberValueNode(name=name, value=NameRef(name=peek.value))
+        return RememberValueNode(
+            name=name, value=NameRef(name=peek.value), descriptor=descriptor,
+        )
     cat = reserved_category(peek.value)
     if cat:
         raise _ParseError(
@@ -542,7 +605,7 @@ def _parse_remember_from(stream: TokenStream, name: str, comp: set[str]) -> ASTN
 # ---------------------------------------------------------------------------
 
 
-def _parse_show(stream: TokenStream) -> ShowNode:
+def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
     _consume_optional_article(stream)
     peek = stream.peek()
     # An optional target — if missing or followed by a sequencing `and verb`,
@@ -555,6 +618,57 @@ def _parse_show(stream: TokenStream) -> ShowNode:
             return ShowNode(target=None)
     if peek.type is TokenType.UNKNOWN:
         stream.consume()
+        # v2a §68 (D4) — `show <field> of <record>` accesses a single
+        # field of a single record. The first unknown is interpreted as
+        # the *field name* when `of` follows.
+        after = stream.peek()
+        if after and after.type is TokenType.CONNECTIVE and after.value == "of":
+            stream.consume()  # eat `of`
+            rec_tok = stream.consume()
+            if rec_tok is None:
+                raise _ParseError("I expected a record name after 'of'.")
+            if rec_tok.type is not TokenType.UNKNOWN:
+                rcat = reserved_category(rec_tok.value)
+                if rcat:
+                    raise _ParseError(
+                        f"The word '{rec_tok.value}' is reserved in "
+                        f"Inscript — it's used as a {rcat} and can't be "
+                        f"used as a record name."
+                    )
+                raise _ParseError(
+                    f"I expected a record name after 'of', not "
+                    f"'{rec_tok.value}'."
+                )
+            return ShowNode(
+                target=NameRef(name=peek.value),
+                record_name=rec_tok.value,
+            )
+        # v2a §69 (D1) — multi-field display inside `each ... show`.
+        # Within an `each` body, `and <field>` after the first field
+        # name collects additional fields rather than starting a new
+        # operation (the four pre-existing `and` meanings in §21 don't
+        # claim this slot; v2a §69 adds the fifth).
+        if in_each:
+            extras: list[str] = []
+            while True:
+                ap = stream.peek()
+                if not (ap and ap.type is TokenType.CONNECTIVE and ap.value == "and"):
+                    break
+                nx2 = stream.peek(1)
+                # Sequencing wins if `and` is followed by a verb
+                # (operation-sequencing §21 rule 3 still applies).
+                if nx2 and nx2.type is TokenType.VERB:
+                    break
+                if not (nx2 and nx2.type is TokenType.UNKNOWN):
+                    break
+                stream.consume()  # eat `and`
+                fld = stream.consume()
+                extras.append(fld.value)
+            if extras:
+                return ShowNode(
+                    target=NameRef(name=peek.value),
+                    extra_fields=extras,
+                )
         return ShowNode(target=NameRef(name=peek.value))
     cat = reserved_category(peek.value)
     if cat:
@@ -651,6 +765,8 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
 
     stream.push_clause("each")
     try:
+        # v2a §69: the show parser keys multi-field detection off this
+        # clause-context flag — see _parse_verb_statement / _parse_show.
         action = _parse_one_operation(stream, comp)
     finally:
         stream.pop_clause()
@@ -663,8 +779,24 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
 
 
 def _parse_filter(stream: TokenStream) -> FilterNode:
+    target, condition = _parse_filter_shape(stream, verb="filter")
+    return FilterNode(target=target, condition=condition)
+
+
+def _parse_keep(stream: TokenStream) -> KeepNode:
+    """v2a §67. Shares the target + where + condition shape with filter."""
+    target, condition = _parse_filter_shape(stream, verb="keep")
+    return KeepNode(target=target, condition=condition)
+
+
+def _parse_filter_shape(
+    stream: TokenStream, *, verb: str,
+) -> tuple[NameRef, ASTNode]:
+    """Shared parser for the filter/keep shape: optional article + target
+    + 'where' + condition. v2a §67 keeps the two verbs structurally
+    identical at parse time; the difference lives in the interpreter."""
     _consume_optional_article(stream)
-    target = _consume_target(stream, verb="filter")
+    target = _consume_target(stream, verb=verb)
 
     where_tok = stream.consume()
     if not (where_tok and where_tok.type is TokenType.CONNECTIVE and where_tok.value == "where"):
@@ -675,7 +807,7 @@ def _parse_filter(stream: TokenStream) -> FilterNode:
         condition = _parse_or_condition(stream)
     finally:
         stream.pop_clause()
-    return FilterNode(target=target, condition=condition)
+    return target, condition
 
 
 def _parse_or_condition(stream: TokenStream) -> ASTNode:
@@ -844,7 +976,7 @@ def _consume_name(stream: TokenStream, *, after: str) -> str:
 
 def _contains_mixed_precedence(node: ASTNode) -> bool:
     """Return True if any condition tree in `node` mixes `and` with `or`."""
-    if isinstance(node, FilterNode):
+    if isinstance(node, (FilterNode, KeepNode)):
         return _condition_is_mixed(node.condition)
     if isinstance(node, SequenceNode):
         return any(_contains_mixed_precedence(op) for op in node.operations)

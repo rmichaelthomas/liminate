@@ -1,30 +1,30 @@
 I understand this as: remember a list called nums with 10 and 20 and 30 and 40 and 50
-I understand this as: remember a value called sum from combine the nums
+I understand this as: remember a total called sum from combine the nums
 I understand this as: show sum
 150
-I understand this as: remember a value called n from count the nums
+I understand this as: remember a howmany called n from count the nums
 I understand this as: show n
 5
-I understand this as: remember a value called nums-copy from nums
+I understand this as: remember a copy called nums-copy from nums
 I understand this as: show nums-copy
 10, 20, 30, 40, 50
 I understand this as: gather the numbers from 1 to 5
 1, 2, 3, 4, 5
 I understand this as: combine the numbers
 15
-I understand this as: remember a value called rangesum from combine the numbers
+I understand this as: remember a rangesum called rangesum from combine the numbers
 I understand this as: show rangesum
 15
 I understand this as: filter the nums where each is above 25
 I understand this as: show nums
 30, 40, 50
-I understand this as: remember a value called nums-after from count the nums
+I understand this as: remember an after called nums-after from count the nums
 I understand this as: show nums-after
 3
-I understand this as: remember a record called d1 with words as 100
-I understand this as: remember a record called d2 with words as 200
-I understand this as: remember a record called d3 with words as 300
+I understand this as: remember a doc called d1 with words as 100
+I understand this as: remember a doc called d2 with words as 200
+I understand this as: remember a doc called d3 with words as 300
 I understand this as: remember a list called docs with d1 and d2 and d3
-I understand this as: remember a value called doc-count from count the docs
+I understand this as: remember a howmany called doc-count from count the docs
 I understand this as: show doc-count
 3

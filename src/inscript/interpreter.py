@@ -42,6 +42,7 @@ from .parser import (
     EachPronoun,
     FilterNode,
     GatherNode,
+    KeepNode,
     NameRef,
     NumberLiteral,
     RememberCompositionNode,
@@ -213,6 +214,8 @@ def _exec_op(
         return _exec_show(node, symtab, current_item)
     if isinstance(node, FilterNode):
         return _exec_filter(node, symtab)
+    if isinstance(node, KeepNode):
+        return _exec_keep(node, symtab)
     if isinstance(node, CountNode):
         return _exec_count(node, symtab)
     if isinstance(node, GatherNode):
@@ -309,6 +312,17 @@ def _exec_show(
         # Iterator-driven: show the current item itself.
         return _display_lines(current_item)
     name = node.target.name
+    # v2a §68 (D4): `show <field> of <record>` — extract the named field
+    # from the named record. Semantic checks (record exists, is a record,
+    # has the field) already ran in the analyzer.
+    if node.record_name is not None:
+        record = symtab[node.record_name].value
+        return [_format_scalar(record[name])]
+    # v2a §69 (D1): multi-field display inside `each ... show`.
+    if node.extra_fields and isinstance(current_item, dict):
+        fields = [name, *node.extra_fields]
+        parts = [f"{f}: {_format_scalar(current_item[f])}" for f in fields]
+        return [", ".join(parts)]
     # Iterator-first resolution (v1c §49).
     if isinstance(current_item, dict) and name in current_item:
         return [_format_scalar(current_item[name])]
@@ -326,6 +340,25 @@ def _exec_filter(node: FilterNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     kept = [item for item in entry.value if _eval_condition(node.condition, item, symtab)]
     entry.value[:] = kept  # in-place per §24 line 478
     return []
+
+
+def _exec_keep(node: KeepNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+    """v2a §67 — non-destructive filter.
+
+    Walks the source list and collects matching items into a fresh list.
+    The source entry in the symbol table is untouched. Auto-shows the
+    matching items unless the surrounding context captured the result
+    via `remember ... from keep ...` (the recursive-descent §43 path
+    routes through _evaluate_expression below, which bypasses this
+    function's output).
+    """
+    entry = symtab[node.target.name]
+    kept = [
+        copy.deepcopy(item)
+        for item in entry.value
+        if _eval_condition(node.condition, item, symtab)
+    ]
+    return _display_lines(kept)
 
 
 def _exec_count(node: CountNode, symtab: dict[str, SymbolEntry]) -> list[str]:
@@ -424,6 +457,17 @@ def _evaluate_expression(
     if isinstance(expr, CountNode):
         entry = symtab[expr.target.name]
         return len(entry.value)
+    if isinstance(expr, KeepNode):
+        # v2a §67: `remember ... from keep ...` captures the matching list.
+        # Source remains untouched — the recursive-descent §43 path uses
+        # the value `keep` produces without invoking the auto-show in
+        # _exec_keep above.
+        entry = symtab[expr.target.name]
+        return [
+            copy.deepcopy(item)
+            for item in entry.value
+            if _eval_condition(expr.condition, item, symtab)
+        ]
     if isinstance(expr, CompositionCallNode):
         # v1 doesn't define a return value for compositions; their side
         # effects flow through the shared symbol table. Treat the call's

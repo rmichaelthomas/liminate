@@ -1,8 +1,8 @@
-I understand this as: remember a record called doc-a with domain as mobius and words as 10000
-I understand this as: remember a record called doc-b with domain as mobius and words as 8000
-I understand this as: remember a record called doc-c with domain as inscript and words as 6000
-I understand this as: remember a record called doc-d with domain as inscript and words as 4000
-I understand this as: remember a record called doc-e with domain as instrument and words as 2000
+I understand this as: remember a doc called doc-a with domain as mobius and words as 10000
+I understand this as: remember a doc called doc-b with domain as mobius and words as 8000
+I understand this as: remember a doc called doc-c with domain as inscript and words as 6000
+I understand this as: remember a doc called doc-d with domain as inscript and words as 4000
+I understand this as: remember a doc called doc-e with domain as instrument and words as 2000
 I understand this as: remember a list called docs with doc-a and doc-b and doc-c and doc-d and doc-e
 I understand this as: remember how to find-large: filter the docs where words is above 5000
 I understand this as: remember how to count-them: count the docs

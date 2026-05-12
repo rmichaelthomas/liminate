@@ -150,6 +150,211 @@ def test_filter_chain_reduces_records():
 
 
 # ---------------------------------------------------------------------------
+# keep — non-destructive filter (v2a §67)
+# ---------------------------------------------------------------------------
+
+
+def _seed_orders(symtab: dict[str, SymbolEntry]) -> None:
+    run("remember an order called order1 with total as 75 and status as active", symtab)
+    run("remember an order called order2 with total as 30 and status as active", symtab)
+    run("remember an order called order3 with total as 120 and status as pending", symtab)
+    run("remember a list called orders with order1 and order2 and order3", symtab)
+
+
+def test_keep_auto_shows_matches_and_does_not_modify_source():
+    symtab = {}
+    _seed_orders(symtab)
+    r = run("keep the orders where total is above 50", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    # Auto-show output present for the two matching records.
+    assert r.output is not None and len(r.output) == 2
+    assert "total: 75" in r.output[0]
+    assert "total: 120" in r.output[1]
+    # Source list is unchanged — D3 dissolves because compositions
+    # wrapping `keep` can be called repeatedly on the same data.
+    totals = [item["total"] for item in symtab["orders"].value]
+    assert totals == [75, 30, 120]
+
+
+def test_keep_empty_result_does_not_modify_source():
+    symtab = {}
+    _seed_orders(symtab)
+    r = run("keep the orders where total is above 999", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    # No matches → empty list auto-shown as an empty line.
+    assert r.output == [""]
+    # Source preserved.
+    assert len(symtab["orders"].value) == 3
+
+
+def test_keep_captured_via_remember_from():
+    symtab = {}
+    _seed_orders(symtab)
+    r = run(
+        "remember the matches called big from keep the orders where total is above 50",
+        symtab,
+    )
+    assert r.status is ResultStatus.SUCCESS
+    # Source untouched.
+    assert len(symtab["orders"].value) == 3
+    # Captured list contains the 2 matching records.
+    assert symtab["big"].type == "list_of_records"
+    assert len(symtab["big"].value) == 2
+    assert [r["total"] for r in symtab["big"].value] == [75, 120]
+
+
+def test_keep_compound_condition():
+    symtab = {}
+    _seed_orders(symtab)
+    r = run(
+        "keep the orders where total is above 50 and status is active",
+        symtab,
+    )
+    assert r.status is ResultStatus.SUCCESS
+    # Only order1 (75/active) matches both.
+    assert r.output is not None and len(r.output) == 1
+    assert "total: 75" in r.output[0]
+    # Source still 3.
+    assert len(symtab["orders"].value) == 3
+
+
+def test_keep_in_composition_is_reusable():
+    # v2a §67 / D3: a composition wrapping `keep` can be called repeatedly
+    # because the source list is never mutated. Same input → same output.
+    symtab = {}
+    _seed_orders(symtab)
+    run("remember how to find-big: keep the orders where total is above 50", symtab)
+    r1 = run("find-big", symtab)
+    r2 = run("find-big", symtab)
+    assert r1.status is ResultStatus.SUCCESS
+    assert r2.status is ResultStatus.SUCCESS
+    assert r1.output == r2.output  # idempotent
+    assert len(symtab["orders"].value) == 3  # source preserved
+
+
+def test_keep_on_scalar_is_semantic_error():
+    symtab = {}
+    run("remember a number called age with 30", symtab)
+    r = run("keep the age where each is above 5", symtab)
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "keep" in r.message
+    assert "age" in r.message
+
+
+# ---------------------------------------------------------------------------
+# show <field> of <record> — single-record field access (v2a §68, D4)
+# ---------------------------------------------------------------------------
+
+
+def test_show_field_of_record_returns_field_value():
+    symtab = {}
+    run("remember an order called order1 with total as 75 and status as active", symtab)
+    r = run("show total of order1", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["75"]
+
+
+def test_show_string_field_of_record():
+    symtab = {}
+    run("remember an order called order1 with total as 75 and status as active", symtab)
+    r = run("show status of order1", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["active"]
+
+
+def test_show_field_of_record_missing_field_is_semantic_error():
+    symtab = {}
+    run("remember an order called order1 with total as 75 and status as active", symtab)
+    r = run("show missing of order1", symtab)
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "order1" in r.message
+    assert "missing" in r.message
+
+
+def test_show_field_of_missing_record_is_semantic_error():
+    symtab = {}
+    r = run("show total of ghost", symtab)
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "ghost" in r.message
+
+
+def test_show_field_of_non_record_is_semantic_error():
+    symtab = {}
+    run("remember a number called age with 30", symtab)
+    r = run("show something of age", symtab)
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "age" in r.message
+    # The error explains that `of` needs a record.
+    assert "of" in r.message.lower() or "record" in r.message.lower()
+
+
+# ---------------------------------------------------------------------------
+# each ... show <a> and <b>: multi-field display (v2a §69, D1)
+# ---------------------------------------------------------------------------
+
+
+def _seed_docs(symtab: dict[str, SymbolEntry]) -> None:
+    run("remember a doc called d1 with class as checkpoint and words as 1000", symtab)
+    run("remember a doc called d2 with class as addendum and words as 2000", symtab)
+    run("remember a list called docs with d1 and d2", symtab)
+
+
+def test_each_show_multiple_fields_emits_field_value_pairs():
+    symtab = {}
+    _seed_docs(symtab)
+    r = run("each the docs show words and class", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == [
+        "words: 1000, class: checkpoint",
+        "words: 2000, class: addendum",
+    ]
+
+
+def test_each_show_single_field_still_emits_bare_value():
+    # v2a §69 must not regress the existing single-field behavior.
+    symtab = {}
+    _seed_docs(symtab)
+    r = run("each the docs show words", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["1000", "2000"]
+
+
+def test_each_show_three_fields():
+    # Field names avoid single-letter clashes with reserved words
+    # (`a`/`an`/`to` are reserved; `x`/`y`/`z` are not).
+    symtab = {}
+    run("remember a rec called r1 with x as 1 and y as 2 and z as 3", symtab)
+    run("remember a rec called r2 with x as 10 and y as 20 and z as 30", symtab)
+    run("remember a list called records with r1 and r2", symtab)
+    r = run("each the records show x and y and z", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == [
+        "x: 1, y: 2, z: 3",
+        "x: 10, y: 20, z: 30",
+    ]
+
+
+def test_each_show_unknown_field_is_semantic_error():
+    symtab = {}
+    _seed_docs(symtab)
+    r = run("each the docs show words and nonexistent", symtab)
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "nonexistent" in r.message
+
+
+def test_show_and_field_outside_each_is_semantic_error():
+    # v2a §69: multi-field `show` is only valid inside `each`. Outside,
+    # `and` after `show <name>` is interpreted as operation sequencing,
+    # which fails when followed by an unknown rather than a verb.
+    symtab = {}
+    run("remember an order called order1 with total as 75 and status as active", symtab)
+    r = run("show total and status of order1", symtab)
+    # Either parse error or semantic error is acceptable — the construct
+    # is rejected.
+    assert r.status in (ResultStatus.ERROR_PARSE, ResultStatus.ERROR_SEMANTIC)
+
+
+# ---------------------------------------------------------------------------
 # gather both stores and auto-shows (v1b §40)
 # ---------------------------------------------------------------------------
 

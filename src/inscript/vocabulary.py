@@ -1,9 +1,19 @@
-"""Vocabulary tables and token types for Inscript v1.
+"""Vocabulary tables and token types for Inscript v1 / v2a.
 
 Sources:
 - inception §11 (vocabulary table), §17 (verb signatures), §22 (lexer rules)
 - v1a §29 (reserved words, 28-word total — superseded)
 - v1c §47 (article `an`, reserved word count corrected to 29)
+- v2a §67 (`keep` verb — non-destructive filter)
+- v2a §68 (`of` connective — single-record field access)
+- v2a §73 (updated vocabulary: 8 verbs, 10 connectives, 31 reserved words)
+
+D7_DEFERRED: Multi-word string values are deferred to a dedicated v2
+checkpoint per v2a §72. The lexer's whitespace-splitting rule (§22, §46)
+remains authoritative; multi-word concepts in v1/v2a are expressed via
+hyphenation (e.g. `gap-inventory`). Three candidate approaches (quoting,
+hyphenation convention, multi-word phrase spans) are catalogued in the
+v2 Design Triage (May 12, 2026) §5.
 """
 
 from dataclasses import dataclass
@@ -27,14 +37,15 @@ class Token:
     position: int
 
 
-# v1 verbs (inception §11)
+# v1 / v2a verbs (inception §11; `keep` added in v2a §67).
 VERBS: frozenset[str] = frozenset({
-    "remember", "show", "filter", "count", "gather", "combine", "each",
+    "remember", "show", "filter", "keep",
+    "count", "gather", "combine", "each",
 })
 
-# v1 connectives (inception §11)
+# v1 / v2a connectives (inception §11; `of` added in v2a §68).
 CONNECTIVES: frozenset[str] = frozenset({
-    "where", "and", "or", "from", "with", "called", "to", "how", "as",
+    "where", "and", "or", "from", "with", "called", "to", "how", "as", "of",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -64,7 +75,7 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 29 reserved words (v1c §47 corrected total).
+# All 31 reserved words (v2a §73: was 29 in v1c §47; +1 for `keep`, +1 for `of`).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -98,6 +109,9 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "remember": ["name", "value"],
     "show":     ["target"],
     "filter":   ["target", "condition"],
+    # v2a §67: `keep` shares filter's slots; only the interpreter differs
+    # (filter mutates in place; keep returns a new list, source unchanged).
+    "keep":     ["target", "condition"],
     "count":    ["target"],
     "gather":   ["name", "from", "to"],
     "combine":  ["target"],

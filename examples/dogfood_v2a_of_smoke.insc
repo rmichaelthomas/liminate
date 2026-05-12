@@ -1,0 +1,4 @@
+remember an order called order1 with total as 75 and status as active
+show total of order1
+show status of order1
+show missing of order1

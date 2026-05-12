@@ -1,0 +1,8 @@
+remember an order called o1 with total as 75 and status as active
+remember an order called o2 with total as 30 and status as pending
+remember a list called orders with o1 and o2
+keep the orders where total is above 50
+count the orders
+remember the matches called big from keep the orders where total is above 50
+show big
+count the orders

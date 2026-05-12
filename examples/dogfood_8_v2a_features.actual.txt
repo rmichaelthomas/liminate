@@ -1,0 +1,43 @@
+I understand this as: remember a domain called inscript with docs as 6 and words as 30230
+I understand this as: remember a domain called mobius with docs as 91 and words as 381476
+I understand this as: remember a domain called instrument with docs as 4 and words as 19438
+I understand this as: remember a domain called drum with docs as 1 and words as 5880
+I understand this as: remember a list called domains with mobius and inscript and instrument and drum
+I understand this as: each the domains show docs and words
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+docs: 1, words: 5880
+I understand this as: show docs of mobius
+91
+I understand this as: show words of inscript
+30230
+I understand this as: keep the domains where docs is above 3
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+I understand this as: count the domains
+4
+I understand this as: show domains
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+docs: 1, words: 5880
+I understand this as: remember a heavy called heavy from keep the domains where words is above 10000
+I understand this as: show heavy
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+I understand this as: count the domains
+4
+I understand this as: remember how to find-major: keep the domains where docs is above 3
+I understand this as: find-major
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+I understand this as: find-major
+docs: 91, words: 381476
+docs: 6, words: 30230
+docs: 4, words: 19438
+I understand this as: remember how to chained: keep the domains where docs is above 3
+Error: Composition chaining isn't supported yet. Call 'chained' on its own line.
