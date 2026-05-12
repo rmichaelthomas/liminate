@@ -1,0 +1,16 @@
+
+
+domain: inscript, class: inception, words: 10831
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: inscript, class: inception, words: 10831
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+
+Error: I expected a target after 'keep', but 'where' is a connective in Inscript. Targets must be names you've created with 'remember' or 'gather'.
+
+Error: No item in 'docs' has a field called 'missing'.
+
+domain: inscript, class: inception, words: 10831
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190

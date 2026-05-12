@@ -1,0 +1,18 @@
+gather the nums from 1 to 1000
+
+count the nums
+
+remember the small called small from keep the nums where each is not above 20
+count the small
+show small
+
+remember the big called big from keep the nums where each is above 980
+count the big
+show big
+
+remember the mid called mid from keep the nums where each is above 500
+count the mid
+
+combine the nums
+
+count the nums

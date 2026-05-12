@@ -1,0 +1,26 @@
+
+
+30
+
+24
+30
+
+19
+30
+
+12
+30
+
+9
+12
+30
+
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+domain: mobius, class: checkpoint, words: 7439
+domain: mobius, class: checkpoint, words: 7297
+domain: mobius, class: checkpoint, words: 7132
+domain: mobius, class: gap-inventory, words: 7128

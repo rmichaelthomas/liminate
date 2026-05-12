@@ -85,9 +85,46 @@ All five cross-checks held. The non-destructive contract is verified at every le
 
 ---
 
+## Second-Pass Observations (with UX polish, May 12, 2026)
+
+After the v1 UX polish landed (U1/U4 `--quiet` flag, U2/U3 schema-mismatch wording, U5 auto-show truncation), the five v2a dogfood programs (9–13) were re-run with `--quiet`, plus three new probes (programs 14–16) were added to stress-test the polish at v2a-realistic scales. The actuals are saved alongside the originals as `*.quiet.actual.txt`.
+
+**Headline impact: --quiet collapses canonical noise.** Trace line counts dropped substantially:
+
+| Program | Default trace | `--quiet` trace | Reduction |
+|---|---|---|---|
+| 9 (multipass) | 65 | 26 | 60% |
+| 10 (tabular) | 43 | 37 | 14% |
+| 11 (inspect) | 18 | 11 | 39% |
+| 12 (compositions) | 51 | 37 | 27% |
+| 13 (edges) | 18 | 16 | 11% |
+
+Program 9 — the headline v2a demonstration — drops most of all because its trace is dominated by 30 record-construction canonicals. With `--quiet`, the trace reads as pure data: a sequence of counts (30, 24, 30, 19, 30, 12, 30, 9, 12, 30) showing the source preserved through every probe, followed by a labeled per-record listing of the 9 final matches.
+
+**New scale + polish probes (programs 14–16):**
+
+| # | Program | What it probes | Outcome |
+|---|---|---|---|
+| 14 | `dogfood_v2a_14_realistic` | A "report-shaped" analysis: count, single-record inspections via `of`, three named compositions, multi-stage narrowing, tabular per-record output. The kind of thing a non-programmer might actually write. | With `--quiet`, output reads as a written report. No new gaps surfaced. |
+| 15 | `dogfood_v2a_15_scale` | `gather 1 to 1000`, multiple `keep` captures, threshold-boundary check (20 = full display), `combine` at scale (1+2+…+1000 = 500500). | Truncation fires correctly on `gather` auto-show (`1, 2, ..., 10, ..., 991, ..., 1000`). At exactly 20 items, full display (threshold exclusive). `combine` produces 500500. Source preserved at 1000. |
+| 16 | `dogfood_v2a_16_schema_errors` | A heterogeneous list with one non-matching record (`item1` among 4 `order`s) — partial-match path. Plus two zero-match paths on homogeneous lists. | All three error messages fire correctly and immediately (no canonical noise thanks to `--quiet`). Partial path: *"'item1' in 'all' doesn't have a field called 'total'. Other items do have it."* Zero path: *"No item in 'X' has a field called 'Y'."* |
+
+**Gap status update:**
+
+- **D9, D10, D11** — still real, unchanged. The UX polish is orthogonal to these v2-design gaps. They remain inputs to the next spec session.
+- **U7** (duplicate fields silently allowed in multi-field show) — still real. Polish doesn't address this; it's an analyzer concern.
+- **U8** (`of`-on-list error doesn't suggest `each`) — still real. Could ship as a small v2.1-patch with the same UX-polish style.
+- **U9** (operation-sequencing emits both outputs) — still real. With `--quiet` the noise is dramatically reduced, but the dual-output semantics are unchanged.
+
+**No new gaps surfaced.** The polish makes the existing gaps *more* visible (because the surrounding noise is gone) but doesn't reveal any unknown unknowns. The U2/U3 named-offender wording is genuinely more helpful — surfacing the specific bad record cuts the diagnostic time on heterogeneous lists from "scan the source code" to "look at the message."
+
+**The second pass confirms v2a + UX polish is ready as a usable working language.** The remaining gaps (D9/D10/D11 + U7/U8/U9) are now sharply specified inputs to either the next spec session or a small follow-up patch round.
+
+---
+
 ## Resume Prompt
 
-*We are resuming from the Inscript v2a Dogfooding Gap Inventory (May 12, 2026). v2a (May 12, 2026) locked five resolutions and deferred one (D7 multi-word strings). Five focused dogfood programs were run against the Möbius corpus to verify each resolution at scale. **All five v2a features work at scale.** D2 (keep) and D3 (composition reusability) are confirmed structurally resolved — four orthogonal keeps on a 30-record list with the source preserved bit-for-bit through every probe. Cross-checks (5 methods × 2 paths each) all held. **Three new gaps surfaced**, all v2-design: **(D9) Compositions can't be captured via `remember ... from <comp-name>`** — the natural workflow of "define a reusable filter, capture its results for further analysis" requires inlining the `keep` body. This is pre-existing v1 behavior (Q9 territory) made newly painful by keep being the natural composition wrapper. **(D10) No per-record `keep`/`filter` inside `each`** — the user has no v2a way to write per-record decision logic; `each ... keep where ...` errors at parse. **(D11) `of` only works in `show`'s target position** — natural expressions like `keep the docs where words of doc-1 is above 5000` aren't expressible. Three UX gaps: **U7** duplicate field in multi-field `each show` is silently allowed; **U8** `of`-on-list error doesn't suggest `each`; **U9** operation-sequencing of `keep` + `show` emits both outputs (no auto-show suppression). Recommended next step: bundle D9 into the next spec addendum (composition return values, Q9). D10 and D11 are smaller; could wait for the next dedicated session. The three UX items are tiny — could ship as v2.1-patches whenever convenient.*
+*We are resuming from the Inscript v2a Dogfooding Gap Inventory (May 12, 2026). v2a (May 12, 2026) locked five resolutions and deferred one (D7 multi-word strings). Two passes have been completed. **First pass** (programs 9–13): five focused programs verified each v2a resolution at scale. All five v2a features work. D2 (keep) and D3 (composition reusability) are confirmed structurally resolved — four orthogonal keeps on a 30-record list with the source preserved bit-for-bit. Three new v2-design gaps surfaced: **D9** (compositions can't be captured via `remember ... from <comp-name>`), **D10** (no per-record `keep`/`filter` inside `each`), **D11** (`of` only works in `show`'s target position). Three UX gaps: **U7** (duplicate fields silently allowed), **U8** (`of`-on-list error doesn't suggest `each`), **U9** (operation-sequencing emits both outputs). **Second pass** (programs 9–13 re-run with the v1 UX polish in `--quiet` mode, plus new programs 14–16): the polish (U1/U4 `--quiet`, U2/U3 schema-mismatch wording, U5 auto-show truncation) dramatically improves the dogfooding experience — Program 9's trace drops 60% (65→26 lines), reading as pure data rather than a parser transcript. Three new probes confirmed `--quiet` + truncation at scale (`gather 1 to 1000`, `combine` = 500500, threshold exclusive at 20) and the U2/U3 named-offender wording in practice. **No new gaps in the second pass** — but the existing six remain. Recommended next step: bundle D9 into the next spec addendum (composition return values, Q9). D10 and D11 are smaller; could wait for the next dedicated session. The three UX items are tiny — could ship as v2.1-patches whenever convenient.*
 
 ---
 

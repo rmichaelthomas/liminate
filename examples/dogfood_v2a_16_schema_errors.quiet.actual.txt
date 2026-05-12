@@ -1,0 +1,7 @@
+
+
+Error: 'item1' in 'all' doesn't have a field called 'total'. Other items do have it.
+
+Error: No item in 'clean' has a field called 'missingfield'.
+
+Error: No item in 'orders' has a field called 'missingfield'.

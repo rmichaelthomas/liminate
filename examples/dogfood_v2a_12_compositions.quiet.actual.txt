@@ -1,0 +1,37 @@
+
+
+
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+domain: mobius, class: checkpoint, words: 7439
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+domain: mobius, class: checkpoint, words: 7439
+domain: inscript, class: inception, words: 10831
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+domain: mobius, class: checkpoint, words: 7439
+domain: inscript, class: inception, words: 10831
+domain: mobius, class: binder, words: 10399
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+
+9
+
+Error: Composition calls can't be used as a value in this version.

@@ -1,0 +1,16 @@
+remember an order called order1 with total as 75 and status as active
+remember an order called order2 with total as 100 and status as active
+remember an order called order3 with total as 50 and status as pending
+remember an item called item1 with price as 30 and color as red
+remember an order called order4 with total as 200 and status as active
+
+remember a list called all with order1 and order2 and order3 and item1 and order4
+
+filter the all where total is above 50
+
+remember a list called clean with order1 and order2 and order3
+filter the clean where missingfield is above 5
+
+remember an order called o1 with total as 75 and status as active
+remember a list called orders with o1
+filter the orders where missingfield is above 5

@@ -1,0 +1,28 @@
+
+
+30
+
+inception
+gap-inventory
+spec
+
+
+
+24
+19
+12
+
+
+9
+8
+
+domain: mobius, class: checkpoint, words: 10190
+domain: mobius, class: checkpoint, words: 8077
+domain: mobius, class: checkpoint, words: 7654
+domain: mobius, class: checkpoint, words: 7506
+domain: mobius, class: checkpoint, words: 7439
+domain: mobius, class: checkpoint, words: 7297
+domain: markings, class: checkpoint, words: 7255
+domain: mobius, class: checkpoint, words: 7132
+
+30

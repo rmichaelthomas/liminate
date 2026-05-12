@@ -1,0 +1,11 @@
+
+inscript
+spec
+5057
+mobius
+
+Error: 'of' needs a record. 'docs' is a list of records.
+
+Error: I didn't expect 'and' here.
+Error: I couldn't parse the condition after 'where'. Conditions look like '[field] is [comparison] [value]', for example: total is above 50.
+Error: I didn't expect 'of' here.
