@@ -251,6 +251,38 @@ class ChooseNode(ASTNode):
     branches: list[ChooseBranch]
 
 
+@dataclass
+class WhenNode(ASTNode):
+    """v3a §108/§109 — top-level reactive handler.
+
+    `condition` is the when-AST (choose-style operand resolution — symbol
+    table names, `of` expressions; no iterator context). `unless` is the
+    optional guard AST (§109): when present, the compound eligibility is
+    `condition AND NOT unless`. `action` is the action block contents —
+    a single AST for single-statement blocks, or a SequenceNode for the
+    multi-line indented form (§110/§111).
+
+    `when` is registered during Phase 1 (§108) but its action block does
+    not execute until Phase 2 (§107). Name resolution inside `action` is
+    deferred to firing time (§111); names in `condition`/`unless` are
+    resolved at registration time.
+    """
+    condition: ASTNode
+    unless: ASTNode | None
+    action: ASTNode
+
+
+@dataclass
+class FinishNode(ASTNode):
+    """v3a §112 — exit listener mode immediately and totally.
+
+    No slots. Legal only inside a `when` action block (directly, inside
+    a `choose` branch, or inside a composition called from an action
+    block). `finish` during Phase 1 is a semantic error.
+    """
+    pass
+
+
 # Set of operator words that may follow `is` as a comparison introducer.
 _COMPARISON_OPERATORS = frozenset({"above", "below", "equal_to"})
 
