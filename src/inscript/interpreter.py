@@ -491,13 +491,71 @@ def _evaluate_expression(
             if _eval_condition(expr.condition, item, symtab)
         ]
     if isinstance(expr, CompositionCallNode):
-        # v1 doesn't define a return value for compositions; their side
-        # effects flow through the shared symbol table. Treat the call's
-        # display output as its "result" would over-reach the spec.
-        raise _RuntimeError(
-            "Composition calls can't be used as a value in this version."
-        )
+        # v2b §76 — execute the composition's body, returning the value
+        # of its last operation. The analyzer has already verified the
+        # last op is value-producing (void-result check fires before
+        # exec, so side effects don't run in that case). Non-final ops
+        # run for side effects per v1d §56 stepwise semantics.
+        return _composition_call_value(expr, symtab)
     raise _RuntimeError(f"Can't evaluate {type(expr).__name__} as a value.")
+
+
+def _composition_call_value(
+    node: CompositionCallNode,
+    symtab: dict[str, SymbolEntry],
+) -> Any:
+    """v2b §76 — evaluate a composition call as a value expression."""
+    body = symtab[node.name].value
+    if isinstance(body, SequenceNode):
+        ops = body.operations
+        for op in ops[:-1]:
+            analysis = analyze(op, symtab)
+            if isinstance(analysis, InscriptResult):
+                raise _RuntimeError(analysis.message or "")
+            _exec_op(op, symtab)
+        last = ops[-1]
+    else:
+        last = body
+    analysis = analyze(last, symtab)
+    if isinstance(analysis, InscriptResult):
+        raise _RuntimeError(analysis.message or "")
+    return _value_of_op(last, symtab)
+
+
+def _value_of_op(op: ASTNode, symtab: dict[str, SymbolEntry]) -> Any:
+    """Return the value produced by a value-producing last operation
+    (v2b §76 table). Side effects required for the op's value (gather's
+    storage, the from-form's symbol binding) still execute; pure side
+    effects (auto-show, etc.) are suppressed because we go through the
+    value extraction path rather than the standalone-op path."""
+    if isinstance(op, KeepNode):
+        entry = symtab[op.target.name]
+        return [
+            copy.deepcopy(item)
+            for item in entry.value
+            if _eval_condition(op.condition, item, symtab)
+        ]
+    if isinstance(op, CombineNode):
+        return sum(symtab[op.target.name].value)
+    if isinstance(op, CountNode):
+        return len(symtab[op.target.name].value)
+    if isinstance(op, GatherNode):
+        start = int(op.from_val)
+        stop = int(op.to_val)
+        items = list(range(start, stop + 1))
+        _store(symtab, op.name, items)
+        return items
+    if isinstance(op, RememberValueNode):
+        # The remember-from-verb-phrase form: capture the value and
+        # also bind it (side effect), then return the captured value.
+        value = _evaluate_expression(op.value, symtab, None)
+        _store(symtab, op.name, value)
+        return value
+    if isinstance(op, CompositionCallNode):
+        return _composition_call_value(op, symtab)
+    raise _RuntimeError(
+        f"Can't extract a value from {type(op).__name__} as a last operation."
+    )
 
 
 # ---------------------------------------------------------------------------

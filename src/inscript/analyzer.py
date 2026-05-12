@@ -218,7 +218,79 @@ def _check_value_expr(
     if isinstance(value_node, FieldAccessNode):
         _check_field_access(value_node, symtab)
         return
+    if isinstance(value_node, CompositionCallNode):
+        # v2b §76 — composition call in value position. Validate the
+        # composition resolves, analyze its body, then verify the body's
+        # last operation produces a value. The void-result error fires
+        # here at analyze time (before exec) so that side effects of the
+        # body don't run.
+        if (
+            value_node.name not in symtab
+            or symtab[value_node.name].type != "composition"
+        ):
+            raise _SemanticError(
+                f"I can't find a composition called '{value_node.name}'."
+            )
+        body = symtab[value_node.name].value
+        _check(body, symtab, iterator=None)
+        verb = _composition_void_result_verb(value_node.name, symtab)
+        if verb is not None:
+            raise _SemanticError(
+                f"Composition '{value_node.name}' doesn't return a value — "
+                f"its last operation is '{verb}', which only has side effects."
+            )
+        return
     _check(value_node, symtab, iterator)
+
+
+def _composition_void_result_verb(
+    name: str,
+    symtab: dict[str, SymbolEntry],
+    visited: set[str] | None = None,
+) -> str | None:
+    """v2b §76 — return the verb name of a composition body's last op if
+    that op is side-effect-only, else None. Resolves nested composition
+    calls recursively."""
+    if visited is None:
+        visited = set()
+    if name in visited:
+        return None  # defensive: cycles shouldn't trigger a structural error
+    visited.add(name)
+    if name not in symtab or symtab[name].type != "composition":
+        return None
+    body = symtab[name].value
+    last = body.operations[-1] if isinstance(body, SequenceNode) else body
+    return _side_effect_verb(last, symtab, visited)
+
+
+def _side_effect_verb(
+    node: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    visited: set[str],
+) -> str | None:
+    """Return the verb name if this AST node is side-effect-only at
+    value position; None if it produces a value (v2b §76 table)."""
+    if isinstance(node, ShowNode):
+        return "show"
+    if isinstance(node, FilterNode):
+        return "filter"
+    if isinstance(node, EachNode):
+        return "each"
+    if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
+        return "remember"
+    if isinstance(node, RememberValueNode):
+        # `remember ... from <verb-phrase>` is value-producing iff the
+        # captured inner verb-phrase itself produces a value (§76 table).
+        inner = node.value
+        if isinstance(inner, (KeepNode, CombineNode, CountNode, GatherNode)):
+            return None
+        if isinstance(inner, CompositionCallNode):
+            return _composition_void_result_verb(inner.name, symtab, visited)
+        return "remember"
+    if isinstance(node, CompositionCallNode):
+        return _composition_void_result_verb(node.name, symtab, visited)
+    # Bare value-producing verbs: keep, combine, count, gather.
+    return None
 
 
 def _check_field_access(
