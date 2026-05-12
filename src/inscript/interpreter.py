@@ -46,6 +46,7 @@ from .parser import (
     KeepNode,
     NameRef,
     NumberLiteral,
+    QuotedString,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -329,6 +330,10 @@ def _exec_show(
     if node.target is None:
         # Iterator-driven: show the current item itself.
         return _display_lines(current_item)
+    if isinstance(node.target, QuotedString):
+        # v2c §88 — literal display: emit the quoted content verbatim,
+        # no symbol-table lookup.
+        return [node.target.content]
     name = node.target.name
     # v2a §68 (D4): `show <field> of <record>` — extract the named field
     # from the named record. Semantic checks (record exists, is a record,
@@ -460,6 +465,10 @@ def _evaluate_expression(
         if expr.word in symtab:
             return copy.deepcopy(symtab[expr.word].value)
         return expr.word
+    if isinstance(expr, QuotedString):
+        # v2c §86/§87 — quoted content is always a literal string. No
+        # symbol-table fallback (unlike BareWord) — quotes mark data.
+        return expr.content
     if isinstance(expr, NameRef):
         if expr.name in symtab:
             return copy.deepcopy(symtab[expr.name].value)
@@ -601,6 +610,9 @@ def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
         if value_node.word in symtab:
             return symtab[value_node.word].value
         return value_node.word
+    if isinstance(value_node, QuotedString):
+        # v2c §86/§87 — quoted value is always a literal string.
+        return value_node.content
     if isinstance(value_node, EachPronoun):
         return current_item
     if isinstance(value_node, FieldAccessNode):

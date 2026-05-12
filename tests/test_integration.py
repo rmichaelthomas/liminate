@@ -1007,3 +1007,195 @@ def test_sentence_68_of_on_list_suggests_each():
     assert r.status is ResultStatus.ERROR_SEMANTIC
     assert "single record" in r.message
     assert "each the docs show class" in r.message
+
+
+# ---------------------------------------------------------------------------
+# v2c §94 — Sentences 69–80 (quoting mechanism for multi-word strings)
+# ---------------------------------------------------------------------------
+
+
+def test_sentence_69_basic_multi_word_string_value():
+    """v2c §86: a quoted multi-word value stores as the literal phrase."""
+    session, _ = run_lines([
+        'remember an order called o1 with status as "in progress"',
+    ])
+    r = session.run_line("show o1")
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["status: in progress"]
+
+
+def test_sentence_70_multi_word_string_in_where_clause():
+    """v2c §87: QUOTED_STRING accepted after an operator in `where`.
+    String equality matches the multi-word stored value."""
+    session, _ = run_lines([
+        'remember an order called o1 with status as "in progress"',
+        "remember an order called o2 with status as shipped",
+        "remember a list called orders with o1 and o2",
+    ])
+    r = session.run_line('keep the orders where status is "in progress"')
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["status: in progress"]
+
+
+def test_sentence_71_reserved_word_inside_quotes_is_data():
+    """v2c §89: a reserved word inside quotes is a valid data value
+    (vocabulary lookup is bypassed)."""
+    session, _ = run_lines([
+        'remember a category called c1 with label as "not applicable"',
+    ])
+    r = session.run_line("show label of c1")
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["not applicable"]
+
+
+def test_sentence_72_mixed_quoted_and_bare_values_in_one_record():
+    """v2c §87: multi-word and single-word values coexist; `and`
+    correctly separates field assignments."""
+    session, _ = run_lines([
+        'remember a task called t1 with status as "in progress" and priority as high',
+    ])
+    r = session.run_line("show t1")
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["status: in progress, priority: high"]
+
+
+def test_sentence_73_quoted_field_name_before_of_is_parse_error():
+    """v2c §87: a quoted token in field-name position before `of` is
+    rejected with hyphenation guidance."""
+    session, _ = run_lines([
+        "remember a metric called m1 with pressure as 120",
+    ])
+    r = session.run_line('show "blood pressure" of m1')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "Field names can't have spaces" in r.message
+    assert "blood-pressure of m1" in r.message
+
+
+def test_sentence_74_hyphenated_and_quoted_values_are_different_strings():
+    """v2c §85: `in-progress` and `"in progress"` are two distinct
+    stored values; the user's choice is preserved."""
+    session, _ = run_lines([
+        "remember a task called t1 with status as in-progress",
+        'remember a task called t2 with status as "in progress"',
+    ])
+    r3 = session.run_line("show status of t1")
+    r4 = session.run_line("show status of t2")
+    assert r3.output == ["in-progress"]
+    assert r4.output == ["in progress"]
+
+
+def test_sentence_75_unclosed_quote_is_parse_error():
+    """v2c §86: an opening quote with no closer surfaces as ERROR_PARSE."""
+    session = make_session()
+    r = session.run_line('remember a note called n1 with text as "hello world')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "opening quote mark" in r.message
+    assert "closing" in r.message
+
+
+def test_sentence_76_empty_quotes_are_parse_error():
+    """v2c §92: `""` is rejected with the empty-content error."""
+    session = make_session()
+    r = session.run_line('remember a note called n1 with text as ""')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "nothing between" in r.message
+
+
+def test_sentence_77_literal_display_via_show():
+    """v2c §88: `show "text"` emits the quoted content as literal,
+    distinct from name lookup and field access."""
+    session = make_session()
+    r1 = session.run_line('show "Section A: before filtering"')
+    session.run_line("remember a list called nums with 10 and 20 and 30")
+    r3 = session.run_line("count the nums")
+    r4 = session.run_line('show "Section B: done"')
+    assert r1.status is ResultStatus.SUCCESS
+    assert r1.output == ["section a: before filtering"]
+    assert r3.output == ["3"]
+    assert r4.output == ["section b: done"]
+
+
+def test_sentence_78_quoted_single_word_is_redundant_but_valid():
+    """v2c §85: quoting a single non-reserved word is redundant but
+    legal; the stored value is identical to the bare form."""
+    session, _ = run_lines([
+        'remember a task called t1 with status as "active"',
+        "remember a task called t2 with status as active",
+    ])
+    r3 = session.run_line("show status of t1")
+    r4 = session.run_line("show status of t2")
+    assert r3.output == ["active"]
+    assert r4.output == ["active"]
+
+
+def test_sentence_79_reserved_word_value_renders_with_quotes():
+    """v2c §90: the canonical renderer quotes reserved-word values to
+    preserve round-trip integrity. `with label as "filter"` keeps its
+    quotes; re-parsing the rendered form yields the same AST."""
+    session = make_session()
+    r1 = session.run_line('remember a tag called t1 with label as "filter"')
+    r2 = session.run_line("show t1")
+    assert r1.status is ResultStatus.SUCCESS
+    # The canonical echo preserves the quotes around the reserved-word value.
+    assert r1.canonical == 'remember a tag called t1 with label as "filter"'
+    assert r2.output == ["label: filter"]
+    # Round-trip — feed the rendered output back through a fresh session.
+    session2 = make_session()
+    r1b = session2.run_line(r1.canonical)
+    assert r1b.status is ResultStatus.SUCCESS
+    assert r1b.canonical == r1.canonical
+
+
+def test_sentence_80_quoted_name_is_parse_error():
+    """v2c §87: `called "my list"` is rejected — names can't have spaces."""
+    session = make_session()
+    r = session.run_line('remember a list called "my list" with 1 and 2 and 3')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "Names can't have spaces" in r.message
+    assert "my-list" in r.message
+
+
+# ---------------------------------------------------------------------------
+# v2c §89 — unquoted vocabulary error suggests quoting
+# ---------------------------------------------------------------------------
+
+
+def test_unquoted_reserved_word_value_suggests_quoting():
+    """v2c §89: the v1c §46 error wording is extended to suggest
+    wrapping the reserved word in quotes."""
+    session = make_session()
+    r = session.run_line("remember a tag called t1 with label as filter")
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "verb" in r.message
+    assert '"filter"' in r.message
+
+
+# ---------------------------------------------------------------------------
+# v2c §87 — quoted field name in each-show multi-field also rejected
+# ---------------------------------------------------------------------------
+
+
+def test_quoted_field_in_each_multi_field_show_rejected():
+    """v2c §87 table — `each the orders show "total amount" and status`
+    is a parse error with hyphenation guidance."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line('each the docs show "total amount" and class')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "Field names can't have spaces" in r.message
+    assert "total-amount" in r.message
+
+
+def test_quoted_extra_field_in_each_show_rejected():
+    """v2c §87 — a quoted token appearing after `and` in multi-field
+    each-show is also a field name position; rejected."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line('each the docs show class and "total amount"')
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "Field names can't have spaces" in r.message
+    assert "total-amount" in r.message

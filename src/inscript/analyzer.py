@@ -42,6 +42,7 @@ from .parser import (
     KeepNode,
     NameRef,
     NumberLiteral,
+    QuotedString,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -206,7 +207,7 @@ def _check_value_expr(
     symtab: dict[str, SymbolEntry],
     iterator: IteratorContext | None,
 ) -> None:
-    if isinstance(value_node, (NumberLiteral, BareWord, EachPronoun)):
+    if isinstance(value_node, (NumberLiteral, BareWord, EachPronoun, QuotedString)):
         return
     if isinstance(value_node, NameRef):
         if value_node.name not in symtab:
@@ -364,6 +365,9 @@ def _infer_item_type(item: ASTNode, symtab: dict[str, SymbolEntry]) -> tuple[str
         if item.word in symtab:
             return symtab[item.word].type, item.word
         return "string", item.word
+    if isinstance(item, QuotedString):
+        # v2c §87: a quoted item in a list always contributes a string.
+        return "string", item.content
     if isinstance(item, FieldAccessNode):
         # v2b §77: same semantic checks at list-item position.
         _check_field_access(item, symtab)
@@ -401,6 +405,9 @@ def _check_show(
     if node.target is None:
         if iterator is None:
             raise _SemanticError("I need something to show.")
+        return
+    if isinstance(node.target, QuotedString):
+        # v2c §88: literal display — no symbol resolution.
         return
     if not isinstance(node.target, NameRef):
         raise _SemanticError("Unexpected target for 'show'.")
@@ -633,6 +640,9 @@ def _resolve_value(
             entry = symtab[value_node.word]
             return entry.type, value_node.word
         return "string", value_node.word
+    if isinstance(value_node, QuotedString):
+        # v2c §87: quoted value in a where comparison is always a string.
+        return "string", value_node.content
     if isinstance(value_node, EachPronoun):
         if iterator.record_schemas is not None:
             return "record", "each"
