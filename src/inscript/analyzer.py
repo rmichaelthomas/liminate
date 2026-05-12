@@ -297,6 +297,16 @@ def _check_show(
             )
         entry = symtab[node.record_name]
         if entry.type != "record":
+            # U8 (v2.1-patch): when the target is a list-of-records, the
+            # user's intent is almost always "show this field for each
+            # row" — guide them toward `each ... show <field>` rather
+            # than the generic type-mismatch.
+            if entry.type == "list_of_records":
+                raise _SemanticError(
+                    f"'of' needs a single record. '{node.record_name}' "
+                    f"is a list of records — did you mean: "
+                    f"each the {node.record_name} show {name}?"
+                )
             raise _SemanticError(
                 f"'of' needs a record. '{node.record_name}' is "
                 f"{_singular(entry.type)}."
@@ -312,6 +322,20 @@ def _check_show(
         # Each field referenced (target + any v2a §69 extras) must exist
         # on every record in the iterated list.
         all_field_names = [name, *node.extra_fields]
+        # U7 (v2.1-patch): reject duplicate field names in multi-field
+        # `each ... show`. Two identical columns are almost certainly a
+        # typo (`show class and class` instead of `show class and words`)
+        # and silently accepting them leaves the user with broken-looking
+        # output. Per v1c §52 (deterministic interpretation only),
+        # erroring is safer than guessing.
+        seen: set[str] = set()
+        for fname in all_field_names:
+            if fname in seen:
+                raise _SemanticError(
+                    f"You listed '{fname}' twice in this show. "
+                    f"Did you mean another field?"
+                )
+            seen.add(fname)
         for fname in all_field_names:
             in_all = all(fname in s for s in iterator.record_schemas)
             in_any = any(fname in s for s in iterator.record_schemas)

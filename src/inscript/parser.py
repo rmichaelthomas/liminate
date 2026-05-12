@@ -937,6 +937,21 @@ def _consume_optional_article(stream: TokenStream) -> None:
 
 def _consume_target(stream: TokenStream, *, verb: str) -> NameRef:
     tok = stream.consume()
+    # D10 (v2.1-patch): per-record decisions don't exist as a v2b feature.
+    # When `keep` or `filter` appears inside an `each` body, the user has
+    # asked for per-record-decision logic that v2b deliberately doesn't
+    # provide (the model is list-level filtering). Surface the list-level
+    # alternative rather than the generic "expected a target" error.
+    if (
+        verb in ("keep", "filter")
+        and stream.in_clause("each")
+        and (tok is None or tok.type is not TokenType.UNKNOWN)
+    ):
+        raise _ParseError(
+            f"'{verb}' is a list operation — it can't appear inside "
+            f"'each'. To {verb} only some items, use "
+            f"'{verb} <list> where <condition>' directly."
+        )
     if tok is None:
         raise _ParseError(f"I expected a target after '{verb}'.")
     if tok.type is not TokenType.UNKNOWN:

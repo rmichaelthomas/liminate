@@ -742,6 +742,101 @@ def test_u5_gather_at_threshold_is_not_truncated(tmp_path):
     assert "..." not in text
 
 
+def test_u7_duplicate_field_in_each_show_is_semantic_error():
+    """U7 (v2.1-patch): repeats in multi-field `each show` are a semantic error."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a doc called d2 with class as addendum and words as 2000",
+        "remember a list called docs with d1 and d2",
+    ])
+    r = session.run_line("each the docs show class and class")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "'class'" in r.message
+    assert "twice" in r.message
+
+
+def test_u7_target_repeated_as_extra_is_also_error():
+    """U7: the target counts toward repeats too — `show A and A` is rejected."""
+    session, _ = run_lines([
+        "remember a doc called d1 with x as 1 and y as 2",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line("each the docs show x and x")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert "twice" in r.message
+
+
+def test_u7_three_distinct_fields_still_works():
+    """U7 does not regress the legitimate multi-field path."""
+    session, _ = run_lines([
+        "remember a doc called d1 with x as 1 and y as 2 and z as 3",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line("each the docs show x and y and z")
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output == ["x: 1, y: 2, z: 3"]
+
+
+def test_u8_of_on_list_suggests_each():
+    """U8 (v2.1-patch): `of` on a list-of-records suggests the each alternative."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line("show class of docs")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    # The suggestion uses the user's actual list and field names.
+    assert "each the docs show class" in r.message
+
+
+def test_u8_of_on_scalar_unchanged():
+    """U8 only changes the list-of-records case; scalar errors stay generic."""
+    session, _ = run_lines([
+        "remember a number called age with 30",
+    ])
+    r = session.run_line("show something of age")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    # Scalar path: no `each` suggestion, just the type-mismatch.
+    assert "each" not in r.message
+    assert "age" in r.message
+
+
+def test_d10_keep_inside_each_gives_list_level_guidance():
+    """D10 (v2.1-patch): `each ... keep where` errors with list-level guidance."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line("each the docs keep where words is above 500")
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "'keep' is a list operation" in r.message
+    assert "can't appear inside 'each'" in r.message
+    assert "<list> where <condition>" in r.message
+
+
+def test_d10_filter_inside_each_gives_same_guidance():
+    """D10: filter gets the same per-record-decision guidance as keep."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a list called docs with d1",
+    ])
+    r = session.run_line("each the docs filter where words is above 500")
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "'filter' is a list operation" in r.message
+    assert "can't appear inside 'each'" in r.message
+
+
+def test_d10_keep_at_top_level_unchanged():
+    """D10's guidance only applies inside `each` — top-level keep is unaffected."""
+    session, _ = run_lines([
+        "remember a doc called d1 with class as checkpoint and words as 1000",
+        "remember a doc called d2 with class as addendum and words as 2000",
+        "remember a list called docs with d1 and d2",
+    ])
+    r = session.run_line("keep the docs where words is above 1500")
+    assert r.status is ResultStatus.SUCCESS
+
+
 def test_u5_explicit_show_is_not_truncated(tmp_path):
     """U5: explicit `show <list>` never truncates — user asked for the data."""
     import io
