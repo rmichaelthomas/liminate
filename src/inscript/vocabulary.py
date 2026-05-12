@@ -28,6 +28,10 @@ class TokenType(Enum):
     DELIMITER = "DELIMITER"
     NUMBER = "NUMBER"
     UNKNOWN = "UNKNOWN"
+    # v2c §86: a quoted string emitted by the lexer as a single token,
+    # bypasses vocabulary lookup (§89) and is valid only in value
+    # positions per §87.
+    QUOTED_STRING = "QUOTED_STRING"
 
 
 @dataclass
