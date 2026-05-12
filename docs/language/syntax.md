@@ -18,8 +18,11 @@ If you have not run the interpreter yet, start with
 - **Decorative punctuation is stripped.** Commas, periods, question
   marks, and exclamation marks at word edges are removed before
   parsing, so you can punctuate naturally:
-  `remember a list called colors with milk, eggs, and bread`
-  is read as `remember a list called colors with milk eggs and bread`.
+  `show colors.` is read as `show colors`, and
+  `filter the orders where total is above 50.` is read as
+  `filter the orders where total is above 50`.
+  Commas are decorative only; they do not replace `and` as a list
+  separator. In v1, list items are always joined by `and`.
 - **Case-insensitive.** `SHOW Age` and `show age` are identical to the
   interpreter. Names and string values are normalized to lowercase
   internally.

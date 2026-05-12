@@ -38,7 +38,7 @@ Inscript is an experimental prose-as-syntax programming language whose v1 interp
 
 A `.insc` source file is plain text — one statement per line. A bounded vocabulary of 29 words combines into sentences that lex, parse, type-check, and execute through a normal compiler pipeline. There is no separate code the prose generates; the sentence IS the program. The long-term thesis is general-purpose computation without leaving readable prose. v1 is the deterministic starting point.
 
-This is not a natural-language layer over Python, not a code-generating AI, and not a domain-specific query language. Inscript has its own lexer, reorderer, parser, semantic analyzer, and interpreter — five stages that return structured results, no `print` calls outside the CLI wrapper.
+This is not a natural-language layer over Python, not a code-generating AI, and not a domain-specific query language. Inscript has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. No `print` calls outside the CLI wrapper.
 
 ---
 
@@ -215,7 +215,7 @@ The user confirms or rewrites. The parse is unambiguous; the amber exists becaus
 
 ## The pipeline
 
-Five stages, each returning structured results.
+The core pipeline has five processing stages, plus canonical rendering and structured-result handling. Each stage returns data; only the CLI wrapper performs I/O.
 
 1. **Lexer** — case-insensitive tokenization with edge-stripping of decorative punctuation; combines `equal to` via one-word lookahead; blank lines are no-ops.
 

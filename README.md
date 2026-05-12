@@ -190,7 +190,7 @@ The v1 vocabulary is 29 reserved words across five categories. The complete list
 
 ## The pipeline
 
-Five stages, each returning structured results. No direct I/O until the CLI wrapper (v1d §64).
+Inscript has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. Each stage returns data; only the CLI wrapper performs I/O (v1d §64).
 
 1. **Lexer.** Splits a line into typed tokens. Case-insensitive; strips decorative punctuation at word edges (interior `.` in `3.14` survives); combines `equal to` into a single operator token via one-word lookahead; recognizes blank lines as no-ops. (inception §22; v1c §47–§48)
 
