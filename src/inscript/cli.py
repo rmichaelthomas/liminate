@@ -1,4 +1,4 @@
-"""CLI wrapper for Inscript v1.
+"""CLI wrapper for Inscript v1 / v2c / v2d / v3a.
 
 This is the ONLY module permitted to call `input()` or `print()`
 (v1d §64). It is a thin layer over the structured-result pipeline:
@@ -13,6 +13,15 @@ Usage:
     python -m inscript <file> --quiet   # Suppress "I understand this as: ..."
                                         # echo; mirror blank source lines so
                                         # visual grouping survives. U1/U4.
+
+v3a additions:
+- Session owns a HandlerTable (registered `when` handlers) and a
+  LiveValueRegistry (declared live values + their lifecycle status).
+- Domain packs are passed at Session construction (Phase 10 adds the
+  `--pack` flag to wire them up from the CLI).
+- Phase 1 sequential execution registers `when` handlers but does not
+  fire them. Phase 2 entry (Phase 9/10) drains the adapter queue and
+  yields HANDLER_FIRE / SHUTDOWN results.
 """
 
 from __future__ import annotations
@@ -20,8 +29,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from .adapter import DomainPack, LiveValueRegistry
 from .analyzer import SymbolEntry
-from .interpreter import execute
+from .interpreter import HandlerTable, execute
 from .lexer import LexError, tokenize
 from .parser import parse
 from .reorderer import reorder
@@ -29,13 +39,39 @@ from .result import InscriptResult, ResultStatus
 
 
 # ---------------------------------------------------------------------------
-# Session: the shared symbol table across statements
+# Session: the shared symbol table across statements (+ v3a listener state)
 # ---------------------------------------------------------------------------
 
 
 class Session:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        domain_packs: list[DomainPack] | None = None,
+    ) -> None:
         self.symtab: dict[str, SymbolEntry] = {}
+        # v3a §108 / §117 / §118 — listener-mode state.
+        self.handler_table = HandlerTable()
+        self.live_value_registry = LiveValueRegistry()
+        self.domain_packs: list[DomainPack] = list(domain_packs or [])
+        # Phase 1 error accumulator: if any sequential statement produced
+        # ERROR_PARSE, ERROR_SEMANTIC, or an unresolved AMBER, the gate
+        # (§107) blocks Phase 2. The CLI populates this via run_line's
+        # caller — record_result is the integration point.
+        self.phase1_had_error: bool = False
+
+        # Register declared live values from each pack. Names become
+        # visible in the symbol table before Phase 1 begins so `when`
+        # condition resolution (§108) can see them.
+        for pack in self.domain_packs:
+            for decl in pack.declarations():
+                self.live_value_registry.declare(decl, pack.name())
+                if decl.name not in self.symtab:
+                    self.symtab[decl.name] = SymbolEntry(
+                        name=decl.name,
+                        value=None,
+                        type=decl.value_type,
+                    )
 
     def composition_names(self) -> set[str]:
         return {n for n, e in self.symtab.items() if e.type == "composition"}
@@ -61,7 +97,30 @@ class Session:
         if isinstance(ast, InscriptResult):
             # Amber outcomes carry a pending_ast for confirmation flow.
             return ast
-        return execute(ast, self.symtab)
+        return execute(
+            ast, self.symtab,
+            handler_table=self.handler_table,
+            live_value_registry=self.live_value_registry,
+        )
+
+    def record_result(self, result: InscriptResult | None) -> None:
+        """Track whether Phase 1 had any blocking outcomes (v3a §107).
+
+        Called by the display layer after each result so the Session can
+        decide whether to enter Phase 2 once the source is exhausted.
+        ERROR_PARSE, ERROR_SEMANTIC, and unresolved-AMBER outcomes set
+        the gate; SUCCESS does not. Resolved amber clears nothing —
+        once an amber is confirmed, the display layer feeds the
+        replacement SUCCESS/ERROR result back through this hook."""
+        if result is None:
+            return
+        if result.status in (
+            ResultStatus.ERROR_PARSE,
+            ResultStatus.ERROR_SEMANTIC,
+            ResultStatus.AMBER_PRECEDENCE,
+            ResultStatus.AMBER_AMBIGUITY,
+        ):
+            self.phase1_had_error = True
 
 
 # ---------------------------------------------------------------------------

@@ -747,3 +747,258 @@ def test_mixed_precedence_is_amber_and_does_not_execute():
     assert r.status is ResultStatus.AMBER_PRECEDENCE
     assert r.executed is False
     assert symtab["orders"].value == before  # unchanged
+
+
+# ---------------------------------------------------------------------------
+# v3a §108 / §117 — Phase 1 `when` registration + live-value activation
+# ---------------------------------------------------------------------------
+
+
+from inscript.adapter import LiveValueDeclaration, LiveValueRegistry
+from inscript.interpreter import (
+    HandlerTable,
+    _extract_when_dependencies,
+    execute as _execute,
+)
+from inscript.lexer import tokenize as _tokenize
+from inscript.parser import parse as _parse_line, parse_when_block
+from inscript.reorderer import reorder
+
+
+def _parse_when_for_test(header: str, *actions: str):
+    htoks = reorder(_tokenize(header))
+    atoks = [reorder(_tokenize(a)) for a in actions]
+    return parse_when_block(htoks, atoks)
+
+
+def test_when_registers_into_handler_table():
+    """v3a §108: a `when` statement registers a handler but does not
+    execute the action block. The handler table holds the WhenNode."""
+    symtab: dict[str, SymbolEntry] = {}
+    run("remember a number called temperature with 50", symtab)
+    ht = HandlerTable()
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100",
+        'show "high alert"',
+    )
+    result = _execute(
+        when_ast, symtab,
+        handler_table=ht,
+        live_value_registry=LiveValueRegistry(),
+    )
+    assert result.status is ResultStatus.SUCCESS
+    assert len(ht.handlers) == 1
+    assert ht.handlers[0].index == 0
+    # The action block was NOT executed — no output side effect.
+    assert result.output is None
+
+
+def test_when_registration_order_preserved():
+    """v3a §115: handlers fire in registration order. The table records
+    them in source order; subsequent registrations append."""
+    symtab: dict[str, SymbolEntry] = {}
+    run("remember a number called score with 0", symtab)
+    run("remember a number called level with 0", symtab)
+    ht = HandlerTable()
+    for header in (
+        "when score is above 0",
+        "when level is above 0",
+    ):
+        when_ast = _parse_when_for_test(header, 'show "x"')
+        _execute(
+            when_ast, symtab,
+            handler_table=ht,
+            live_value_registry=LiveValueRegistry(),
+        )
+    assert [h.index for h in ht.handlers] == [0, 1]
+
+
+def test_when_with_missing_name_in_condition_does_not_register():
+    """v3a §108: registration-time validation rejects unresolved names."""
+    ht = HandlerTable()
+    when_ast = _parse_when_for_test(
+        "when missingname is above 100",
+        'show "x"',
+    )
+    result = _execute(
+        when_ast, {},
+        handler_table=ht,
+        live_value_registry=LiveValueRegistry(),
+    )
+    assert result.status is ResultStatus.ERROR_SEMANTIC
+    assert len(ht.handlers) == 0  # not registered
+
+
+def test_when_without_handler_table_returns_semantic_error():
+    """Calling execute() with a WhenNode but no handler_table is a
+    programmer-facing error (Session always provides one)."""
+    symtab: dict[str, SymbolEntry] = {}
+    run("remember a number called temperature with 50", symtab)
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100", 'show "alert"',
+    )
+    result = _execute(when_ast, symtab)  # no handler_table
+    assert result.status is ResultStatus.ERROR_SEMANTIC
+    assert "listener-capable Session" in result.message
+
+
+# ---------- Dependency extraction (v3a §108 dependency rule) ----------
+
+
+def test_extract_dependencies_bare_name():
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100", 'show "x"',
+    )
+    assert _extract_when_dependencies(when_ast) == frozenset({"temperature"})
+
+
+def test_extract_dependencies_of_expression_uses_record_name():
+    """v3a §108: `<field> of <record>` depends on the record, not the
+    field. Updates to the record trigger re-evaluation."""
+    when_ast = _parse_when_for_test(
+        "when status of patient is equal to critical",
+        'show "alert"',
+    )
+    # `patient` is the record; `status` is just a field reference.
+    assert _extract_when_dependencies(when_ast) == frozenset({"patient"})
+
+
+def test_extract_dependencies_collects_compound():
+    """Compound and/or conditions collect dependencies from both sides."""
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100 and humidity is above 80",
+        'show "danger"',
+    )
+    assert _extract_when_dependencies(when_ast) == frozenset(
+        {"temperature", "humidity"}
+    )
+
+
+def test_extract_dependencies_includes_unless_guard():
+    """v3a §109: the `unless` guard's dependencies are watched too."""
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100 unless silenced is equal to true",
+        'show "alert"',
+    )
+    assert _extract_when_dependencies(when_ast) == frozenset(
+        {"temperature", "silenced"}
+    )
+
+
+def test_handler_table_watching_names_deterministic():
+    """The LISTENING marker (§122) needs a stable name order."""
+    symtab: dict[str, SymbolEntry] = {}
+    for n in ("temperature", "humidity", "score"):
+        run(f"remember a number called {n} with 0", symtab)
+    ht = HandlerTable()
+    for header in (
+        "when humidity is above 80",
+        "when temperature is above 100",
+        "when score is above 0",
+    ):
+        when_ast = _parse_when_for_test(header, 'show "x"')
+        _execute(
+            when_ast, symtab,
+            handler_table=ht,
+            live_value_registry=LiveValueRegistry(),
+        )
+    # First-encounter order across handlers' (sorted) dependency sets.
+    assert ht.watching_names() == ["humidity", "temperature", "score"]
+
+
+def test_handler_table_dependents_of_filters_by_name():
+    symtab: dict[str, SymbolEntry] = {}
+    run("remember a number called temperature with 0", symtab)
+    run("remember a number called humidity with 0", symtab)
+    ht = HandlerTable()
+    for header in (
+        "when temperature is above 100",
+        "when humidity is above 80",
+        "when temperature is above 50",
+    ):
+        when_ast = _parse_when_for_test(header, 'show "x"')
+        _execute(
+            when_ast, symtab,
+            handler_table=ht,
+            live_value_registry=LiveValueRegistry(),
+        )
+    # Two handlers depend on temperature, one on humidity.
+    deps = ht.dependents_of("temperature")
+    assert {h.index for h in deps} == {0, 2}
+    deps = ht.dependents_of("humidity")
+    assert {h.index for h in deps} == {1}
+
+
+def test_handler_table_dependents_excludes_disabled():
+    """v3a §120: disabled handlers don't show up in dependent lookups."""
+    symtab: dict[str, SymbolEntry] = {}
+    run("remember a number called temperature with 0", symtab)
+    ht = HandlerTable()
+    when_ast = _parse_when_for_test(
+        "when temperature is above 100", 'show "x"',
+    )
+    _execute(
+        when_ast, symtab,
+        handler_table=ht,
+        live_value_registry=LiveValueRegistry(),
+    )
+    ht.handlers[0].disabled = True
+    assert ht.dependents_of("temperature") == []
+
+
+# ---------- v3a §117 — Phase 1 remember of a live value activates the registry ----------
+
+
+def test_phase1_remember_of_live_value_marks_active():
+    """v3a §117: a Phase 1 `remember` on a declared live value
+    transitions the registry from "unset" to "active"."""
+    symtab: dict[str, SymbolEntry] = {}
+    registry = LiveValueRegistry()
+    registry.declare(
+        LiveValueDeclaration("temperature", "number"), "test-pack",
+    )
+    assert registry.is_unset("temperature")
+
+    ast = _parse_line(_tokenize("remember a number called temperature with 50"))
+    result = _execute(
+        ast, symtab,
+        handler_table=HandlerTable(),
+        live_value_registry=registry,
+    )
+    assert result.status is ResultStatus.SUCCESS
+    assert not registry.is_unset("temperature")
+    assert registry.entry("temperature").status == "active"
+
+
+def test_phase1_remember_of_non_live_value_does_not_touch_registry():
+    """Remembering a name that isn't declared as a live value leaves
+    the registry alone — Phase 1 init is opt-in by declaration."""
+    symtab: dict[str, SymbolEntry] = {}
+    registry = LiveValueRegistry()
+    registry.declare(
+        LiveValueDeclaration("temperature", "number"), "test-pack",
+    )
+    ast = _parse_line(_tokenize("remember a number called other with 99"))
+    _execute(
+        ast, symtab,
+        handler_table=HandlerTable(),
+        live_value_registry=registry,
+    )
+    # Live value untouched.
+    assert registry.is_unset("temperature")
+
+
+def test_phase1_remember_list_of_live_value_marks_active():
+    """v3a §117 applies to all three remember flavors (value, list, record)."""
+    symtab: dict[str, SymbolEntry] = {}
+    registry = LiveValueRegistry()
+    registry.declare(
+        LiveValueDeclaration("readings", "list_of_numbers"), "test-pack",
+    )
+    ast = _parse_line(_tokenize("remember a list called readings with 10 and 20"))
+    _execute(
+        ast, symtab,
+        handler_table=HandlerTable(),
+        live_value_registry=registry,
+    )
+    assert not registry.is_unset("readings")

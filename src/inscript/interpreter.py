@@ -1,4 +1,4 @@
-"""Interpreter for Inscript v1.
+"""Interpreter for Inscript v1 / v2a / v2b / v2c / v2d / v3a.
 
 Sources:
 - inception §24 (interpreter behaviors: auto-show, in-place filter,
@@ -17,6 +17,10 @@ Sources:
 - v1d §57 (lowercased identifiers and string values)
 - v1d §58 (duplicate names overwrite silently)
 - v1d §64 (structured result objects; no direct I/O)
+- v3a §108 (Phase 1 `when` registration into a handler table; no
+  action-block execution at this stage)
+- v3a §117 (Phase 1 `remember` of a declared live value transitions
+  the registry entry from "unset" to "active")
 
 This module performs both the per-op analyze gate and execution. The
 analyzer is re-invoked per operation inside SequenceNode bodies and
@@ -27,8 +31,10 @@ semantics (v1d §56).
 from __future__ import annotations
 
 import copy
+from dataclasses import dataclass, field
 from typing import Any
 
+from .adapter import LiveValueRegistry
 from .analyzer import SymbolEntry, analyze
 from .parser import (
     ASTNode,
@@ -44,6 +50,7 @@ from .parser import (
     EachPronoun,
     FieldAccessNode,
     FilterNode,
+    FinishNode,
     GatherNode,
     KeepNode,
     NameRef,
@@ -55,9 +62,116 @@ from .parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    WhenNode,
 )
 from .renderer import render
 from .result import InscriptResult, ResultStatus
+
+
+# ---------------------------------------------------------------------------
+# Handler table (v3a §108) — registration-time state for `when` blocks
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Handler:
+    """A `when` handler registered during Phase 1 (v3a §108).
+
+    `index` is the registration order, surfaced in trigger metadata as
+    `handler_index` (§122). `dependencies` is the set of symbol names
+    referenced by the condition and (optional) unless guard — per §108
+    "dependency extraction rule", `<field> of <record>` depends on the
+    record, not the field. `last_eligibility` tracks the most-recent
+    compound-eligibility value so the event loop (Phase 9) can detect
+    false→true transitions (§113 edge triggering). `disabled` is set
+    when a depended-on adapter has failed (§120) — disabled handlers
+    are skipped during event processing.
+    """
+    index: int
+    when_node: WhenNode
+    dependencies: frozenset[str]
+    last_eligibility: bool = False
+    disabled: bool = False
+
+
+@dataclass
+class HandlerTable:
+    """Ordered list of registered `when` handlers (v3a §108/§115).
+
+    Registration order is the firing order for ties (v3a §115 — multiple
+    handlers eligible from the same update fire in registration order).
+    """
+    handlers: list[Handler] = field(default_factory=list)
+
+    def register(self, when_node: WhenNode) -> Handler:
+        deps = _extract_when_dependencies(when_node)
+        handler = Handler(
+            index=len(self.handlers),
+            when_node=when_node,
+            dependencies=deps,
+        )
+        self.handlers.append(handler)
+        return handler
+
+    def watching_names(self) -> list[str]:
+        """Union of all dependency names across all handlers, in
+        deterministic order. Surfaced in the LISTENING marker (§122)."""
+        seen: set[str] = set()
+        ordered: list[str] = []
+        for h in self.handlers:
+            for name in sorted(h.dependencies):
+                if name not in seen:
+                    seen.add(name)
+                    ordered.append(name)
+        return ordered
+
+    def dependents_of(self, name: str) -> list[Handler]:
+        """Active (non-disabled) handlers that reference `name` in
+        their condition or guard. Order preserves registration order
+        for §115 ordering."""
+        return [
+            h for h in self.handlers
+            if name in h.dependencies and not h.disabled
+        ]
+
+    def is_empty(self) -> bool:
+        return not self.handlers
+
+
+def _extract_when_dependencies(when_node: WhenNode) -> frozenset[str]:
+    """Walk the `when` condition and `unless` guard, collecting the
+    symbol names a handler depends on (v3a §108 dependency rule).
+
+    - Bare names (NameRef) depend on themselves.
+    - `<field> of <record>` depends on the record name only — handlers
+      re-evaluate when the record value changes.
+    - Literals (NumberLiteral, BareWord, QuotedString) contribute no
+      dependencies. Note: a BareWord that happens to match a symbol-
+      table name still resolves at evaluation time; we conservatively
+      do not register it here because §108 says conditions resolve to
+      a comparison between values, not lookups during dependency
+      extraction.
+    """
+    deps: set[str] = set()
+    _walk_dependencies(when_node.condition, deps)
+    if when_node.unless is not None:
+        _walk_dependencies(when_node.unless, deps)
+    return frozenset(deps)
+
+
+def _walk_dependencies(node: ASTNode, deps: set[str]) -> None:
+    if isinstance(node, ConditionNode):
+        _walk_dependencies(node.field, deps)
+        _walk_dependencies(node.value, deps)
+    elif isinstance(node, CompoundConditionNode):
+        _walk_dependencies(node.left, deps)
+        _walk_dependencies(node.right, deps)
+    elif isinstance(node, NameRef):
+        deps.add(node.name)
+    elif isinstance(node, FieldAccessNode):
+        deps.add(node.record_name)
+    # Literals (NumberLiteral, BareWord, QuotedString, EachPronoun)
+    # contribute no dependencies — they evaluate to themselves.
 
 
 # ---------------------------------------------------------------------------
@@ -68,16 +182,86 @@ from .result import InscriptResult, ResultStatus
 def execute(
     ast: ASTNode,
     symbol_table: dict[str, SymbolEntry],
+    *,
+    handler_table: HandlerTable | None = None,
+    live_value_registry: LiveValueRegistry | None = None,
 ) -> InscriptResult:
     """Execute a single top-level AST against a mutable symbol table.
 
     Returns an InscriptResult. For SequenceNode the interpreter loops
     per-op so that earlier successes commit even if a later op fails
     (v1d §56).
+
+    v3a parameters:
+    - `handler_table`: when set, WhenNode statements register here
+      rather than raising. Phase 1 sequential mode passes this through
+      the Session; the action block is NOT executed at registration
+      time (§108).
+    - `live_value_registry`: when set, declared-live-value names are
+      visible to the analyzer (live_value_names) for the §111 ownership
+      checks; Phase 1 `remember` of a declared name transitions the
+      registry entry to "active" (§117).
     """
+    if isinstance(ast, WhenNode):
+        return _execute_when(ast, symbol_table, handler_table, live_value_registry)
     if isinstance(ast, SequenceNode):
-        return _execute_sequence(ast, symbol_table)
-    return _execute_single(ast, symbol_table)
+        return _execute_sequence(
+            ast, symbol_table,
+            handler_table=handler_table,
+            live_value_registry=live_value_registry,
+        )
+    return _execute_single(
+        ast, symbol_table,
+        handler_table=handler_table,
+        live_value_registry=live_value_registry,
+    )
+
+
+def _execute_when(
+    node: WhenNode,
+    symtab: dict[str, SymbolEntry],
+    handler_table: HandlerTable | None,
+    live_value_registry: LiveValueRegistry | None,
+) -> InscriptResult:
+    """Phase 1 WhenNode handling (v3a §108): validate condition + unless
+    against the current symbol table, then register the handler. The
+    action block is NOT executed here — Phase 2 fires it (§107)."""
+    live_value_names = (
+        live_value_registry.names() if live_value_registry is not None else None
+    )
+    analysis = analyze(
+        node, symtab,
+        live_value_names=live_value_names,
+    )
+    if isinstance(analysis, InscriptResult):
+        if analysis.canonical is None:
+            try:
+                analysis.canonical = render(node)
+            except Exception:
+                pass
+        return analysis
+    if handler_table is None:
+        # `when` outside a listener-capable Session can't be registered.
+        # This is a programmer-facing error, not a user-facing one — the
+        # CLI and Session always provide a handler table when a Phase 1
+        # source contains `when` blocks.
+        return InscriptResult(
+            status=ResultStatus.ERROR_SEMANTIC,
+            canonical=render(node),
+            message=(
+                "'when' handlers require a listener-capable Session. "
+                "Run the program through `python -m inscript` rather "
+                "than the bare `execute()` API."
+            ),
+            executed=False,
+        )
+    handler_table.register(node)
+    return InscriptResult(
+        status=ResultStatus.SUCCESS,
+        canonical=render(node),
+        output=None,
+        executed=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -95,8 +279,14 @@ def _execute_single(
     node: ASTNode,
     symtab: dict[str, SymbolEntry],
     current_item: Any = None,
+    *,
+    handler_table: HandlerTable | None = None,
+    live_value_registry: LiveValueRegistry | None = None,
 ) -> InscriptResult:
-    analysis = analyze(node, symtab)
+    live_value_names = (
+        live_value_registry.names() if live_value_registry is not None else None
+    )
+    analysis = analyze(node, symtab, live_value_names=live_value_names)
     if isinstance(analysis, InscriptResult):
         # Attach canonical if it's missing — we can render any AST.
         if analysis.canonical is None:
@@ -114,6 +304,7 @@ def _execute_single(
             message=e.message,
             executed=False,
         )
+    _mark_live_value_active_if_remember(node, live_value_registry)
     return InscriptResult(
         status=ResultStatus.SUCCESS,
         canonical=render(node),
@@ -125,11 +316,17 @@ def _execute_single(
 def _execute_sequence(
     seq: SequenceNode,
     symtab: dict[str, SymbolEntry],
+    *,
+    handler_table: HandlerTable | None = None,
+    live_value_registry: LiveValueRegistry | None = None,
 ) -> InscriptResult:
+    live_value_names = (
+        live_value_registry.names() if live_value_registry is not None else None
+    )
     completed_canonicals: list[str] = []
     outputs: list[str] = []
     for op in seq.operations:
-        analysis = analyze(op, symtab)
+        analysis = analyze(op, symtab, live_value_names=live_value_names)
         if isinstance(analysis, InscriptResult):
             return _stepwise_error(op, analysis, completed_canonicals, outputs, seq)
         try:
@@ -145,6 +342,7 @@ def _execute_sequence(
                 outputs,
                 seq,
             )
+        _mark_live_value_active_if_remember(op, live_value_registry)
         completed_canonicals.append(render(op))
         if op_output:
             outputs.extend(op_output)
@@ -154,6 +352,24 @@ def _execute_sequence(
         output=outputs if outputs else None,
         executed=True,
     )
+
+
+def _mark_live_value_active_if_remember(
+    node: ASTNode,
+    live_value_registry: LiveValueRegistry | None,
+) -> None:
+    """v3a §117: Phase 1 `remember <live-value> with V` transitions the
+    registry entry from "unset" to "active". The interpreter calls this
+    after a successful op so the change is committed only when the
+    storage succeeded."""
+    if live_value_registry is None:
+        return
+    if isinstance(
+        node,
+        (RememberValueNode, RememberListNode, RememberRecordNode),
+    ):
+        if node.name in live_value_registry:
+            live_value_registry.mark_active(node.name)
 
 
 def _stepwise_error(
