@@ -475,8 +475,11 @@ def run_file(
         line = lines[i]
 
         # v1c §48 — blank lines are skipped by the lexer. --quiet mirrors
-        # them so the user's paragraph breaks survive (U1/U4).
-        if not line.strip():
+        # them so the user's paragraph breaks survive (U1/U4). Comment
+        # lines (`--` after optional leading whitespace) are handled
+        # identically: the lexer returns [] for both.
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("--"):
             if quiet:
                 write("\n")
             i += 1
@@ -601,7 +604,10 @@ def _consume_when_block(
     while j < len(lines):
         next_line = lines[j]
         # Blank lines inside the block are skipped (v1c §48 / v3a §110).
-        if not next_line.strip():
+        # Comment lines (`--` prefix) are treated the same way — they do
+        # not establish or violate the block's indentation depth.
+        next_stripped = next_line.lstrip()
+        if not next_stripped or next_stripped.startswith("--"):
             if quiet:
                 write("\n")
             consumed_through = j

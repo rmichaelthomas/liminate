@@ -1426,3 +1426,90 @@ V2D_SENTENCE_INDEX = {81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95
 def test_all_v2d_sentences_have_a_targeted_test():
     """Lock the v2d test sentence count (§105: 15 sentences, 81–95)."""
     assert len(V2D_SENTENCE_INDEX) == 15
+
+
+# ---------------------------------------------------------------------------
+# Comment syntax — `--` line marker (pre-lexer line skip).
+# ---------------------------------------------------------------------------
+
+
+def test_comments_invisible_to_top_level_execution(tmp_path):
+    """A program with comments produces the same output as one without."""
+    import io
+    from inscript.cli import run_file
+
+    with_comments = tmp_path / "with.insc"
+    with_comments.write_text(
+        "-- Set up our orders\n"
+        "remember an order called order1 with total as 75 and status as active\n"
+        "\n"
+        "-- Now let's see what we have\n"
+        "show order1\n"
+        "\n"
+        "-- Count check\n"
+        "count the orders\n"
+    )
+    without = tmp_path / "without.insc"
+    without.write_text(
+        "remember an order called order1 with total as 75 and status as active\n"
+        "show order1\n"
+        "count the orders\n"
+    )
+    buf_a = io.StringIO()
+    buf_b = io.StringIO()
+    run_file(str(with_comments), auto_confirm_amber=True, quiet=True, out=buf_a)
+    run_file(str(without), auto_confirm_amber=True, quiet=True, out=buf_b)
+    # Strip blank lines — `--quiet` mirrors blanks but the comparison
+    # cares about data, not paragraph spacing.
+    norm = lambda s: [ln for ln in s.split("\n") if ln.strip()]
+    assert norm(buf_a.getvalue()) == norm(buf_b.getvalue())
+
+
+def test_comment_inside_when_action_block(tmp_path):
+    """Indented comment lines inside a `when` block must not break the
+    block parser or alter the action sequence."""
+    import io
+    from inscript.cli import run_file
+
+    src = tmp_path / "w.insc"
+    src.write_text(
+        "remember a number called threshold with 100\n"
+        "\n"
+        "when threshold is above 50\n"
+        "    -- alert the user\n"
+        "    show threshold\n"
+        "    finish\n"
+    )
+    buf = io.StringIO()
+    run_file(str(src), auto_confirm_amber=True, quiet=True, out=buf)
+    text = buf.getvalue()
+    # The handler fires on initial evaluation and prints 100, then
+    # `finish` exits the listener.
+    assert "100" in text
+    assert "Error" not in text
+
+
+def test_comment_at_block_indent_does_not_set_block_depth(tmp_path):
+    """A comment whose indent differs from the action lines must not
+    establish or violate the block's indentation depth."""
+    import io
+    from inscript.cli import run_file
+
+    src = tmp_path / "w2.insc"
+    # The comment is more deeply indented than the action lines. Under
+    # naive handling, this would set block_depth=8 and the 4-space
+    # action lines would terminate the block. Comment-as-blank handling
+    # avoids this.
+    src.write_text(
+        "remember a number called threshold with 100\n"
+        "\n"
+        "when threshold is above 50\n"
+        "        -- a deeply-indented comment\n"
+        "    show threshold\n"
+        "    finish\n"
+    )
+    buf = io.StringIO()
+    run_file(str(src), auto_confirm_amber=True, quiet=True, out=buf)
+    text = buf.getvalue()
+    assert "100" in text
+    assert "Error" not in text

@@ -78,7 +78,14 @@ def tokenize(line: str) -> list[Token]:
     Raises LexError for unclosed or empty quoted strings (v2c §86/§92).
     Positions are character offsets into the original input line.
     """
-    if not line.strip():
+    stripped = line.lstrip()
+    if not stripped:
+        return []
+    # Comment line: `--` at the start of a line (after optional leading
+    # whitespace) marks the line as marginalia — handled identically to
+    # a blank line (v1c §48). The check fires before _split_raw so the
+    # hyphens are never interpreted as token content.
+    if stripped.startswith("--"):
         return []
 
     raw: list[tuple[str, int, bool]] = _split_raw(line)

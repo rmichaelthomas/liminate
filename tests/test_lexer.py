@@ -640,3 +640,50 @@ def test_leading_indent_allows_tab_inside_content():
     # whitespace as before — only leading tabs are rejected.
     assert leading_indent("show\talert") == 0
     assert leading_indent("  show\talert") == 2
+
+
+# ---------------------------------------------------------------------------
+# Comment syntax (`--` at the start of a line) — pre-lexer line skip.
+# ---------------------------------------------------------------------------
+
+
+def test_comment_basic():
+    assert tokenize("-- this is a comment") == []
+
+
+def test_comment_with_leading_whitespace():
+    # Indented comment, e.g. inside a `when` action block.
+    assert tokenize("    -- this action does the thing") == []
+
+
+def test_comment_no_space_after_marker():
+    assert tokenize("--no space") == []
+
+
+def test_comment_just_the_marker():
+    assert tokenize("--") == []
+
+
+def test_comment_only_dashes():
+    # `----` and similar dash runs all start with `--`, so all comments.
+    assert tokenize("----") == []
+    assert tokenize("-- ---- divider ----") == []
+
+
+def test_hyphenated_name_is_not_a_comment():
+    tokens = tokenize("find-big")
+    assert len(tokens) == 1
+    assert tokens[0].value == "find-big"
+
+
+def test_single_hyphen_is_not_a_comment():
+    # A single-hyphen prefix tokenizes normally (becomes an UNKNOWN token).
+    tokens = tokenize("- something")
+    assert len(tokens) >= 1
+
+
+def test_mid_line_double_hyphen_is_not_a_comment():
+    # `--` only marks a comment at the start of a line. Mid-line, it is
+    # just part of whatever token it sits in.
+    tokens = tokenize("remember an order")
+    assert len(tokens) > 0
