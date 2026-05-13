@@ -556,7 +556,7 @@ def _consume_when_block(
 
 def repl() -> None:
     session = Session()
-    print("Inscript v1 — type 'exit' to quit.")
+    print("Inscript v3a — type 'exit' to quit.")
     while True:
         try:
             line = input("> ")

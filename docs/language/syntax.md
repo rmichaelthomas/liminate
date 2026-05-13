@@ -1,14 +1,17 @@
 # Inscript syntax
 
 A practical guide to writing Inscript programs. Inscript is a bounded
-prose language: 31 reserved words plus user-provided names and literal
+prose language: 34 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
-This guide covers v1 plus the v2a additions that have shipped: the
-`keep` verb, the `of` connective, multi-field `each show`, and
-descriptor preservation. See
-[`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
-what's drafted in v2b but not yet implemented.
+This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
+multi-field `each show`, descriptor preservation), v2b (composition
+return values + generalized `of`), v2c (quoting for multi-word
+strings), v2d (composition parameters with `from`, `choose` with
+`if`/`otherwise`), and v3a (event-driven listener mode — `when`,
+`unless`, `finish`, indented action blocks, domain-pack adapters).
+See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
+what's intentionally not built.
 
 If you have not run the interpreter yet, start with
 [`quickstart.md`](quickstart.md).
@@ -40,16 +43,20 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 31 reserved words.
+- Cannot be one of the 34 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
 Invalid: `1st-order` (starts with a digit), `filter`
-(reserved verb), `when` (reserved for v2).
+(reserved verb), `when` (reserved — v3a connective).
+
+Multi-word names use hyphens (`big-orders`, `priority-label`). The
+quoting mechanism (v2c) brackets multi-word *values*, never names —
+see [Values](#values) and [Quoting](#quoting) below.
 
 ## Verbs
 
-There are eight verbs. Most statements begin with one.
+There are ten verbs. Most statements begin with one.
 
 ### `remember`
 
@@ -173,10 +180,20 @@ find-big   # auto-shows matches; orders unchanged
 find-big   # callable again; same result
 ```
 
-(Capturing `find-big`'s result via `remember the X from find-big`
-needs composition return values — drafted in v2b but not yet
-implemented. Until then, use the inline form `remember the X from keep
-the orders where ...`.)
+Capturing `find-big`'s result for further analysis uses the v2b
+composition-return-value form:
+
+```
+remember the matches called big from find-big
+show big
+count the orders   # still 3 — keep didn't mutate the source
+```
+
+The captured value is whatever the composition's last operation
+returns (v2b §76). For a composition whose last op is a side-effect-
+only verb (`show`, `filter`, `each`, `choose`, `finish`), the call
+site fails with a "doesn't return a value" error — the language
+forbids capturing nothing.
 
 **Conditions** have the shape `<field> is <operator> <value>` or, for
 flat lists, `each is <operator> <value>`:
@@ -363,10 +380,17 @@ Three checks fire at parse/validation time:
 
 - The record must have the named field.
 
-In the current build, `of` only works in `show`'s target position.
-Generalizing it to value positions (e.g. `keep the docs where total
-is above total of baseline`) is drafted in v2b but not yet
-implemented.
+`of` works in every value position (v2b §77):
+
+- After `show`: `show total of order1`.
+- After comparison operators: `keep the orders where total is above total of baseline`.
+- In `with` value position: `remember a number called copy with total of order1`.
+- In `from`-value position: `remember the snapshot called s from total of order1`.
+- In `choose if` conditions, on either side: `choose if total of o1 is above total of o2: …`.
+- In `when` and `unless` conditions: `when status of patient is equal to critical`.
+
+The single-level rule still holds: `a of b of c` is a parse error. v1
+records are flat, so nested field access has no shape to land on yet.
 
 ## Named compositions
 
@@ -395,45 +419,249 @@ If the body references a name that does not exist when you call it,
 the interpreter raises a semantic error at the call site, not at the
 definition.
 
-The current build does not support passing arguments to compositions,
-and the composition name must stand alone — no `from` chaining yet.
-Attempting `find-big-orders from orders` produces:
+### Parameters (v2d)
 
-> Error: Composition chaining isn't supported yet. Call
-> 'find-big-orders' on its own line.
+A composition can declare one named parameter with `from <param>`
+between the composition name and the colon. Call sites pass an
+argument with `from <name>`:
 
-Capturing a composition's return value (`remember the X from
-find-big-orders`) is drafted in v2b but not yet implemented. Until
-then, use the inline form: `remember the X from keep the orders where
-...`.
+```
+remember how to find-high from data: keep the data where total is above 50
+
+remember a list called big-orders with order1
+remember a list called small-orders with order2
+
+find-high from big-orders     # auto-shows matches from big-orders
+find-high from small-orders   # reusable on a different list
+```
+
+The parameter is a local binding (deep-copied from the argument) for
+the duration of the body's execution. The global of the same name, if
+any, is shadowed and restored on return. Parameters are names-only —
+you cannot pass a literal value. Calling a parameterized composition
+without an argument is an error, and calling a parameterless
+composition *with* an argument is also an error (v2d §97). A
+parameterized call in value-capture position uses two `from`s:
+
+```
+remember the result called captured from find-high from big-orders
+```
+
+### Return values (v2b)
+
+A composition's call returns the value of its last operation (v2b §76).
+The return shape depends on the last verb: `keep` returns a list,
+`combine` returns a number, `count` returns a number, `gather` returns
+the generated list. `remember`-from-verb-phrase returns the captured
+value. Side-effect-only verbs (`show`, `filter`, `each`, `choose`,
+`finish`) make the composition unsuitable for value-capture position —
+the analyzer rejects `remember the X from <comp>` with the "doesn't
+return a value" wording.
+
+## `choose` (v2d)
+
+Conditional branching for sequential statements:
+
+```
+remember a number called score with 75
+choose if score is above 90: show "excellent"
+otherwise if score is above 50: show "passing"
+otherwise show "needs work"
+```
+
+Conditions use the same operand resolution as `where` clauses (names,
+`of` expressions, literals) but resolve against the symbol table
+directly — there is no iterator context inside `choose`. The first
+branch whose condition is true fires; later branches are skipped.
+The optional terminal `otherwise <action>` (with no `if`) runs if no
+prior condition matched. The colon is the context switch between
+condition and action.
+
+A branch's action may itself be a multi-statement sequence joined by
+`and <verb>`:
+
+```
+choose if score is above 90: show "excellent" and remember a string called tier with gold
+```
+
+`choose` is side-effect-only — it doesn't produce a value, so using
+it as the last operation of a composition called in value-capture
+position is rejected.
+
+`choose` inside `each` is deferred (v2d §102). The error message
+points at `keep` as the list-level alternative.
+
+## Quoting (v2c)
+
+By default, every string value is a single bare word. Multi-word values
+(or values that collide with the reserved-word list) use double quotes:
+
+```
+remember an order called o1 with total as 75 and status as "in progress"
+remember a value called priority-label with "high priority"
+remember a value called keyword with "filter"
+show "Section A: counts"
+```
+
+The quoting rules:
+
+- Quotes are **value-position only**. Names and field names use
+  hyphens — `priority-label`, not `"priority label"`.
+- A quoted value preserves spaces and any punctuation. Decorative
+  punctuation stripping (commas, periods) is bypassed inside quotes.
+- Quoted reserved words become data: `with status as "filter"` stores
+  the string "filter" rather than treating it as the verb.
+- The renderer's conditional-quoting rule (v2c §90) drops quotes
+  around single-word non-reserved values when echoing canonical
+  prose, so `with status as "active"` reads back as
+  `with status as active` while `with status as "in progress"` keeps
+  its quotes.
+- An empty quoted string `""` is a parse error — quotes must contain
+  a value.
+- A quoted field name (e.g. `show "total" of order1`) is rejected
+  with a hyphenation suggestion: "Field names can't have spaces. Try
+  a hyphenated name like 'total' instead."
+
+## Event-driven listener mode (v3a)
+
+A `when` line at indent 0 registers a reactive handler. Its action
+block is indented underneath:
+
+```
+remember a number called level with 0
+remember a string called alert-mode with off
+
+when level is above 100
+  remember a string called alert-mode with on
+  show "level escalated"
+
+when alert-mode is equal to on
+  show "alarm sounding"
+```
+
+### Two-phase execution
+
+- **Phase 1** runs every top-level sequential statement (`remember`,
+  `show`, `filter`, etc.) as before. `when` lines register handlers
+  but do not execute their actions yet.
+- **Phase 2** starts after Phase 1 completes with zero errors AND at
+  least one handler registered. The interpreter performs initial
+  evaluation (any handler whose compound eligibility is already true
+  fires in registration order), then starts the registered domain
+  packs and drains their event queue. Each adapter update changes a
+  symbol-table value; dependent handlers re-evaluate. Handlers fire
+  on false→true transitions of their compound eligibility.
+
+If a program has no `when` blocks, only Phase 1 runs — every existing
+v2d program is unchanged. If a program has `when` blocks but no domain
+packs registered (no `--pack` flag), Phase 2 performs initial
+evaluation and immediately shuts down.
+
+### Indented action blocks
+
+- Indent at least one space. Tabs in leading whitespace are rejected
+  at the lexer level.
+- The first indented line after the `when` line sets the block's
+  depth; every subsequent line in the block must use the same depth.
+  Indentation deeper than the block's depth is a parse error;
+  indentation shallower (including zero) ends the block.
+- The colon after the `when` line is optional. Present or absent, the
+  indented block defines the action scope.
+- Blank lines inside a block are skipped — they don't end the block.
+- An empty block (a `when` line followed immediately by a top-level
+  line or EOF) is a parse error.
+- A single-statement action block is one indented line. A
+  multi-statement action block is several.
+
+### `unless` guard
+
+`unless` appears between the `when` condition and the action block.
+The compound eligibility is `when-true AND NOT unless-true`:
+
+```
+when temperature is above 100 unless silenced is equal to true
+  show "alert"
+```
+
+If the alarm has been silenced, the handler is suppressed even though
+the temperature has crossed the threshold. The guard's dependencies
+are watched too — changes to `silenced` re-evaluate the handler.
+
+### `finish`
+
+The new verb `finish` exits listener mode immediately and totally:
+
+```
+when level is above 200
+  finish
+```
+
+`finish` is "immediate and total" (v3a §112): when it executes, no
+remaining statements in the action block run, no cascades from this
+handler's modifications process, no sibling handlers from the same
+event evaluate, no queued adapter updates dispatch, the adapters are
+stopped, and the listener yields a terminal `SHUTDOWN` result.
+`finish` works the same way inside a `choose` branch and inside a
+composition called from an action block.
+
+`finish` outside an action block (in Phase 1 sequential code) is a
+semantic error.
+
+### Cascading and cycle detection
+
+Action-block writes are watched too. Setting `alert-mode` inside the
+first handler's action triggers the second handler's eligibility
+transition (a "cascade"). Cascades resolve depth-first. The conservative
+cycle guard rejects same-handler-twice in one cascade chain as a
+runtime error and skips the would-be loop; the handler stays active
+for future events.
+
+### Live values and domain packs
+
+A domain pack declares one or more *live values* — names whose
+authoritative value comes from an external event source. Phase 1
+`remember` may initialize a live value (the natural pattern of setting
+state before listener mode begins), but once Phase 2 starts, the
+adapter owns it: `remember` targeting a live-value name from inside
+an action block is a semantic error, and `filter` (destructive)
+targeting a live-value name is a semantic error in *all* contexts.
+The non-destructive verbs (`keep`, `show`, `count`, `combine`, `each`)
+are fine.
+
+v3a ships only a test adapter (`TestAdapter`) for scripted event
+sequences. Real-world adapters (sensors, messaging brokers, etc.) are
+downstream product work, not language work. Pack registration is
+external — via the `--pack <path>` CLI flag (which loads a JSON test
+domain pack) or the `Session(domain_packs=...)` constructor.
 
 ## Values
 
 A literal value can be:
 
 - **A number** — digits with an optional single decimal point.
-  Examples: `30`, `3.14`, `100`. v1 does not support negative numbers
-  or scientific notation.
+  Examples: `30`, `3.14`, `100`. The language does not support
+  negative numbers or scientific notation.
 - **A single-word string** — any bare word that is not a number and
   not in the reserved-word list. Examples: `red`, `active`,
   `portland`. Strings are case-folded to lowercase.
+- **A quoted multi-word string** — any text inside `"..."` (v2c).
+  Used for values that contain spaces or that collide with the
+  reserved-word list. Examples: `"in progress"`, `"high priority"`,
+  `"filter"` (the literal word "filter" as data, not the verb). See
+  [Quoting](#quoting-v2c) for the full rules.
 
-The language does **not** support multi-word strings. A status value
-like `in progress` cannot be expressed because `in` and `progress`
-would tokenize as separate words. A quoting mechanism is the open D7
-question — see [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md).
-The hyphenation workaround (`in-progress`) is the recommended pattern
-in the meantime.
-
-Vocabulary words (the 31 reserved words) cannot be used as values
-either:
+Vocabulary words (the 34 reserved words) cannot be used **unquoted**
+as values:
 
 ```
 remember a list called items with filter and blue
 ```
 
-> Error: The word 'filter' is a verb in Inscript and can't be used as
-> a value. Try a different word.
+> Error: The word 'filter' is a verb in Inscript and can't be used
+> as a value. Try a different word, or wrap it in quotes: "filter".
+
+Wrapping the reserved word in quotes is the v2c remedy — quoted
+content bypasses the vocabulary lookup.
 
 ## Mixed `and` / `or` and the amber prompt
 
@@ -456,25 +684,38 @@ because associativity makes the parse unambiguous to read.
 
 ## Limitations at a glance
 
-- **Single-word strings only.** No quoting yet (D7, deferred).
 - **Homogeneous lists only.** All numbers, all text, or all records.
 - **No negative numbers.** All literals are zero or positive.
 - **Range cap.** `gather` produces at most 10,000 items.
 - **Ascending ranges only.** `from` must be less than or equal to `to`.
-- **No event-driven execution.** `when` and `unless` are reserved but
-  not executable.
-- **No `transform`, `choose`, `compare`.** Reserved for v2.
-- **No composition return capture yet.** `remember the X from
-  <composition>` is drafted in v2b but not implemented; use the
-  inline form (`remember the X from keep the orders where ...`)
-  meanwhile.
-- **`of` only in `show`'s target position.** Generalizing to all
-  value positions is drafted in v2b.
+- **No `transform`, `compare`.** Reserved-word slots protected; no
+  grammar yet.
 - **Single-level `of` only.** `field-a of field-b of record` is a
   parse error; nested records don't exist yet.
 - **List operations only.** `keep`/`filter` operate on lists.
   `each ... keep where ...` is rejected (the error suggests the
   list-level alternative).
+- **`choose` inside `each` is deferred** (v2d §102). The error points
+  at `keep` as the list-level alternative.
+- **One composition parameter, names-only.** v2d compositions take
+  one declared parameter (`from <param>`) passed by name (`from
+  <name>`); multiple parameters and literal arguments aren't
+  supported.
+- **`when` is top-level only.** It can't appear inside compositions,
+  `each` bodies, or another `when` action block — those are parse
+  errors with a specific message about top-level scope.
+- **`finish` is action-block only.** `finish` in Phase 1 sequential
+  code (or in a composition body called from Phase 1) is a semantic
+  error.
+- **`remember` on a live value inside an action block is rejected.**
+  Live values are adapter-owned once Phase 2 begins. Phase 1
+  initialization remains legal.
+- **`filter` on a live value is rejected in all contexts.**
+  `filter` is destructive; the error suggests `keep` as the
+  non-destructive alternative.
+- **Conservative cycle detection.** v3a §114's same-handler-twice
+  guard rejects genuinely-toggling handler pairs as a runtime error.
+  A more nuanced detector is deferred.
 
 See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
 the full boundary.

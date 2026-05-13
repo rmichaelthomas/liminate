@@ -20,7 +20,7 @@ pip install -e ".[dev]"
 
 ## Run the test suite
 
-There are 418 tests. They run in well under a second.
+There are 641 tests. They run in well under a second.
 
 ```bash
 pytest tests/
@@ -51,11 +51,15 @@ python -m inscript
 You'll see:
 
 ```
-Inscript v1 — type 'exit' to quit.
+Inscript v3a — type 'exit' to quit.
 >
 ```
 
 Type a statement and press enter. Type `exit` (or `quit`) to leave.
+The REPL stays in Phase 1 — `when` blocks need the multi-line block
+parser, which only the file driver invokes. To exercise listener
+mode, write the program to a file and run it via `python -m inscript
+<file> --pack <pack.json>`.
 
 ## Try this first
 
@@ -116,12 +120,72 @@ python -m inscript --test --quiet examples/dogfood_1_corpus_summary.insc
 Blank source lines mirror through to the output under `--quiet` so
 your paragraph breaks survive. Flags work in any order.
 
+## Try Phase 2 — event-driven listener mode
+
+The v3a addendum adds a reactive runtime that watches for changes to
+named values and runs registered handlers when their compound
+eligibility transitions false→true. Save this as `listener.insc`:
+
+```
+remember a number called level with 0
+
+when level is above 100
+  show "level escalated"
+
+when level is above 200
+  finish
+```
+
+Then save this as `listener-pack.json`:
+
+```json
+{
+  "name": "monitor",
+  "declarations": [],
+  "script": [
+    ["level", 150],
+    ["level", 250],
+    "[done]"
+  ]
+}
+```
+
+Run it with the `--pack` flag pointing at the JSON file:
+
+```bash
+python -m inscript --pack listener-pack.json --test --quiet listener.insc
+```
+
+Expected output:
+
+```
+Listening for changes to: level
+level escalated
+Program stopped.
+```
+
+Walkthrough: Phase 1 sets `level=0` and registers two handlers (no
+firing yet). Phase 2 begins — the LISTENING marker prints, initial
+evaluation finds neither handler's condition true (level is 0), and
+the adapter starts pushing scripted updates. The first update
+(`level=150`) makes both handlers' eligibility transition: handler 0
+fires (`show "level escalated"`), handler 1's condition is false
+still (150 ≤ 200). The second update (`level=250`) fires handler 1,
+which executes `finish` — immediate total shutdown.
+
+The full v3a dogfood at `examples/dogfood_v3a_event_driven.insc` (with
+its companion `examples/dogfood_v3a_pack.json`) exercises every major
+v3a feature: initial evaluation, `unless` guards, `of`-expression
+conditions, multi-statement action blocks, parameterized compositions
+called from action blocks, cascading triggers, and `finish` via a
+`choose` branch.
+
 ## Where to go next
 
-- [`syntax.md`](syntax.md) — full v1 syntax tour.
+- [`syntax.md`](syntax.md) — full syntax tour through v3a.
 - [`../architecture/pipeline.md`](../architecture/pipeline.md) — how a
-  source line becomes a result.
+  source line becomes a result, including the Phase 2 listener layer.
 - [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) — what
-  v1 includes and what it deliberately does not.
+  the interpreter includes and what it deliberately does not.
 - [`../spec/`](../spec/) — the immutable specification documents the
-  v1 interpreter is built against.
+  interpreter is built against.
