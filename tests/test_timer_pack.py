@@ -118,3 +118,81 @@ def test_timer_adapter_start_without_queue_raises():
     adapter = TimerAdapter(interval_ms=20, max_ticks=1)
     with pytest.raises(RuntimeError):
         adapter.start()
+
+
+def test_timer_adapter_stops_cleanly_mid_run():
+    """Calling stop() while the timer is mid-run must:
+      - terminate the background thread within ~stop-grace,
+      - leave the queue with at most max_ticks (tick, _) updates,
+      - NOT emit AdapterDone (stop is external, not natural).
+    """
+    q: Queue = Queue()
+    # No max_ticks → would run forever. We stop after letting it
+    # produce ~1–2 ticks.
+    adapter = TimerAdapter(interval_ms=20, max_ticks=None)
+    adapter.attach_queue(q)
+    adapter.start()
+    time.sleep(0.05)  # ~2 ticks of headroom
+    adapter.stop()
+
+    # Thread joined cleanly.
+    assert adapter._thread is not None
+    assert not adapter._thread.is_alive()
+    assert adapter.stopped is True
+
+    # Drain remaining events; verify no AdapterDone slipped in (stop
+    # is external; only natural max_ticks completion emits Done).
+    events: list = []
+    while not q.empty():
+        events.append(q.get_nowait())
+    assert not any(isinstance(e, AdapterDone) for e in events)
+
+
+def test_timer_adapter_stop_interrupts_pending_interval():
+    """stop() must wake a long sleep promptly — the threading.Event-
+    based interruptible sleep is the whole reason this adapter does
+    not use time.sleep(). A regression here would silently break
+    `finish` semantics under v3a §112."""
+    q: Queue = Queue()
+    # Long interval, no max_ticks: would block 10s without interruption.
+    adapter = TimerAdapter(interval_ms=10_000)
+    adapter.attach_queue(q)
+    adapter.start()
+    t0 = time.monotonic()
+    adapter.stop()
+    elapsed = time.monotonic() - t0
+    assert elapsed < 0.5, f"stop() took {elapsed:.3f}s — not interruptible"
+    assert adapter._thread is not None
+    assert not adapter._thread.is_alive()
+
+
+def test_timer_adapter_stop_is_idempotent():
+    q: Queue = Queue()
+    adapter = TimerAdapter(interval_ms=20, max_ticks=2)
+    adapter.attach_queue(q)
+    adapter.start()
+    adapter.stop()
+    adapter.stop()  # second call must not raise
+    assert adapter.stopped is True
+
+
+def test_timer_adapter_elapsed_is_monotonically_non_decreasing():
+    """`elapsed` is rounded to 1 decimal place, so equal-to-previous
+    values are legal (two ticks may land in the same 100ms bucket at
+    short intervals). Strictly: each value >= the previous."""
+    q: Queue = Queue()
+    adapter = TimerAdapter(interval_ms=30, max_ticks=5)
+    adapter.attach_queue(q)
+    adapter.start()
+    events = _drain_until_done(q)
+    adapter.stop()
+
+    elapsed_values = [
+        e.value for e in events
+        if isinstance(e, AdapterUpdate) and e.name == "elapsed"
+    ]
+    assert len(elapsed_values) == 5
+    for prev, cur in zip(elapsed_values, elapsed_values[1:]):
+        assert cur >= prev, f"elapsed went backwards: {prev} -> {cur}"
+    # Sanity check: last elapsed is within a reasonable window.
+    assert elapsed_values[-1] < 5.0  # 5 ticks * 30ms < 200ms, well under 5s

@@ -109,14 +109,10 @@ class TimerAdapter(Adapter):
                 return
             tick_count += 1
             elapsed = round(time.monotonic() - start_time, 1)
-            queue = self.queue
-            if queue is None:
-                # Defensive — attach_queue() invariant should prevent this.
-                return
-            queue.put(AdapterUpdate(name="tick", value=tick_count))
-            queue.put(AdapterUpdate(name="elapsed", value=elapsed))
+            self.queue.put(AdapterUpdate(name="tick", value=tick_count))
+            self.queue.put(AdapterUpdate(name="elapsed", value=elapsed))
             if self.max_ticks is not None and tick_count >= self.max_ticks:
-                queue.put(AdapterDone(adapter_name=self.name))
+                self.queue.put(AdapterDone(adapter_name=self.name))
                 return
 
 
