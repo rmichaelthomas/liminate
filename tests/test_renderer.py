@@ -62,6 +62,23 @@ def test_render_bareword_and_nameref():
     assert render(EachPronoun()) == "each"
 
 
+def test_render_quoted_string_with_uppercase_keeps_quotes():
+    """Quoted strings now preserve case. The renderer must keep quotes
+    around any string that contains uppercase characters — without them,
+    the value would be re-lexed in lowercase and the round-trip would
+    silently corrupt the stored value (e.g. proper nouns, IDs).
+    Single-word lowercase non-reserved values continue to emit bare."""
+    assert render(QuotedString("Active")) == '"Active"'
+    assert render(QuotedString("LosAngeles")) == '"LosAngeles"'
+    assert render(QuotedString("active")) == "active"
+
+
+def test_render_bareword_with_uppercase_keeps_quotes():
+    """Same rule applies to BareWord nodes — if the stored value carries
+    case that would be lost on re-lex, emit it quoted."""
+    assert render(BareWord("Active")) == '"Active"'
+
+
 def test_render_show():
     assert render(ShowNode(target=NameRef("age"))) == "show age"
     assert render(ShowNode(target=None)) == "show"

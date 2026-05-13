@@ -1110,9 +1110,9 @@ def test_sentence_77_literal_display_via_show():
     r3 = session.run_line("count the nums")
     r4 = session.run_line('show "Section B: done"')
     assert r1.status is ResultStatus.SUCCESS
-    assert r1.output == ["section a: before filtering"]
+    assert r1.output == ["Section A: before filtering"]
     assert r3.output == ["3"]
-    assert r4.output == ["section b: done"]
+    assert r4.output == ["Section B: done"]
 
 
 def test_sentence_78_quoted_single_word_is_redundant_but_valid():

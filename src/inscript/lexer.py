@@ -7,7 +7,9 @@ Sources:
 - v1d §57 (lexer lowercases — symbol table names are lowercase as a consequence)
 - v2c §86 (quote-state accumulation: `"…"` produces a single QUOTED_STRING)
 - v2c §89 (QUOTED_STRING bypasses vocabulary lookup)
-- v2c §91 (quoted content is lowercased, consistent with the rest of the language)
+- v2c §91 (case normalization stops at the quote delimiter — quoted
+  content is preserved verbatim so external identifiers and labels
+  survive round-trip)
 - v2c §92 (empty quotes `""` are a parse error)
 - v3a §110 (leading-space indentation tracked for `when` action blocks;
   tabs in leading indentation are rejected with a clear LexError)
@@ -20,7 +22,8 @@ Pipeline per BUILD_PLAN Phase 2, extended for v2c:
 3. Strip decorative punctuation `, . ? !` from each UNQUOTED word's
    edges (§22 line 430). Quoted content preserves its punctuation
    verbatim (v2c §86).
-4. Lowercase each word — quoted and unquoted alike (v2c §91 + §22).
+4. Lowercase each UNQUOTED word (§22). Quoted content is left
+   untouched so case is preserved across the lexer.
 5. Combine `equal` + `to` into a single OPERATOR token `equal_to` via
    one-word lookahead (§22 line 426). Quoted `"equal"` does NOT combine
    (it is a value token, not a vocabulary lookup).
@@ -160,16 +163,16 @@ def _split_raw(line: str) -> list[tuple[str, int, bool]]:
 def _strip_and_lower(
     raw: list[tuple[str, int, bool]],
 ) -> list[tuple[str, int, bool]]:
-    """Lowercase every token (v2c §91 + §22). For unquoted tokens, also
-    strip decorative punctuation from the edges. Quoted tokens preserve
-    their punctuation verbatim per v2c §86. Empty residues are dropped
-    only when they arose from punctuation stripping; quoted tokens
-    already passed the §92 empty-content check upstream.
+    """Lowercase every unquoted token (§22). Quoted tokens preserve their
+    content verbatim — case and punctuation — so external identifiers
+    and human-readable labels survive round-trip. Empty residues are
+    dropped only when they arose from punctuation stripping; quoted
+    tokens already passed the §92 empty-content check upstream.
     """
     out: list[tuple[str, int, bool]] = []
     for word, pos, is_quoted in raw:
         if is_quoted:
-            out.append((word.lower(), pos, True))
+            out.append((word, pos, True))
             continue
         left = 0
         while left < len(word) and word[left] in _DECORATIVE:

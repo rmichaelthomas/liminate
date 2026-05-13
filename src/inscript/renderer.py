@@ -341,10 +341,18 @@ def _fmt_number(v: int | float) -> str:
 
 def _emit_string(s: str) -> str:
     """v2c §90 — conditional quoting. Emit quotes around a string value
-    iff it contains a space (multi-word) or matches a reserved word.
-    This preserves round-trip integrity: `with label as "filter"` keeps
-    its quotes; `with status as active` stays bare.
+    iff dropping them would change the value on re-lex. That is true
+    when:
+      - the value contains a space (multi-word → bare form won't even
+        tokenize as one token), or
+      - the value matches a reserved word (bare form would be rejected
+        as a verb/connective/etc.), or
+      - the value differs from its lowercased form (case would be lost
+        because the lexer normalizes unquoted words; quoted content is
+        preserved verbatim).
+    `with status as active` stays bare; `with status as "Active"` keeps
+    its quotes.
     """
-    if " " in s or s in ALL_RESERVED:
+    if " " in s or s in ALL_RESERVED or s != s.lower():
         return f'"{s}"'
     return s

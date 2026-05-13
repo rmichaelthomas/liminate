@@ -428,17 +428,21 @@ def test_quoted_string_emits_single_token():
 
 def test_quoted_string_preserves_internal_punctuation():
     """v2c §86: commas/periods/colons inside quotes are content, not
-    decoration. Punctuation stripping (inception §22) is bypassed."""
+    decoration. Punctuation stripping (inception §22) is bypassed.
+    Case is preserved verbatim as well — the value comes through
+    exactly as written between the quotes."""
     toks = tokenize('show "Hello, world!"')
     assert toks[-1].type is TokenType.QUOTED_STRING
-    assert toks[-1].value == "hello, world!"
+    assert toks[-1].value == "Hello, world!"
 
 
-def test_quoted_string_lowercases_content():
-    """v2c §91: case normalization applies inside quotes too."""
+def test_quoted_string_preserves_original_case():
+    """Quoted content is preserved verbatim — case normalization stops at
+    the quote delimiter. `"In Progress"` stores `In Progress`, not
+    `in progress`. Unquoted tokens continue to lowercase as before."""
     toks = tokenize('with status as "In Progress"')
     assert toks[-1].type is TokenType.QUOTED_STRING
-    assert toks[-1].value == "in progress"
+    assert toks[-1].value == "In Progress"
 
 
 def test_quoted_string_can_contain_reserved_words():
@@ -488,7 +492,7 @@ def test_quoted_colon_is_preserved():
     QUOTED_STRING + DELIMITER + UNKNOWN."""
     toks = tokenize('show "Section A: counts before filtering"')
     assert [t.type for t in toks] == [TokenType.VERB, TokenType.QUOTED_STRING]
-    assert toks[-1].value == "section a: counts before filtering"
+    assert toks[-1].value == "Section A: counts before filtering"
 
 
 def test_quoted_string_position_points_at_opening_quote():
