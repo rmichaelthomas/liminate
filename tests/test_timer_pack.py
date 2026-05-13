@@ -282,6 +282,42 @@ def test_load_pack_from_arg_unknown_type_raises():
     assert "no-such-pack" in str(exc.value)
 
 
+def test_timer_adapter_with_interval_longer_than_poll_window():
+    """Regression: when interval_ms > listener._QUEUE_POLL_SECONDS,
+    the listener used to break on the first Empty poll and shut down
+    before any tick arrived. Now the loop continues until adapters
+    signal Done.
+
+    Uses interval_ms=80 (well above the 50ms poll window) and
+    max_ticks=2 to keep the test fast (~160ms).
+    """
+    from inscript.result import ResultStatus
+    from tests._v3a_helpers import run_v3a, fires
+
+    pack = TimerDomainPack(interval_ms=80, max_ticks=2)
+    session, results = run_v3a(
+        """
+        remember a string called marker with idle
+
+        when tick is above 0
+          remember a string called marker with seen
+        """,
+        pack=pack,
+    )
+
+    # Handler fires on the first tick (edge from unset → 1).
+    handler_fires = fires(results)
+    assert len(handler_fires) >= 1, (
+        f"Expected at least one HANDLER_FIRE; got "
+        f"{[(r.status, r.canonical) for r in results]}"
+    )
+    assert session.symtab["marker"].value == "seen"
+    # And the listener reaches normal adapter-complete shutdown.
+    shutdowns = [r for r in results if r.status is ResultStatus.SHUTDOWN]
+    assert shutdowns, "Listener must produce a SHUTDOWN result"
+    assert shutdowns[-1].metadata.get("reason") == "adapter_complete"
+
+
 # ---------------------------------------------------------------------------
 # Integration: timer updates flow through the listener and fire handlers
 # ---------------------------------------------------------------------------

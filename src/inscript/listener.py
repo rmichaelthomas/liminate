@@ -143,10 +143,14 @@ class _Runner:
             try:
                 msg = self.queue.get(timeout=_QUEUE_POLL_SECONDS)
             except Empty:
-                # No more messages and no live adapters left. The
-                # _QUEUE_POLL_SECONDS bound means tests don't hang if
-                # an adapter forgot to signal Done.
-                break
+                # Idle poll — no message arrived this quantum. Loop and
+                # keep waiting. Real adapters with intervals longer than
+                # _QUEUE_POLL_SECONDS will see many of these between
+                # updates; that's fine. The loop only exits when every
+                # adapter has signaled AdapterDone (or AdapterFailure),
+                # at which point `active_adapters` becomes empty and the
+                # `while` condition terminates the loop naturally.
+                continue
             if isinstance(msg, AdapterDone):
                 active_adapters.discard(msg.adapter_name)
                 continue
