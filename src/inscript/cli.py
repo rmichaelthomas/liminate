@@ -573,17 +573,35 @@ def repl() -> None:
 def _make_test_pack(
     config: dict, *, default_name: str = "pack",
 ) -> TestDomainPack:
-    """Factory for the existing `type == "test"` pack (default)."""
+    """Factory for the existing `type == "test"` pack (default).
+
+    The update sequence may be supplied under either key:
+      - `"sequence"` (preferred, used by the v3a domain-pack examples)
+      - `"script"`   (legacy, used by `examples/dogfood_v3a_pack.json`)
+
+    Specifying both is rejected so a typo never silently picks the
+    wrong one.
+    """
+    if "sequence" in config and "script" in config:
+        raise ValueError(
+            "test pack config has both 'sequence' and 'script' keys — "
+            "use only one (prefer 'sequence')."
+        )
+    raw_sequence = (
+        config.get("sequence")
+        if "sequence" in config
+        else config.get("script", [])
+    )
     declarations = [(d[0], d[1]) for d in config.get("declarations", [])]
     script: list = []
-    for entry in config.get("script", []):
+    for entry in raw_sequence:
         if isinstance(entry, str) and entry == "[done]":
             script.append("[done]")
         elif isinstance(entry, list) and len(entry) == 2:
             script.append((entry[0], entry[1]))
         else:
             raise ValueError(
-                f"malformed script entry {entry!r} — each entry must "
+                f"malformed sequence entry {entry!r} — each entry must "
                 f"be ['name', value] or '[done]'."
             )
     return TestDomainPack(

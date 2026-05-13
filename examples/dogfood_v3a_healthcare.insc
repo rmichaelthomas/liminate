@@ -1,0 +1,18 @@
+remember a number called systolic with 120
+remember a number called heart-rate with 72
+remember a string called alert-level with normal
+remember a string called medication-given with false
+
+when systolic is above 180 unless medication-given is equal to true
+  remember a string called alert-level with critical
+  show "ALERT: blood pressure critical"
+
+when systolic is above 140
+  choose if alert-level is equal to critical: show "escalated to critical" otherwise show "warning: elevated blood pressure"
+
+when heart-rate is above 120
+  show "warning: tachycardia detected"
+
+when alert-level is equal to critical and heart-rate is above 100
+  show "EMERGENCY: compound cardiovascular event"
+  finish

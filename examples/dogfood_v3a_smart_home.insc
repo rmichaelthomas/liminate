@@ -1,0 +1,21 @@
+remember a number called light-level with 500
+remember a number called occupancy with 0
+remember a string called lights with off
+remember a string called mode with away
+
+when occupancy is above 0
+  remember a string called mode with home
+
+when occupancy is equal to 0
+  remember a string called mode with away
+
+when mode is equal to home and light-level is below 200
+  remember a string called lights with on
+  show "lights turned on"
+
+when mode is equal to away and lights is equal to on
+  remember a string called lights with off
+  show "lights turned off"
+
+when lights is equal to on
+  show "light status: on"

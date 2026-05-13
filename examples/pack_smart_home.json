@@ -1,0 +1,7 @@
+{"type": "test", "sequence": [
+  ["occupancy", 1],
+  ["light-level", 150],
+  ["occupancy", 0],
+  ["occupancy", 2],
+  ["light-level", 500]
+]}

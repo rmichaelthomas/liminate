@@ -1,0 +1,10 @@
+
+
+
+
+Listening for changes to: medication-given, systolic, heart-rate, alert-level
+warning: elevated blood pressure
+alert: blood pressure critical
+warning: tachycardia detected
+emergency: compound cardiovascular event
+Program stopped.

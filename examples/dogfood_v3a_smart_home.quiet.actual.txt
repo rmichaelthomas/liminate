@@ -1,0 +1,12 @@
+
+
+
+
+
+Listening for changes to: occupancy, light-level, mode, lights
+lights turned on
+light status: on
+lights turned off
+lights turned on
+light status: on
+All event sources finished. Listener mode complete.

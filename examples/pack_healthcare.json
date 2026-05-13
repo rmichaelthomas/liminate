@@ -1,0 +1,8 @@
+{"type": "test", "sequence": [
+  ["systolic", 150],
+  ["heart-rate", 85],
+  ["systolic", 185],
+  ["heart-rate", 130],
+  ["medication-given", "true"],
+  ["systolic", 190]
+]}

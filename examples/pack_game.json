@@ -1,0 +1,8 @@
+{"type": "test", "sequence": [
+  ["turn", 1],
+  ["score", 25],
+  ["turn", 2],
+  ["score", 60],
+  ["turn", 3],
+  ["score", 110]
+]}

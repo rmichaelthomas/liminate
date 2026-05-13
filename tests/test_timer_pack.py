@@ -282,6 +282,68 @@ def test_load_pack_from_arg_unknown_type_raises():
     assert "no-such-pack" in str(exc.value)
 
 
+# ---------------------------------------------------------------------------
+# Test pack factory: `"sequence"` is the preferred key; `"script"` stays as
+# a back-compat alias for the original v3a dogfood pack.
+# ---------------------------------------------------------------------------
+
+
+def test_load_pack_from_arg_inline_test_reads_sequence_key():
+    """The three new domain-pack examples use the `"sequence"` key. The
+    factory was originally reading only `"script"`, dropping every
+    update on the floor — that's the bug this test guards."""
+    from queue import Queue
+    from inscript.adapter import AdapterDone, AdapterUpdate
+    from inscript.cli import load_pack_from_arg
+
+    pack = load_pack_from_arg(
+        '{"type": "test", "sequence": [["temperature", 100], ["humidity", 50]]}'
+    )
+    q: Queue = Queue()
+    adapter = pack.adapter()
+    adapter.attach_queue(q)
+    adapter.start()
+    msgs: list = []
+    while not q.empty():
+        msgs.append(q.get_nowait())
+    updates = [m for m in msgs if isinstance(m, AdapterUpdate)]
+    assert [(u.name, u.value) for u in updates] == [
+        ("temperature", 100),
+        ("humidity", 50),
+    ]
+    # Auto-appended done marker (TestAdapter contract).
+    assert any(isinstance(m, AdapterDone) for m in msgs)
+
+
+def test_load_pack_from_arg_inline_test_rejects_both_sequence_and_script():
+    """Specifying both `"sequence"` and `"script"` is a typo trap — we
+    reject the config rather than silently picking one."""
+    from inscript.cli import load_pack_from_arg
+
+    with pytest.raises(ValueError) as exc:
+        load_pack_from_arg(
+            '{"type": "test", "sequence": [["x", 1]], "script": [["y", 2]]}'
+        )
+    msg = str(exc.value).lower()
+    assert "sequence" in msg and "script" in msg
+
+
+def test_load_pack_from_arg_file_path_with_sequence_key(tmp_path):
+    """Mirror of `..._file_path_still_works`, but using the new
+    canonical `"sequence"` key."""
+    import json
+    from inscript.cli import load_pack_from_arg
+
+    p = tmp_path / "pack.json"
+    p.write_text(json.dumps({
+        "type": "test",
+        "name": "monitor",
+        "sequence": [["level", 55], "[done]"],
+    }))
+    pack = load_pack_from_arg(str(p))
+    assert pack.name() == "monitor"
+
+
 def test_timer_adapter_with_interval_longer_than_poll_window():
     """Regression: when interval_ms > listener._QUEUE_POLL_SECONDS,
     the listener used to break on the first Empty poll and shut down

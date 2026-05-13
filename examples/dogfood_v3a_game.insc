@@ -1,0 +1,18 @@
+remember a number called turn with 0
+remember a number called score with 0
+remember a string called game-state with playing
+
+when turn is above 0
+  show "turn started"
+
+when score is above 50
+  remember a string called game-state with winning
+  show "you are winning"
+
+when score is above 100
+  remember a string called game-state with victory
+  show "VICTORY"
+  finish
+
+when game-state is equal to winning
+  show "keep going"
