@@ -1,0 +1,8 @@
+remember a string called status with waiting
+
+when tick is above 0
+  remember a string called status with running
+
+when tick is above 3
+  show status
+  finish

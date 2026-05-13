@@ -35,6 +35,7 @@ from .analyzer import SymbolEntry
 from .interpreter import HandlerTable, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
+from .packs.timer import make_timer_pack
 from .parser import parse, parse_when_block
 from .reorderer import reorder
 from .result import InscriptResult, ResultStatus
@@ -569,25 +570,10 @@ def repl() -> None:
         display_result(result, session)
 
 
-def load_pack_from_path(path: str) -> DomainPack:
-    """Load a TestDomainPack from a JSON config file (v3a §118 test
-    surface).
-
-    Expected config shape:
-        {
-            "name": "weather",
-            "declarations": [["temperature", "number"], ...],
-            "script": [
-                ["temperature", 105],
-                ["humidity", 85],
-                "[done]"
-            ]
-        }
-
-    `[done]` is the v3a §118 termination marker; if absent the
-    TestAdapter appends one automatically.
-    """
-    config = json.loads(Path(path).read_text(encoding="utf-8"))
+def _make_test_pack(
+    config: dict, *, default_name: str = "pack",
+) -> TestDomainPack:
+    """Factory for the existing `type == "test"` pack (default)."""
     declarations = [(d[0], d[1]) for d in config.get("declarations", [])]
     script: list = []
     for entry in config.get("script", []):
@@ -597,14 +583,57 @@ def load_pack_from_path(path: str) -> DomainPack:
             script.append((entry[0], entry[1]))
         else:
             raise ValueError(
-                f"pack '{path}': malformed script entry {entry!r} — "
-                f"each entry must be ['name', value] or '[done]'."
+                f"malformed script entry {entry!r} — each entry must "
+                f"be ['name', value] or '[done]'."
             )
     return TestDomainPack(
         declarations=declarations,
         script=script,
-        name=config.get("name", Path(path).stem),
+        name=config.get("name", default_name),
     )
+
+
+# Pack-type dispatch table for the --pack CLI flag. Adding a new pack
+# means adding its factory here (and importing it at the top of the
+# module).
+_PACK_FACTORIES = {
+    "test": _make_test_pack,
+    "timer": lambda config, **_kw: make_timer_pack(config),
+}
+
+
+def load_pack_from_arg(arg: str) -> DomainPack:
+    """Load a domain pack from a CLI `--pack` argument.
+
+    `arg` may be either:
+      - An inline JSON string (starts with `{`), or
+      - A path to a JSON config file.
+
+    The decoded JSON object's optional `"type"` field selects the
+    pack factory; the default is `"test"` for backward compatibility
+    with existing dogfood pack JSON files.
+    """
+    arg_stripped = arg.strip()
+    if arg_stripped.startswith("{"):
+        config = json.loads(arg_stripped)
+        default_name = "pack"
+    else:
+        config = json.loads(Path(arg).read_text(encoding="utf-8"))
+        default_name = Path(arg).stem
+    pack_type = config.get("type", "test")
+    factory = _PACK_FACTORIES.get(pack_type)
+    if factory is None:
+        raise ValueError(
+            f"unknown pack type '{pack_type}'. "
+            f"Allowed: {sorted(_PACK_FACTORIES)}."
+        )
+    return factory(config, default_name=default_name)
+
+
+def load_pack_from_path(path: str) -> DomainPack:
+    """Backwards-compatible shim — `load_pack_from_arg` for an arg
+    known to be a file path."""
+    return load_pack_from_arg(path)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -621,11 +650,15 @@ def main(argv: list[str] | None = None) -> int:
         elif a == "--quiet":
             quiet = True
         elif a == "--pack":
-            # `--pack <path>` registers a TestDomainPack from a JSON
-            # file. Multiple `--pack` flags accumulate.
+            # `--pack <arg>` registers a domain pack. `<arg>` may be
+            # either a JSON file path or an inline JSON string (starts
+            # with `{`). The decoded config's optional `"type"` field
+            # selects the pack factory; `"test"` is the default for
+            # backward compatibility. Multiple `--pack` flags accumulate.
             if i + 1 >= len(args):
                 print(
-                    f"Error: --pack requires a path argument", file=sys.stderr,
+                    "Error: --pack requires an argument (JSON file path or inline JSON)",
+                    file=sys.stderr,
                 )
                 return 2
             pack_paths.append(args[i + 1])
@@ -642,7 +675,7 @@ def main(argv: list[str] | None = None) -> int:
     domain_packs: list[DomainPack] = []
     for p in pack_paths:
         try:
-            domain_packs.append(load_pack_from_path(p))
+            domain_packs.append(load_pack_from_arg(p))
         except (OSError, ValueError, json.JSONDecodeError) as e:
             print(f"Error loading pack '{p}': {e}", file=sys.stderr)
             return 2

@@ -89,6 +89,22 @@ class Adapter(ABC):
 
     `name` is a human-readable identifier surfaced in error and
     shutdown metadata (§120 / §122).
+
+    **Termination contract.** For the listener's Phase 2 drain loop to
+    exit normally, every adapter must eventually push exactly one
+    `AdapterDone(adapter_name=self.name)` (natural completion) or one
+    `AdapterFailure(...)` (error). Adapters that run forever and never
+    signal completion will keep the listener alive until the user's
+    program calls `finish` (which triggers stop() from inside the
+    listener) or the process is interrupted externally.
+
+    `stop()` is invoked by the listener — either from `_shutdown_finish`
+    after a `finish` propagates, or from the final cleanup loop after
+    the drain has already returned. Concrete adapters should treat
+    `stop()` as "cease pushing as soon as practical and tear down any
+    threads or resources." They do not need to push a terminal
+    `AdapterDone` from within `stop()` itself — by that point the
+    listener has already decided to shut down.
     """
 
     def __init__(self, name: str = "adapter"):

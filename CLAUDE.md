@@ -78,6 +78,13 @@ python -m inscript --test --quiet examples/dogfood_v2a_14_realistic.insc
 python -m inscript examples/dogfood_v3a_event_driven.insc \
     --pack examples/dogfood_v3a_pack.json --test --quiet
 
+# Phase 2 event-driven mode with the timer pack (real threaded source).
+# Inline JSON config — same flag, `--pack` now also accepts a JSON
+# string starting with `{`. The `type` field dispatches to the pack
+# factory (`test` is the default for backward compatibility).
+python -m inscript examples/dogfood_v3a_timer_pack.insc \
+    --pack '{"type": "timer", "interval_ms": 200, "max_ticks": 5}' --quiet
+
 # Interactive REPL (Phase 1 only — REPL doesn't enter listener mode)
 python -m inscript
 ```
@@ -102,6 +109,8 @@ python -m inscript
 - `cli.py` — `Session` (owns symtab + handler table + registry +
   packs), `run_file` (with v3a §110 block buffering and Phase 2
   entry), `--pack` flag for JSON pack loading.
+- `packs/timer.py` — `TimerAdapter` + `TimerDomainPack` + `make_timer_pack(config)`
+  (v3a §116 — first real domain pack; threaded periodic event source).
 - `result.py` — `InscriptResult` with nine statuses + metadata.
 
 ## Code Style
