@@ -31,11 +31,11 @@ import sys
 from pathlib import Path
 
 from .adapter import DomainPack, LiveValueRegistry, TestDomainPack
-from .packs.timer import make_timer_pack
 from .analyzer import SymbolEntry
 from .interpreter import HandlerTable, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
+from .packs.timer import make_timer_pack
 from .parser import parse, parse_when_block
 from .reorderer import reorder
 from .result import InscriptResult, ResultStatus
@@ -650,11 +650,15 @@ def main(argv: list[str] | None = None) -> int:
         elif a == "--quiet":
             quiet = True
         elif a == "--pack":
-            # `--pack <path>` registers a TestDomainPack from a JSON
-            # file. Multiple `--pack` flags accumulate.
+            # `--pack <arg>` registers a domain pack. `<arg>` may be
+            # either a JSON file path or an inline JSON string (starts
+            # with `{`). The decoded config's optional `"type"` field
+            # selects the pack factory; `"test"` is the default for
+            # backward compatibility. Multiple `--pack` flags accumulate.
             if i + 1 >= len(args):
                 print(
-                    f"Error: --pack requires a path argument", file=sys.stderr,
+                    "Error: --pack requires an argument (JSON file path or inline JSON)",
+                    file=sys.stderr,
                 )
                 return 2
             pack_paths.append(args[i + 1])
