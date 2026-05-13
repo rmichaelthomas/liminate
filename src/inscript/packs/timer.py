@@ -16,8 +16,13 @@ Declarations
 
 from __future__ import annotations
 
+import threading
+import time
+
 from ..adapter import (
     Adapter,
+    AdapterDone,
+    AdapterUpdate,
     DomainPack,
     LiveValueDeclaration,
 )
@@ -38,9 +43,13 @@ def _validate_timer_args(interval_ms: int, max_ticks: int | None) -> None:
 
 
 class TimerAdapter(Adapter):
-    """Real adapter implementation — will run on a background thread.
+    """Real adapter implementation — runs on a background thread.
 
-    Scaffold only at this stage; threading lands in the next commit.
+    The thread loop sleeps via `threading.Event.wait(timeout)` so
+    `stop()` can interrupt the sleep without waiting for the full
+    interval. The interpreter's listener calls `stop()` on `finish`
+    (v3a §112) and at shutdown (§120); both paths must return
+    promptly.
     """
 
     def __init__(
@@ -54,12 +63,61 @@ class TimerAdapter(Adapter):
         _validate_timer_args(interval_ms, max_ticks)
         self.interval_ms = interval_ms
         self.max_ticks = max_ticks
+        self._stop_event = threading.Event()
+        self._thread: threading.Thread | None = None
 
     def start(self) -> None:
-        raise NotImplementedError("filled in by a later task")
+        if self.queue is None:
+            raise RuntimeError(
+                "TimerAdapter.start() called before attach_queue()."
+            )
+        if self.started:
+            return
+        self.started = True
+        self._stop_event.clear()
+        self._thread = threading.Thread(
+            target=self._run,
+            name=f"{self.name}-thread",
+            daemon=True,
+        )
+        self._thread.start()
 
     def stop(self) -> None:
-        raise NotImplementedError("filled in by a later task")
+        # Idempotent: repeated calls (listener-shutdown + atexit, etc.)
+        # are safe.
+        if self.stopped:
+            return
+        self.stopped = True
+        self._stop_event.set()
+        thread = self._thread
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=1.0)
+
+    def _run(self) -> None:
+        """Background-thread loop. Pushes (tick, N) and (elapsed, S)
+        pairs every `interval_ms`. On `max_ticks` reached, pushes an
+        `AdapterDone` and exits. On external `stop()`, exits without
+        a terminal `AdapterDone` — the listener detects no-activity
+        timeout and shuts down (v3a §119)."""
+        interval_s = self.interval_ms / 1000.0
+        start_time = time.monotonic()
+        tick_count = 0
+        while not self._stop_event.is_set():
+            # Interruptible sleep: wait() returns True if the event
+            # is set during the wait.
+            if self._stop_event.wait(timeout=interval_s):
+                return
+            tick_count += 1
+            elapsed = round(time.monotonic() - start_time, 1)
+            queue = self.queue
+            if queue is None:
+                # Defensive — attach_queue() invariant should prevent this.
+                return
+            queue.put(AdapterUpdate(name="tick", value=tick_count))
+            queue.put(AdapterUpdate(name="elapsed", value=elapsed))
+            if self.max_ticks is not None and tick_count >= self.max_ticks:
+                queue.put(AdapterDone(adapter_name=self.name))
+                return
 
 
 class TimerDomainPack(DomainPack):
