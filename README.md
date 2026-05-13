@@ -5,7 +5,7 @@ A prose-as-syntax programming language designed from the human end.
 > *"Every programming language in history was designed by programmers. This one wasn't. That's why the design is different."*
 > — Inscript Inception Checkpoint v1
 
-**Status (May 12, 2026):** v1 interpreter + v2a (`keep`, `of`, multi-field `each show`, descriptor preservation) + UX polish (`--quiet`, named-offender errors, auto-show truncation) + v2.1-patches. 418 tests passing. The v2b addendum (composition return values, generalized `of`) is drafted in `docs/spec/` but not yet implemented.
+**Status (May 12, 2026):** v1 interpreter + v2a (`keep`, `of`, multi-field `each show`, descriptor preservation) + UX polish (`--quiet`, named-offender errors, auto-show truncation) + v2.1-patches + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings) + v2d (composition parameters with `from`, `choose` verb with `if`/`otherwise`) + **v3a event-driven execution** (`when`/`unless`/`finish`, two-phase listener model with indented action blocks, single-threaded event queue, cascading triggers with cycle detection, domain-pack adapter contract). **641 tests passing.** The sequential feature set (v1 → v2d) and the reactive feature set (v3a) together form a structurally complete programming language.
 
 ---
 
@@ -18,12 +18,12 @@ A prose-as-syntax programming language designed from the human end.
 - [Installation and running](#installation-and-running)
 - [The vocabulary](#the-vocabulary)
 - [The pipeline](#the-pipeline)
-- [Five outcomes](#five-outcomes)
+- [Nine outcomes](#nine-outcomes)
 - [Example programs](#example-programs)
-- [v1 scope and v2 deferrals](#v1-scope-and-v2-deferrals)
+- [Current scope and deferrals](#current-scope-and-deferrals)
 - [Design principles](#design-principles)
 - [Project structure](#project-structure)
-- [The forty-eight test sentences](#the-forty-eight-test-sentences)
+- [The locked test sentences](#the-locked-test-sentences)
 - [Guides](#guides)
 - [Specification documents](#specification-documents)
 - [Lineage](#lineage)
@@ -36,7 +36,7 @@ A prose-as-syntax programming language designed from the human end.
 
 `filter the orders where total is above 50` is not a prompt to an AI. It is the program.
 
-Inscript is a general-purpose programming language whose source code is readable English prose. A bounded vocabulary of 31 words combines into sentences that execute directly. There is no separate code the prose generates — the sentence IS the program.
+Inscript is a general-purpose programming language whose source code is readable English prose. A bounded vocabulary of 34 words combines into sentences that execute directly. There is no separate code the prose generates — the sentence IS the program.
 
 This is not a domain-specific language for queries or data, nor a natural-language layer over Python, nor a code-generating AI. It is a programming language with its own pipeline: lexer, reorderer, parser, semantic analyzer, interpreter. The prose-as-syntax constraint is structural, not cosmetic.
 
@@ -60,7 +60,7 @@ Five properties combine in Inscript that exist individually in other systems but
 
 1. **Prose-as-syntax where the prose IS the executable code.** Not prose that generates code (vibe coding). Not prose that describes a game world (Inform 7, which is domain-locked). General-purpose computation expressed as readable English sentences that execute directly.
 
-2. **Bounded vocabulary as design constraint.** 31 reserved words in the current build (8 verbs + 10 connectives + 4 single-word operators + `equal` as a multi-word component + 3 articles + 5 v2-reserved words). The vocabulary is the language boundary, not a starter set that grows. Expressiveness scales through domain packs, composition over expansion, and named-composition chunking (inception §19) — not through adding more keywords. Each v2 addition is the smallest spec change consistent with a surfaced dogfooding gap.
+2. **Bounded vocabulary as design constraint.** 34 reserved words in the current build (10 verbs + 14 connectives + 4 single-word operators + `equal` as a multi-word component + 3 articles + 2 v2-deferred words). The vocabulary is the language boundary, not a starter set that grows. Expressiveness scales through domain packs, composition over expansion, and named-composition chunking (inception §19) — not through adding more keywords. Each v2 addition is the smallest spec change consistent with a surfaced dogfooding gap.
 
 3. **Graduation from tiles to text within one language.** The same AST underlies a tile-composition surface (for first-encounter authoring), a prose surface (for fluent authoring), and an optional symbolic surface (for velocity). Three views, one structure. Scratch-to-Python is two languages; Inscript is one language with three surfaces. The v1 interpreter implements the prose surface; the tile surface is a separate downstream concern.
 
@@ -136,6 +136,28 @@ Quiet mode (suppresses the canonical-prose echo; useful for any program longer t
 python -m inscript --quiet examples/dogfood_1_corpus_summary.insc
 ```
 
+Phase 2 listener mode requires at least one registered domain pack (or a program that has no adapters, in which case the listener performs initial evaluation and shuts down). The `--pack <path>` flag loads a JSON test domain pack:
+
+```bash
+python -m inscript --pack examples/dogfood_v3a_pack.json --test --quiet \
+    examples/dogfood_v3a_event_driven.insc
+```
+
+Pack JSON shape:
+
+```json
+{
+  "name": "monitor",
+  "declarations": [["temperature", "number"]],
+  "script": [
+    ["temperature", 105],
+    "[done]"
+  ]
+}
+```
+
+Multiple `--pack` flags accumulate. v3a §118 — domain pack activation via Inscript syntax (a `use`/`load` verb) is intentionally deferred; pack registration is external.
+
 Flags work in any argument position and can be combined. Blank source lines are mirrored to the output under `--quiet` so paragraph breaks survive.
 
 Every statement is echoed first in canonical prose form (the parser's interpretation of what you wrote) before any output is shown — unless `--quiet` is set. This is the "Logic Preview" — see v1a §33.
@@ -144,35 +166,41 @@ Every statement is echoed first in canonical prose form (the parser's interpreta
 
 ## The vocabulary
 
-The current vocabulary is 31 reserved words across five categories. The complete list is the entire language surface — no other words are part of Inscript, only user-provided names and literal values.
+The current vocabulary is 34 reserved words across five categories. The complete list is the entire language surface — no other words are part of Inscript, only user-provided names and literal values.
 
-### Verbs (8)
+### Verbs (10)
 
 | Verb | Purpose |
 |---|---|
-| `remember` | Store a value, list, record, or named composition |
-| `show` | Display the value of a named item or one field of a record (`show total of order1`) |
+| `remember` | Store a value, list, record, or named composition (optionally with a `from <param>` parameter — v2d §96) |
+| `show` | Display the value of a named item or one field of a record (`show total of order1`); `show "literal text"` displays the quoted content (v2c §88) |
 | `filter` | Reduce a list in-place by a condition |
 | `keep` | Non-destructive sibling of `filter` — returns matches as a fresh list; source unchanged. v2a §67. |
 | `count` | Return (and auto-show) the size of a list |
 | `gather` | Generate a numeric range, store and auto-show it |
 | `combine` | Sum the numbers in a list (non-destructive, auto-shows) |
 | `each` | Iterate over a list and perform an action per item; supports `show A and B` for multi-field display (v2a §69) |
+| `choose` | Conditional branching via `choose if <cond>: <action> [otherwise [if <cond>:] <action>]*` (v2d §99) |
+| `finish` | Exit listener mode immediately and totally — legal only inside a `when` action block (v3a §112) |
 
-### Connectives (10)
+### Connectives (14)
 
 | Connective | Purpose |
 |---|---|
 | `where` | Introduces a filter condition |
 | `and` | List construction; compound condition; operation sequencing; record-field continuation; multi-field display in `each ... show` (five contexts, all deterministically disambiguated) |
 | `or` | List construction; compound condition; operation sequencing; record-field continuation (four contexts) |
-| `from` | Range start; result capture; simple reference (three contexts) |
+| `from` | Range start; result capture; simple reference; composition parameter declaration and passing (v2d §96) |
 | `with` | Introduces values, list items, or record fields |
 | `called` | Introduces a name |
 | `to` | Range endpoint, or component of `equal to` |
 | `how` | Signals a named-composition definition (with `to`) |
 | `as` | Field assignment in records |
-| `of` | Single-record field access in `show <field> of <record>` (v2a §68) |
+| `of` | Single-record field access — `<field> of <record>` in any value position (v2a §68 + v2b §77) |
+| `if` | Introduces a `choose` branch's condition (v2d §99) |
+| `otherwise` | Introduces a `choose` alternative or terminal branch (v2d §99) |
+| `when` | Registers a reactive handler — top-level only; introduces an indented action block (v3a §108/§110) |
+| `unless` | Guard clause on a `when` line — compound eligibility is `when-true AND NOT unless-true` (v3a §109) |
 
 ### Operators (5)
 
@@ -190,43 +218,74 @@ The current vocabulary is 31 reserved words across five categories. The complete
 
 ### Delimiter (1)
 
-`:` separates a composition name from its body.
+`:` separates a composition name from its body, and a `choose` branch's condition from its action (v2d §99).
 
-### v2-reserved (5)
+### Quoting (v2c)
 
-`when`, `unless`, `transform`, `choose`, `compare` — designed but not executable in v1. Reserved now so user-provided names don't break when v2 ships (v1a §29).
+`"..."` brackets a multi-word string value or one that would collide with a reserved word (e.g. `with status as "in progress"`, `with label as "filter"`). Quotes are legal in value positions only — names and field names use hyphens for multi-word identifiers (`big-orders`, `start-date`). The renderer's conditional-quoting rule preserves quotes around values that need them and drops them around safe single-word values, so round-trips stay readable. (v2c §86–§92)
+
+### v2-deferred (2)
+
+`transform` and `compare` — reserved-word slots protected (v1a §29 / v3a §124). The grammar for these verbs is not yet specified; they're reserved so user-provided names won't collide when a future addendum lands them.
 
 ---
 
 ## The pipeline
 
-Inscript has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. Each stage returns data; only the CLI wrapper performs I/O (v1d §64).
+Inscript has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. Each stage returns data; only the CLI wrapper performs I/O (v1d §64). v3a adds a Phase 2 runtime layer atop this pipeline that activates when `when` blocks register handlers.
 
-1. **Lexer.** Splits a line into typed tokens. Case-insensitive; strips decorative punctuation at word edges (interior `.` in `3.14` survives); combines `equal to` into a single operator token via one-word lookahead; recognizes blank lines as no-ops. (inception §22; v1c §47–§48)
+### Phase 1 — sequential (v2d-identical)
+
+1. **Lexer.** Splits a line into typed tokens. Case-insensitive; strips decorative punctuation at word edges (interior `.` in `3.14` survives); combines `equal to` into a single operator token via one-word lookahead; recognizes blank lines as no-ops; accumulates `"..."` runs as `QUOTED_STRING` tokens (v2c §86); reports leading-tab indentation as a parse error (v3a §110). (inception §22; v1c §47–§48; v2c §86–§92)
 
 2. **Reorderer.** Narrow table-driven preprocessor that accepts canonical word order, target-before-verb (`the orders filter where ...`), and bare target-before-verb. Other arrangements are rejected with a canonical-form suggestion. The full free-order acceptance is the target state for the tile interface, not the v1 text interpreter. (v1d §55)
 
-3. **Parser.** Slot-filling per verb signature. Implements all seven disambiguation rules from v1b §44 — `and`, `or`, `is`, `not`, `to`, `from`, `each` — deterministically via parser state and one-token lookahead. Produces a typed AST. Mixed `and`/`or` in a single `where` clause triggers an amber-precedence outcome with a parenthesized message showing the parser's interpretation. (inception §21; v1a §30; v1b §44; v1c §51)
+3. **Parser.** Slot-filling per verb signature. Implements all v1b §44 disambiguation rules — `and`, `or`, `is`, `not`, `to`, `from`, `each` — deterministically via parser state and one-token lookahead. Produces a typed AST. Mixed `and`/`or` in any condition triggers amber-precedence (extended to `when`/`unless` at v3a §123). A second entry point, `parse_when_block(header, action_lines)`, handles v3a §110 indented action blocks: same-depth throughout, deeper-than-block is a parse error, empty blocks are a parse error. (inception §21; v1a §30; v1b §44; v1c §51; v3a §108–§110)
 
-4. **Semantic analyzer.** Checks names against the symbol table, types against operations, field schemas across record lists (every record must have the referenced field, v1d §60), list homogeneity (v1d §59), gather range direction and cap (v1d §62/§63). For named compositions, grammar is validated at definition time and names at call time (§23 line 466).
+4. **Semantic analyzer.** Checks names against the symbol table, types against operations, field schemas across record lists (every record must have the referenced field, v1d §60), list homogeneity (v1d §59), gather range direction and cap (v1d §62/§63). For named compositions, grammar is validated at definition time and names at call time (§23 line 466). v3a extends the analyzer with two listener-aware kwargs (`in_action_block`, `live_value_names`) for the §111/§112/§117 ownership and `finish`-context rules.
 
-5. **Interpreter.** Executes the validated AST against a mutable symbol table. In-place `filter`, non-destructive `combine`, `gather` stores-and-shows, copy semantics for all data operations, iterator context for `each`, stepwise commit for multi-operation sequences (a later failure does not roll back earlier side effects). (§24; v1b §38–§42; v1c §49; v1d §56–§58)
+5. **Interpreter.** Executes the validated AST against a mutable symbol table. In-place `filter`, non-destructive `combine`, `gather` stores-and-shows, copy semantics for all data operations, iterator context for `each`, stepwise commit for multi-operation sequences. Phase 1 `WhenNode` statements register into a handler table rather than executing — the action block is parsed but not run until Phase 2 (v3a §108). (§24; v1b §38–§42; v1c §49; v1d §56–§58)
 
 A thin CLI wrapper is the only module that calls `input()` or `print()`. Every other module returns a structured `InscriptResult`. (v1d §64)
 
+### Phase 2 — reactive listener (v3a)
+
+Phase 2 starts only if Phase 1 completes with zero errors AND at least one `when` handler registered (§107 gate). The runtime then:
+
+1. **Listener entry marker.** Yields a `LISTENING` result with the union of all handler dependency names (§122).
+
+2. **Initial evaluation.** Every registered handler's compound eligibility is evaluated against the current symbol table; any handler that is already eligible fires in registration order with `trigger.source = "initial"` (§121). Cascades resolve depth-first.
+
+3. **Adapter dispatch + event loop.** Each registered domain pack's adapter is attached to the shared, thread-safe event queue and started (§116/§119). The runtime drains one `(name, value)` update at a time to completion — change detection uses deep Inscript value equality (§113), edge-triggered firing on false→true transitions (§115).
+
+4. **Cascading + cycle detection.** Action-block mutations are coalesced by name after the action block completes (§113); modified-name dependents re-evaluate and fire depth-first. The conservative cycle guard rejects same-handler-twice in one cascade chain with `ERROR_RUNTIME` (§114). The handler stays active for future events.
+
+5. **Shutdown.** A `SHUTDOWN` result is yielded when `finish` executes (§112), when all adapters signal completion or fail (§120), or on external termination — with metadata.reason identifying which.
+
+Domain packs are registered externally — either via the CLI `--pack <path>` flag (JSON config) or via the `Session(domain_packs=...)` constructor (§118). v3a ships exactly one adapter (`TestAdapter`) for scripted, deterministic event-driven testing.
+
 ---
 
-## Five outcomes
+## Nine outcomes
 
-Every statement produces exactly one of five outcomes (v1c §50):
+Every Phase 1 sequential statement produces exactly one of five outcomes (v1c §50):
 
 | Outcome | When | Behavior |
 |---|---|---|
 | **Success** | Parse + analysis + execution all succeed | Canonical preview displayed; output (if any) written |
-| **Amber — precedence** | Mixed `and`/`or` in a single `where` clause | Parser's interpretation shown with parens; user confirms or restructures |
+| **Amber — precedence** | Mixed `and`/`or` in any `where`/`choose`/`when`/`unless` condition | Parser's interpretation shown with parens; user confirms or restructures |
 | **Amber — ambiguity** | Reorderer cannot uniquely resolve slot filling | Clarification prompt; no execution until clarified |
-| **Error — parse** | Cannot build an AST (no verb; reserved word in name position; vocabulary word in value position; malformed clause) | Plain-English error describing what is missing |
-| **Error — semantic** | AST built but references a non-existent name, wrong type, missing field, out-of-range gather, etc. | Plain-English error; nothing executed |
+| **Error — parse** | Cannot build an AST (no verb; reserved word in name position; vocabulary word in value position; malformed clause; indentation rule violated) | Plain-English error describing what is missing |
+| **Error — semantic** | AST built but references a non-existent name, wrong type, missing field, out-of-range gather, `finish` outside an action block, `remember`/`filter` on a live-value name, etc. | Plain-English error; nothing executed |
+
+Phase 2 listener mode adds four more (v3a §122):
+
+| Outcome | When | Behavior |
+|---|---|---|
+| **Listening** | Phase 2 begins | One-time entry marker carrying the set of watched names |
+| **Handler fire** | An action-block statement runs successfully during firing | Same display shape as Success; wrapped with `trigger` metadata (source, handler index, names changed, new values) |
+| **Shutdown** | `finish`, all adapters complete, no adapters registered, or external termination | Terminal result with `reason` metadata |
+| **Error — runtime** | Cycle detected (same handler firing twice in one cascade chain), adapter failure, or adapter type mismatch | Plain-English error with `kind` metadata; the handler remains active for future events |
 
 No "warning" category. No silent fallback. The interpreter is deterministic — the prose either runs as written or it doesn't run at all. (v1c §52)
 
@@ -318,6 +377,59 @@ filter the scores where each is not equal to 5
 
 After all filters, `scores` is `[3, 4, 6, 7]`. `not above 7` means `≤ 7` (the boundary is included), which is distinct from `below 7` which excludes it — `not` is a genuine operator modifier with its own comparison semantics, not a synonym swap (§21 line 416).
 
+### Multi-word strings (v2c)
+
+```
+remember an order called o1 with total as 75 and status as "in progress"
+remember a value called priority-label with "high priority"
+show priority-label
+show "Section A: counts before filtering"
+```
+
+```
+high priority
+Section A: counts before filtering
+```
+
+The quoting mechanism is the v2c resolution to D7: values that contain spaces or that collide with reserved words (`"filter"`, `"if"`) wrap in `"..."` and bypass the vocabulary table. Names and field names still use hyphens (`priority-label`, `start-date`) — quotes are value-position only. The renderer drops quotes around single-word non-reserved values to keep round-trips clean (§90). (v2c §86–§92)
+
+### Composition parameters + `choose` (v2d)
+
+```
+remember a list called big-orders with order1
+remember a list called small-orders with order2
+remember how to find-high from data: keep the data where total is above 50
+
+remember the high-from-big called bigwins from find-high from big-orders
+remember the high-from-small called smallwins from find-high from small-orders
+
+remember a number called score with 75
+choose if score is above 90: show "excellent" otherwise if score is above 50: show "passing" otherwise show "needs work"
+```
+
+`find-high` takes one parameter declared with `from <param>` in the definition and passed with `from <name>` at the call site (v2d §96). The composition is reusable on different lists — its body sees `data` bound to the passed list for the duration of the call. `choose` selects the first branch whose condition is true, or the terminal `otherwise` if none match. `if`/`otherwise` are new connectives (v2d §99); the colon is the context switch between condition and action.
+
+### Event-driven listener (v3a)
+
+```
+remember a number called level with 0
+remember a string called alert-mode with off
+
+when level is above 100
+  remember a string called alert-mode with on
+  show "level escalated"
+
+when alert-mode is equal to on
+  show "alarm sounding"
+
+when level is above 200
+  choose if level is above 250: finish otherwise show "warning very high"
+```
+
+A `when` line at indent 0 starts an indented action block (min 1 space, tabs rejected, same depth throughout — v3a §110). Each `when` registers a reactive handler; the action block is parsed but not executed during Phase 1. Phase 2 starts after Phase 1 completes with zero errors: handlers fire when their compound eligibility transitions false→true. Updates arrive from an externally-registered domain pack (e.g. `--pack pack.json` for the test adapter — v3a §118). `finish` exits listener mode immediately and totally — no further statements, cascades, or queued updates run after it executes.
+
+Cascades work because action-block writes are watched too: setting `alert-mode` to `on` inside the first handler's action triggers the second handler's eligibility transition. The conservative cycle guard (§114) catches genuinely-toggling handler pairs as a runtime error rather than letting them loop.
+
 ### Named compositions
 
 ```
@@ -359,15 +471,13 @@ Line 3 then shows `4, 5` — the filter's commit persists. Multi-operation seque
 
 ## Current scope and deferrals
 
-The shipped build covers v1 (48 locked test sentences) + v2a (11 more sentences, locked in v2a §74) + UX polish + v2.1-patches. 418 tests passing. Larger scope is intentionally deferred.
+The shipped build covers v1 (48 locked test sentences) + v2a (11 more) + UX polish + v2.1-patches + v2b (9 more) + v2c (12 more) + v2d (15 more) + v3a (18 more). **641 tests passing.** Larger scope is intentionally deferred — but the sequential feature set (v1 → v2d) and the reactive feature set (v3a) together form a structurally complete programming language.
 
-**Currently shipped.** Sequential execution. 8 verbs. 10 connectives. 31 reserved words. Numbers (integers + decimals). Strings (single-token bare words). Lists (homogeneous — all numbers, all strings, or all records). Records (named fields). Named compositions. In-place `filter`, non-destructive `keep`, non-destructive `combine`, copy semantics, iterator context for `each`, multi-field display in `each ... show`, single-record field access via `show <field> of <record>`, descriptor preservation, named-offender error wording, stepwise sequences. CLI flags `--quiet` and `--test` (any position).
+**Currently shipped.** Two-phase execution (Phase 1 sequential, Phase 2 reactive). 10 verbs. 14 connectives. 34 reserved words. Numbers (integers + decimals). Strings (single-token bare words + multi-word quoted strings via v2c). Lists (homogeneous — all numbers, all strings, or all records). Records (named fields). Named compositions with optional parameters (v2d §96). Conditional branching via `choose if/otherwise` (v2d §99). In-place `filter`, non-destructive `keep`, non-destructive `combine`, copy semantics, iterator context for `each`, multi-field display in `each ... show`, single-record field access via `show <field> of <record>` and `<field> of <record>` in any value position. Descriptor preservation, named-offender error wording, stepwise sequences. Composition return values via `remember the X from <comp>` (v2b §76). Event-driven `when`/`unless`/`finish` with indented action blocks (v3a §110), single-threaded event queue (v3a §119), edge-triggered evaluation with deep value equality (v3a §113), depth-first cascading with conservative cycle detection (v3a §114), domain-pack adapter contract (v3a §116) registered externally via `--pack <path>` JSON or `Session(domain_packs=...)`. CLI flags `--quiet`, `--test`, `--pack` (any position).
 
-**Drafted in v2b, not yet implemented.** Composition return values (`remember the X from <composition>`). Generalized `of` (using `<field> of <record>` in `where` clauses and other value positions). The list/iteration model clarification (already present as an improved error message; the spec text lands in v2b).
+**Not built (deliberately).** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Real-world domain packs (healthcare, smart home, game) — the language ships a test adapter only, packs are product work. Domain pack activation syntax (an Inscript-level `use`/`load` verb). The verbs `transform`, `compare` — reserved-word slots protected, no grammar yet. Symbolic syntax surface. External data sources beyond domain-pack adapters. Negative numbers. Scope isolation beyond the iterator context and composition parameters. Mixed-type lists. Descending ranges. Ranges over 10,000 items. Nested records (and therefore chained `of`). `choose` inside `each`. Sophisticated cycle detection beyond same-handler-twice. Adapter timeout or preemption. Tile interface, proposal engine, domain packs as product surfaces.
 
-**Not built.** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Domain packs. Event-driven execution (`when`/`unless`). The verbs `transform`, `choose`, `compare`. Symbolic syntax surface. External data sources. Multi-word strings (D7, deferred to its own checkpoint per v2a §72). Composition parameters and chaining. Negative numbers. Scope isolation beyond the iterator context. Mixed-type lists. Descending ranges. Ranges over 10,000 items. Nested records (and therefore chained `of`).
-
-The deferrals are not "TODO when we get to it." Each has a specific reason and a documented v2 grammar plan — see [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) for a readable walkthrough, or `docs/spec/inscript_addendum_v1d_build_boundary.md` §66 (and v2a §75, v2b §84) for the locked source.
+The deferrals are not "TODO when we get to it." Each has a specific reason and a documented v2/v3 plan — see [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) for a readable walkthrough, or `docs/spec/inscript_addendum_v1d_build_boundary.md` §66 (and v2a §75, v2b §84, v2d §103, v3a §126) for the locked source.
 
 ---
 
@@ -377,7 +487,7 @@ These are the load-bearing decisions that shape every implementation choice. Eac
 
 **The prose IS the program.** The interpreter operates exclusively on what the user stated. It does not infer, assume, guess, or fill in unstated information. If the prose doesn't say it, it doesn't happen. (v1c §52)
 
-**The vocabulary is the boundary.** 31 reserved words in the current build. No quoting mechanism (D7 deferred to its own checkpoint). Vocabulary words cannot appear as user-provided names or as string values. This is structurally why slot-filling parser logic works: every word's category is known in advance. Each addition to the vocabulary (v2a's `keep`, v2a's `of`) is the smallest spec change consistent with a dogfooded gap. (v1a §29; v1c §46; v2a §73)
+**The vocabulary is the boundary.** 34 reserved words in the current build. v2c added a quoting mechanism for multi-word string values, but only in value positions — names and field names still come from the unquoted name-space. Vocabulary words cannot appear unquoted as user-provided names or as string values. This is structurally why slot-filling parser logic works: every word's category is known in advance. Each addition to the vocabulary (v2a's `keep`, v2a's `of`, v2d's `choose`/`if`/`otherwise`, v3a's `when`/`unless`/`finish`) is the smallest spec change consistent with a dogfooded gap. (v1a §29; v1c §46; v2a §73; v2d §104; v3a §124)
 
 **The reorderer does not guess.** When an arrangement of words could fill slots in more than one valid way, the system produces an amber clarification prompt rather than picking one interpretation. Authorship over inference. (inception §17)
 
@@ -396,7 +506,7 @@ These are the load-bearing decisions that shape every implementation choice. Eac
 ```
 inscript/
 ├── CLAUDE.md                        Build instructions for Claude Code
-├── BUILD_PLAN.md                    Seven-phase build plan
+├── BUILD_PLAN.md                    Seven-phase v1 build plan (historical)
 ├── README.md                        (this file)
 ├── pyproject.toml                   Python project config
 ├── docs/spec/                       Specification documents (immutable)
@@ -405,35 +515,48 @@ inscript/
 │   ├── inscript_addendum_v1b_design_resolutions.md
 │   ├── inscript_addendum_v1c_implementation_hardening.md
 │   ├── inscript_addendum_v1d_build_boundary.md
+│   ├── inscript_addendum_v2a_dogfooding_resolutions.md
+│   ├── inscript_addendum_v2b_composition_returns.md
+│   ├── inscript_addendum_v2c_multi_word_strings.md
+│   ├── inscript_addendum_v2d_parameters_and_branching.md
+│   ├── inscript_addendum_v3a_event_driven_execution.md
 │   └── inscript_v1_thirty_sentences.md
 ├── src/inscript/
 │   ├── vocabulary.py                Token types, reserved-word sets, verb signatures
-│   ├── lexer.py                     Tokenization
+│   ├── lexer.py                     Tokenization + `leading_indent` (v3a §110)
 │   ├── reorderer.py                 Narrow table-driven reorderer
-│   ├── parser.py                    Slot-filling parser; AST node types; TokenStream
-│   ├── renderer.py                  AST-to-prose canonical rendering
-│   ├── analyzer.py                  Semantic analysis; SymbolEntry; iterator context
-│   ├── interpreter.py               Execution engine with copy semantics
-│   ├── result.py                    InscriptResult + ResultStatus
-│   ├── cli.py                       REPL + file driver (only module with input/print)
+│   ├── parser.py                    Slot-filling parser; AST nodes; `parse_when_block`
+│   ├── renderer.py                  AST-to-prose canonical rendering (multi-line for WhenNode)
+│   ├── analyzer.py                  Semantic analysis; SymbolEntry; iterator context; v3a `in_action_block` / `live_value_names`
+│   ├── interpreter.py               Phase 1 execution; HandlerTable; ContextVars; `_FinishRequested`
+│   ├── listener.py                  Phase 2 generator — initial eval, event-queue drain, cascades, cycle detection, shutdown (v3a §107–§122)
+│   ├── adapter.py                   DomainPack, Adapter, TestAdapter, LiveValueRegistry (v3a §116–§120)
+│   ├── result.py                    InscriptResult + ResultStatus (9 statuses)
+│   ├── cli.py                       Session + REPL + file driver + `--pack` (only module with input/print)
 │   └── __main__.py                  `python -m inscript` entry point
 ├── tests/
-│   ├── test_vocabulary.py           Phase 1
-│   ├── test_result.py               Phase 1
-│   ├── test_lexer.py                Phase 2
-│   ├── test_reorderer.py            Phase 3
-│   ├── test_parser.py               Phase 4
-│   ├── test_renderer.py             Phase 4
-│   ├── test_analyzer.py             Phase 5
-│   ├── test_interpreter.py          Phase 6
-│   ├── test_integration.py          Phase 7 — all 48 sentences end-to-end
+│   ├── test_vocabulary.py           Vocab tables + reserved-word categorization
+│   ├── test_result.py               Result interface (9 statuses + metadata)
+│   ├── test_lexer.py                Tokenizer + `leading_indent`
+│   ├── test_reorderer.py            Reorderer table
+│   ├── test_parser.py               Parser + `parse_when_block`
+│   ├── test_renderer.py             Canonical rendering + round-trip
+│   ├── test_analyzer.py             Semantic checks + v3a context kwargs
+│   ├── test_interpreter.py          Phase 1 execution + HandlerTable + dependency extraction
+│   ├── test_adapter.py              DomainPack / Adapter / TestAdapter / LiveValueRegistry
+│   ├── test_listener.py             Phase 2 listener (initial eval, cascades, cycle, shutdown)
+│   ├── test_integration.py          End-to-end coverage for v1 / v2a / v2b / v2c / v2d sentences
+│   ├── test_integration_v3a.py      End-to-end for v3a sentences 96–113
 │   └── conftest.py
 └── examples/
     ├── program1_basics.insc
-    └── program2_orders.insc
+    ├── program2_orders.insc
+    ├── dogfood_*.insc               Per-addendum dogfood programs + .actual.txt baselines
+    ├── dogfood_v3a_event_driven.insc
+    └── dogfood_v3a_pack.json        Test domain pack for the v3a dogfood
 ```
 
-418 tests pass via `pytest tests/`. Each spec section that locks a behavior has at least one test that exercises it.
+641 tests pass via `pytest tests/`. Each spec section that locks a behavior has at least one test that exercises it.
 
 ---
 
@@ -453,11 +576,12 @@ Sentence numbering accumulates across addenda:
 | v1c §53 | 32–34 | Reserved-word value position, article `an`, no-verb error |
 | v1d §65 | 35–48 | Hostile test block — error paths across all categories |
 | v2a §74 | 49–59 | `keep` basic + capture + composition reuse, `of` field access, multi-field `each show`, composition-chaining error |
-| v2b §83 (drafted, not yet implemented) | 60–68 | Composition returns, generalized `of` in where/with positions, list-model clarification |
+| v2b §83 | 60–68 | Composition returns, generalized `of` in where/with positions, list-model clarification |
+| v2c §94 | 69–80 | Quoting mechanism: multi-word values, quoted reserved words, conditional rendering, name/field rejection |
+| v2d §105 | 81–95 | Composition parameters with `from`, parameterized calls in value-capture position, `choose if`/`otherwise`, multi-statement branches |
+| v3a §125 | 96–113 | `when` + `unless` + `finish`, initial evaluation, cascades, cycle detection, unset live values, no-adapter shutdown, Phase 1 error blocks Phase 2 |
 
-Currently 59 sentences are wired through the test suite (those locked through v2a). The 9 v2b sentences are drafted in the spec and will land when the v2b implementation does.
-
-Every sentence is exercised end-to-end in `tests/test_integration.py`.
+All 113 sentences are wired through the test suite. v1/v2a/v2b/v2c/v2d coverage lives in `tests/test_integration.py`; v3a in `tests/test_integration_v3a.py`. The full suite is 641 tests.
 
 ---
 
@@ -471,8 +595,8 @@ matters.
 | Guide | What it covers |
 |---|---|
 | [`docs/language/quickstart.md`](docs/language/quickstart.md) | Install, run tests, run an example, start the REPL, and try a three-line demo program. |
-| [`docs/language/syntax.md`](docs/language/syntax.md) | Full v1 syntax tour: source-file rules, all seven verbs, lists, records, conditions, `each`, named compositions, and the v1 limits. |
-| [`docs/architecture/pipeline.md`](docs/architecture/pipeline.md) | Stage-by-stage walkthrough of how a source line becomes a result, plus the five-outcome trust model and the I/O boundary. |
+| [`docs/language/syntax.md`](docs/language/syntax.md) | Full syntax tour: source-file rules, all ten verbs, lists, records, conditions, `each`, named compositions with parameters, `choose`, quoting, and the v3a `when`/`unless`/`finish` listener model. |
+| [`docs/architecture/pipeline.md`](docs/architecture/pipeline.md) | Stage-by-stage walkthrough of how a source line becomes a result, the Phase 2 listener layer for v3a, the nine-outcome trust model, and the I/O boundary. |
 | [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) | What v1 includes and what it intentionally does not, with each deferral framed as a design boundary. |
 
 ---
@@ -489,8 +613,11 @@ The build specification has grown by addendum. Each document either locks new de
 | `inscript_addendum_v1c_implementation_hardening.md` | Locked + implemented | Vocabulary words can't be values (§46), article `an` (§47), blank-line handling (§48), iterator context (§49), output taxonomy (§50), parser lookahead capability (§51), deterministic interpretation (§52) |
 | `inscript_addendum_v1d_build_boundary.md` | Locked + implemented | Reorderer scope (§55), stepwise execution (§56), case normalization (§57), duplicate overwrite (§58), homogeneous lists (§59), record schema homogeneity (§60), single-token strings (§61), descending ranges (§62), gather range cap (§63), structured results (§64), build boundary (§66) |
 | `inscript_addendum_v2a_dogfooding_resolutions.md` | Locked + implemented | `keep` verb (§67), `of` connective (§68), multi-field `each show` (§69), composition-chaining error message (§70), descriptor preservation (§71), D7 deferral (§72), updated vocabulary table (§73), test sentences 49–59 (§74) |
-| `inscript_addendum_v2b_composition_returns.md` | **Locked, not yet implemented** | Composition return values (§76), generalize `of` to all value positions (§77), list/iteration model clarification (§78), U7/U8/U9 (§79–§81), test sentences 60–68 (§83) |
-| `inscript_v1_thirty_sentences.md` | Test specification | 30 + 4 (v1c §53) + 14 (v1d §65) + 11 (v2a §74) = 59 sentences currently wired; 9 more drafted in v2b §83 |
+| `inscript_addendum_v2b_composition_returns.md` | Locked + implemented | Composition return values (§76), generalize `of` to all value positions (§77), list/iteration model clarification (§78), U7/U8/U9 (§79–§81), test sentences 60–68 (§83) |
+| `inscript_addendum_v2c_multi_word_strings.md` | Locked + implemented | Quoting mechanism: lexer quote-state (§86), `QUOTED_STRING` in value positions only (§87), literal display via `show "..."` (§88), quoted reserved words bypass vocabulary exclusion (§89), conditional rendering (§90), case normalization inside quotes (§91), empty quotes rejected (§92), test sentences 69–80 (§94) |
+| `inscript_addendum_v2d_parameters_and_branching.md` | Locked + implemented | Composition parameters with `from` (§96), parameter-mismatch errors (§97), parameterized calls in value-capture position (§98), `choose if`/`otherwise` (§99–§102), `transform`/`compare` deferral (§103), vocabulary update (§104), test sentences 81–95 (§105) |
+| `inscript_addendum_v3a_event_driven_execution.md` | Locked + implemented | Two-phase execution (§107), `when` registration (§108), `unless` guard (§109), indented action blocks (§110), action block scope and live-value rules (§111), `finish` verb (§112), edge-triggered evaluation (§113), cascading + cycle detection (§114), registration-order firing (§115), adapter contract (§116), live-value lifecycle (§117), domain pack registration (§118), single-threaded event queue (§119), adapter failure isolation (§120), initial evaluation (§121), result interface (§122), amber at registration (§123), vocabulary update (§124), test sentences 96–113 (§125) |
+| `inscript_v1_thirty_sentences.md` | Test specification | 1–30 + v1c §53 (31–34) + v1d §65 (35–48) + v2a §74 (49–59) + v2b §83 (60–68) + v2c §94 (69–80) + v2d §105 (81–95) + v3a §125 (96–113) = 113 sentences |
 
 Two triage documents and two gap inventories under `docs/` show how each addendum was scoped against dogfooding evidence:
 
@@ -527,7 +654,7 @@ The Möbius Inscript system is a DSL for behavioral rules within Möbius. The In
 |---|---|
 | Architect, language designer | Rob Thomas (R. Michael Thomas) |
 | Interpreter builder | Claude Code |
-| Build sessions | May 11–12, 2026 (v1 + v2a + UX polish + v2.1-patches; v2b drafted) |
+| Build sessions | May 11–12, 2026 (v1 → v2a → UX polish → v2.1-patches → v2b → v2c → v2d → v3a) |
 
 The build is a paired collaboration. The architect produces and approves every design decision in the locked specification documents. The builder translates those decisions into Python — and, when implementation surfaces an ambiguity, opens the spec document rather than guessing. The CLAUDE.md rule: every claim is load-bearing; do not state that a spec section says something without verifying. The rhythm — *spec → dogfood → triage → spec → implement* — is what keeps the language shape coherent across additions.
 
@@ -535,19 +662,22 @@ The build is a paired collaboration. The architect produces and approves every d
 
 ## Status and what's next
 
-**Currently shipped.** v1 interpreter + v2a additions + UX polish + v2.1-patches. 418 tests passing. The interpreter runs in a terminal as text-only, reads `.insc` source files, and offers an interactive REPL with `--quiet` and `--test` flags.
+**Currently shipped.** v1 → v2d (sequential) + v3a (event-driven listener mode). 641 tests passing. The interpreter runs in a terminal as text-only, reads `.insc` source files, and offers an interactive REPL with `--quiet`, `--test`, and `--pack` flags. The sequential and reactive feature sets together form a structurally complete programming language.
 
-**Next: v2b implementation.** The v2b spec addendum is locked and drafted (`docs/spec/inscript_addendum_v2b_composition_returns.md`). It adds composition return values and generalizes `of` to all value positions. The architect has resolved all five open design questions; implementation can proceed.
+**The largest remaining work is not language additions.** It's everything around the language — Branches C/D/E from the inception checkpoint, plus domain packs as product surfaces. Specifically:
 
-**After v2b** (in no particular order, from inception §27 / Branches for Future Sessions):
-
-- **D7 — multi-word strings.** The largest open language-design question. Deferred to a dedicated checkpoint with external review per v2a §72. Three candidate approaches catalogued (quoting, hyphenation convention, multi-word phrase spans).
 - **Branch C — Tile interface.** Apply the slot-filling architecture to a visual tile-composition surface with AST-state-filtered tray (v1a §31). The interpreter is the engine; the tile surface is one of three views of the same AST.
 - **Branch D — Identity and positioning.** Name decision (Inscript Programming Language vs. a distinct name from Möbius Inscript). Repository setup. License choice. README as manifesto.
 - **Branch E — Narratia integration.** The proposal engine that powers "authorize, don't author." Observes intent, proposes a working program for the user to modify.
-- **Branch F — v2 event-driven execution.** Adds `when` and `unless` and a listener model. Required for healthcare protocols, smart home automation, and reactive game logic.
-- **Domain packs.** Healthcare, business, home automation, narrative, legal/compliance. Each pack adds 10–15 context-specific terms (inception §19).
-- **v2 verbs.** `transform`, `choose`, `compare` — designed but with under-specified semantics that need additional grammar before they execute.
+- **Domain packs as product surfaces.** Healthcare, business, home automation, narrative, legal/compliance. Each pack adds 10–15 context-specific terms (inception §19) plus an adapter implementation. v3a ships only the `TestAdapter` for scripted, deterministic event-driven testing — real-world packs are downstream product work, not language work.
+
+**Smaller language additions still on the deferred list** (in no particular order):
+
+- **`transform` and `compare` verbs.** Reserved-word slots protected through v3a §124; no grammar yet specified. These would extend the verb set if a dogfooded gap surfaces a clear use case.
+- **`choose` inside `each`.** Deferred at v2d §102; deliberately closed in v3a §126. The list-level filtering model handles the discriminative cases that motivated it.
+- **Sophisticated cycle detection.** v3a §114's same-handler-twice guard is conservative — a more nuanced state-based detector could allow legitimately-terminating patterns that the current guard rejects. Deferred until a real use case demands it.
+- **Adapter timeout and preemption.** v3a §119's single-threaded queue assumes handlers complete quickly. A long-running handler blocks the queue; acceptable for v3a, revisitable later.
+- **Domain pack activation via language syntax.** v3a §118 registers packs externally (constructor / CLI). An Inscript-level `use`/`load` verb would let programs declare their adapter dependencies inline.
 
 ---
 
