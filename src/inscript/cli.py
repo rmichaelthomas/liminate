@@ -26,16 +26,19 @@ v3a additions:
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
-from .adapter import DomainPack, LiveValueRegistry
+from .adapter import DomainPack, LiveValueRegistry, TestDomainPack
 from .analyzer import SymbolEntry
 from .interpreter import HandlerTable, execute
-from .lexer import LexError, tokenize
-from .parser import parse
+from .lexer import LexError, leading_indent, tokenize
+from .listener import listen
+from .parser import parse, parse_when_block
 from .reorderer import reorder
 from .result import InscriptResult, ResultStatus
+from .vocabulary import TokenType
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +105,66 @@ class Session:
             handler_table=self.handler_table,
             live_value_registry=self.live_value_registry,
         )
+
+    def run_when_block(
+        self,
+        header_line: str,
+        action_lines: list[str],
+    ) -> InscriptResult | None:
+        """Execute a v3a `when` block — header line plus its already-
+        de-indented action lines.
+
+        The caller (run_file) is responsible for indentation validation
+        (§110): tabs, deeper-than-block, empty block. By the time we
+        get here, `action_lines` is a list of action statement strings
+        with leading whitespace stripped — they tokenize and parse like
+        any other line.
+        """
+        try:
+            header_tokens = tokenize(header_line)
+        except LexError as e:
+            return InscriptResult(
+                status=ResultStatus.ERROR_PARSE,
+                message=e.message,
+                executed=False,
+            )
+        header_reordered = reorder(header_tokens)
+        if isinstance(header_reordered, InscriptResult):
+            return header_reordered
+
+        action_token_lists: list = []
+        for raw in action_lines:
+            try:
+                toks = tokenize(raw)
+            except LexError as e:
+                return InscriptResult(
+                    status=ResultStatus.ERROR_PARSE,
+                    message=e.message,
+                    executed=False,
+                )
+            if not toks:
+                continue  # blank line inside the block — v1c §48
+            re_ordered = reorder(toks)
+            if isinstance(re_ordered, InscriptResult):
+                return re_ordered
+            action_token_lists.append(re_ordered)
+
+        ast = parse_when_block(
+            header_reordered, action_token_lists,
+            composition_names=self.composition_names(),
+        )
+        if isinstance(ast, InscriptResult):
+            return ast
+        return execute(
+            ast, self.symtab,
+            handler_table=self.handler_table,
+            live_value_registry=self.live_value_registry,
+        )
+
+    def adapters(self):
+        """Return the adapter for each registered domain pack, in pack
+        registration order."""
+        return [pack.adapter() for pack in self.domain_packs]
 
     def record_result(self, result: InscriptResult | None) -> None:
         """Track whether Phase 1 had any blocking outcomes (v3a §107).
@@ -227,6 +290,36 @@ def display_result(
             )
         return
 
+    # v3a §122 — listener-mode statuses.
+    if result.status is ResultStatus.LISTENING:
+        watching = (result.metadata or {}).get("watching", [])
+        if watching:
+            write(f"Listening for changes to: {', '.join(watching)}\n")
+        else:
+            write("Listening for changes.\n")
+        return
+    if result.status is ResultStatus.HANDLER_FIRE:
+        # v3a §122: HANDLER_FIRE wraps each successful action-block
+        # statement result. The output is displayed identically to
+        # SUCCESS.
+        if result.output:
+            lines = (
+                _maybe_truncate(result.output)
+                if _is_auto_shown(result.canonical)
+                else result.output
+            )
+            for line in lines:
+                write(f"{line}\n")
+        return
+    if result.status is ResultStatus.SHUTDOWN:
+        if result.output:
+            for line in result.output:
+                write(f"{line}\n")
+        return
+    if result.status is ResultStatus.ERROR_RUNTIME:
+        write(f"Error: {result.message}\n")
+        return
+
     # ERROR_PARSE / ERROR_SEMANTIC
     write(f"Error: {result.message}\n")
     if result.output:
@@ -253,18 +346,80 @@ def run_file(
     *,
     auto_confirm_amber: bool = False,
     quiet: bool = False,
+    domain_packs: list[DomainPack] | None = None,
     out=None,
 ) -> None:
-    session = Session()
+    """Execute an Inscript source file (Phase 1 + optional Phase 2).
+
+    Phase 1 reads the file line-by-line. Top-level `when` lines start
+    an indentation-aware block: subsequent indented lines belong to
+    the action block (v3a §110). After Phase 1 completes, if any
+    handlers registered and Phase 1 had no errors, Phase 2 enters
+    listener mode (§107).
+    """
+    session = Session(domain_packs=domain_packs)
     content = Path(path).read_text(encoding="utf-8")
     write = (out.write if out is not None else lambda s: print(s, end=""))
-    for line in content.splitlines():
-        # v1c §48: blank lines are still skipped by the lexer (semantics
-        # unchanged). When --quiet is active, mirror them in the display
-        # stream so the user's paragraph breaks survive (U1/U4).
-        if quiet and not line.strip():
-            write("\n")
+    lines = content.splitlines()
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+
+        # v1c §48 — blank lines are skipped by the lexer. --quiet mirrors
+        # them so the user's paragraph breaks survive (U1/U4).
+        if not line.strip():
+            if quiet:
+                write("\n")
+            i += 1
             continue
+
+        # Tab-in-leading-whitespace is a v3a §110 lex error — surface it
+        # as ERROR_PARSE and skip this line.
+        try:
+            indent = leading_indent(line)
+        except LexError as e:
+            err = InscriptResult(
+                status=ResultStatus.ERROR_PARSE,
+                message=e.message,
+                executed=False,
+            )
+            display_result(
+                err, session,
+                auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
+            )
+            session.record_result(err)
+            i += 1
+            continue
+
+        # Detect a `when` block at indent 0. A line is a `when` header
+        # iff its first token is the `when` CONNECTIVE — we use the
+        # lexer rather than a string prefix check so quoted `"when"` or
+        # similar edge cases don't trip the detector.
+        is_when_header = False
+        if indent == 0:
+            try:
+                header_tokens = tokenize(line)
+            except LexError:
+                header_tokens = []
+            if (
+                header_tokens
+                and header_tokens[0].type is TokenType.CONNECTIVE
+                and header_tokens[0].value == "when"
+            ):
+                is_when_header = True
+
+        if is_when_header:
+            i = _consume_when_block(
+                lines, i, session,
+                auto_confirm_amber=auto_confirm_amber,
+                quiet=quiet,
+                out=out,
+                write=write,
+            )
+            continue
+
+        # Regular Phase 1 sequential statement.
         result = session.run_line(line)
         display_result(
             result, session,
@@ -272,6 +427,131 @@ def run_file(
             quiet=quiet,
             out=out,
         )
+        session.record_result(result)
+        i += 1
+
+    # v3a §107 — Phase 2 gate: only enter listener mode if Phase 1 had
+    # zero errors AND at least one handler registered. Otherwise the
+    # source executed as a regular v2d program (or reported Phase 1
+    # errors that the user must fix before listening can begin).
+    if session.handler_table.is_empty():
+        return
+    if session.phase1_had_error:
+        # Don't even yield a SHUTDOWN — the existing error stream is the
+        # user's signal that Phase 2 didn't start. The condition is
+        # rare in practice: most programs that contain `when` blocks are
+        # error-free Phase 1 setup.
+        return
+
+    # Phase 2 streams results from the listener generator. v3a §122
+    # data (HANDLER_FIRE output, SHUTDOWN message, errors) is always
+    # rendered regardless of --quiet — display_result itself only gates
+    # the "I understand this as: ..." canonical echo on `quiet`, which
+    # we honor consistently here for Phase 2 too (canonical echo would
+    # be noise for HANDLER_FIRE — the user already confirmed the source
+    # at registration time).
+    adapters = session.adapters()
+    for result in listen(
+        session.symtab,
+        session.handler_table,
+        session.live_value_registry,
+        adapters,
+    ):
+        display_result(
+            result, session,
+            auto_confirm_amber=auto_confirm_amber,
+            quiet=quiet,
+            out=out,
+        )
+
+
+def _consume_when_block(
+    lines: list[str],
+    start_idx: int,
+    session: Session,
+    *,
+    auto_confirm_amber: bool,
+    quiet: bool,
+    out,
+    write,
+) -> int:
+    """Buffer the indented action block starting at line index
+    `start_idx + 1` and dispatch the full when-block to the session.
+
+    Returns the next index to process. On indentation errors (tabs in
+    a continuation line, indent deeper than the established depth)
+    emits ERROR_PARSE; on empty blocks the parser surfaces the
+    canonical §110 wording.
+    """
+    header_line = lines[start_idx]
+    action_lines: list[str] = []
+    block_depth: int | None = None
+    block_error: str | None = None
+    consumed_through = start_idx  # last index we've "claimed"
+    j = start_idx + 1
+
+    while j < len(lines):
+        next_line = lines[j]
+        # Blank lines inside the block are skipped (v1c §48 / v3a §110).
+        if not next_line.strip():
+            if quiet:
+                write("\n")
+            consumed_through = j
+            j += 1
+            continue
+        try:
+            next_indent = leading_indent(next_line)
+        except LexError as e:
+            block_error = e.message
+            consumed_through = j  # claim the bad line so the outer loop skips it
+            j += 1
+            break
+        if next_indent == 0:
+            # Block ends at a top-level line — leave it for the outer loop.
+            break
+        # First indented line sets the block's depth.
+        if block_depth is None:
+            block_depth = next_indent
+        elif next_indent > block_depth:
+            block_error = (
+                f"This line is indented {next_indent} spaces, deeper than "
+                f"the action block's first indented line ({block_depth} "
+                f"spaces). v3a §110 — all action lines in a 'when' block "
+                f"must use the same indentation depth."
+            )
+            consumed_through = j
+            j += 1
+            break
+        elif next_indent < block_depth:
+            # Shallower-but-non-zero ends the block; leave the line for
+            # the outer loop to process as a top-level statement.
+            break
+        action_lines.append(next_line.lstrip(" "))
+        consumed_through = j
+        j += 1
+
+    if block_error is not None:
+        err = InscriptResult(
+            status=ResultStatus.ERROR_PARSE,
+            message=block_error,
+            executed=False,
+        )
+        display_result(
+            err, session,
+            auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
+        )
+        session.record_result(err)
+        return consumed_through + 1
+
+    result = session.run_when_block(header_line, action_lines)
+    display_result(
+        result, session,
+        auto_confirm_amber=auto_confirm_amber,
+        quiet=quiet,
+        out=out,
+    )
+    session.record_result(result)
+    return j  # j points to the first un-consumed line
 
 
 def repl() -> None:
@@ -289,25 +569,91 @@ def repl() -> None:
         display_result(result, session)
 
 
+def load_pack_from_path(path: str) -> DomainPack:
+    """Load a TestDomainPack from a JSON config file (v3a §118 test
+    surface).
+
+    Expected config shape:
+        {
+            "name": "weather",
+            "declarations": [["temperature", "number"], ...],
+            "script": [
+                ["temperature", 105],
+                ["humidity", 85],
+                "[done]"
+            ]
+        }
+
+    `[done]` is the v3a §118 termination marker; if absent the
+    TestAdapter appends one automatically.
+    """
+    config = json.loads(Path(path).read_text(encoding="utf-8"))
+    declarations = [(d[0], d[1]) for d in config.get("declarations", [])]
+    script: list = []
+    for entry in config.get("script", []):
+        if isinstance(entry, str) and entry == "[done]":
+            script.append("[done]")
+        elif isinstance(entry, list) and len(entry) == 2:
+            script.append((entry[0], entry[1]))
+        else:
+            raise ValueError(
+                f"pack '{path}': malformed script entry {entry!r} — "
+                f"each entry must be ['name', value] or '[done]'."
+            )
+    return TestDomainPack(
+        declarations=declarations,
+        script=script,
+        name=config.get("name", Path(path).stem),
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     auto = False
     quiet = False
-    # Accept --test and --quiet in any position. Unknown flags are
-    # rejected so typos don't silently change behavior.
+    pack_paths: list[str] = []
     positional: list[str] = []
-    for a in args:
+    i = 0
+    while i < len(args):
+        a = args[i]
         if a == "--test":
             auto = True
         elif a == "--quiet":
             quiet = True
+        elif a == "--pack":
+            # `--pack <path>` registers a TestDomainPack from a JSON
+            # file. Multiple `--pack` flags accumulate.
+            if i + 1 >= len(args):
+                print(
+                    f"Error: --pack requires a path argument", file=sys.stderr,
+                )
+                return 2
+            pack_paths.append(args[i + 1])
+            i += 1
+        elif a.startswith("--pack="):
+            pack_paths.append(a[len("--pack="):])
         elif a.startswith("--"):
             print(f"Error: unknown flag '{a}'", file=sys.stderr)
             return 2
         else:
             positional.append(a)
+        i += 1
+
+    domain_packs: list[DomainPack] = []
+    for p in pack_paths:
+        try:
+            domain_packs.append(load_pack_from_path(p))
+        except (OSError, ValueError, json.JSONDecodeError) as e:
+            print(f"Error loading pack '{p}': {e}", file=sys.stderr)
+            return 2
+
     if positional:
-        run_file(positional[0], auto_confirm_amber=auto, quiet=quiet)
+        run_file(
+            positional[0],
+            auto_confirm_amber=auto,
+            quiet=quiet,
+            domain_packs=domain_packs or None,
+        )
     else:
         repl()
     return 0
