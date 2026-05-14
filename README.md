@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-primary-dark.svg">
-    <img src="brand/wordmark-primary-light.svg" alt="Inscript" width="420">
+    <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-primary-dark.png">
+    <img src="brand/wordmark-primary-light.png" alt="Inscript" width="420">
   </picture>
 </p>
 
