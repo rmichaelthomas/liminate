@@ -1,7 +1,24 @@
 [project]
 name = "inscript"
 version = "0.1.0"
+description = "A prose-as-syntax programming language designed from the human end."
 requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [
+    { name = "R. Michael Thomas" }
+]
+keywords = ["programming-language", "prose-as-syntax", "natural-language", "interpreter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Interpreters",
+]
+
+[project.urls]
+Repository = "https://github.com/rmichaelthomas/inscript"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]

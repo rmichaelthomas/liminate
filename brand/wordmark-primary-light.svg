@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 100" width="420" height="100">
+  <g transform="translate(10 10)">
+    <rect x="17" y="17" width="46" height="46" rx="7.5" transform="rotate(45 40 40)" fill="#C0780F"/>
+    <rect x="25" y="31" width="30" height="3.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="20" y="38" width="40" height="3.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="25" y="45" width="30" height="3.5" rx="1.5" fill="#FFFFFF"/>
+  </g>
+  <text x="120" y="73" font-family="Alegreya, Georgia, serif" font-style="italic" font-weight="500" font-size="72" fill="#0B1C38">in</text>
+  <text x="183" y="73" font-family="'Red Hat Mono', ui-monospace, monospace" font-weight="400" font-size="60" fill="#0B1C38">script</text>
+</svg>
