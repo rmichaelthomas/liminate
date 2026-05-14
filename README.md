@@ -460,8 +460,8 @@ The spec documents are immutable build artifacts. The code is built against them
 Inscript is the fifth in a sequence of projects applying one thesis at different layers — *the person affected must remain the author of their story*.
 
 - **Narratia.** Educational storytelling. Built on Paulo Freire's pedagogy of the oppressed — learners author their own narratives rather than absorb dominant ones.
-- **Counter-Flow.** A reading-pace experiment. The reader's tempo, not the text's.
-- **TAOS.** Accountability infrastructure. The governed remain author of the system's accountability.
+- **Counter-Flow Marketing.** Anti-algorithmic engagement. The algorithm is the obfuscating layer between sender and receiver — bypass it through OS-level primitives the algorithm can't touch.
+- **The Accountability of Systems.** The governed must remain legible to the systems that affect them — no obfuscating layer between the governed and the rules.
 - **Möbius Inscript.** A behavioral-rules DSL with prose-as-syntax, tile composition, and authorize-don't-author. The thesis applied to rule authoring within Möbius.
 - **Inscript Programming Language.** The thesis applied to general computation. *(This repository.)*
 
