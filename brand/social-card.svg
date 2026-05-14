@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <rect width="1200" height="630" fill="#0B1C38"/>
+  <g transform="translate(420 215)">
+    <rect x="17" y="17" width="46" height="46" rx="7.5" transform="rotate(45 40 40)" fill="#C0780F"/>
+    <rect x="25" y="31" width="30" height="3.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="20" y="38" width="40" height="3.5" rx="1.5" fill="#FFFFFF"/>
+    <rect x="25" y="45" width="30" height="3.5" rx="1.5" fill="#FFFFFF"/>
+  </g>
+  <text x="530" y="320" font-family="Alegreya, Georgia, serif" font-style="italic" font-weight="500" font-size="120" fill="#E8DFD0">in</text>
+  <text x="635" y="320" font-family="'Red Hat Mono', ui-monospace, monospace" font-weight="400" font-size="100" fill="#E8DFD0">script</text>
+  <text x="600" y="430" text-anchor="middle" font-family="Alegreya, Georgia, serif" font-style="italic" font-size="32" fill="#E8DFD0" opacity="0.5">A prose-as-syntax programming language designed from the human end.</text>
+</svg>

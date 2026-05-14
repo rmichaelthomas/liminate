@@ -10,3 +10,6 @@ venv/
 
 # Superpowers skill scratch / local notes — not part of the spec.
 docs/superpowers/
+
+# Branch D reference asset — kept locally for design reference, not committed.
+inscript_visual_identity.html
