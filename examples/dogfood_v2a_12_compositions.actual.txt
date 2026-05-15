@@ -1,4 +1,4 @@
-I understand this as: remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+I understand this as: remember a doc called doc-1 with domain as liminate and class as inception and words as 10831
 I understand this as: remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
 I understand this as: remember a doc called doc-3 with domain as mobius and class as checkpoint and words as 10190
 I understand this as: remember a doc called doc-4 with domain as mobius and class as checkpoint and words as 8077
@@ -25,7 +25,7 @@ domain: mobius, class: checkpoint, words: 7654
 domain: mobius, class: checkpoint, words: 7506
 domain: mobius, class: checkpoint, words: 7439
 I understand this as: find-large
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
 domain: mobius, class: checkpoint, words: 8077
@@ -39,7 +39,7 @@ domain: mobius, class: checkpoint, words: 7654
 domain: mobius, class: checkpoint, words: 7506
 domain: mobius, class: checkpoint, words: 7439
 I understand this as: find-large
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
 domain: mobius, class: checkpoint, words: 8077

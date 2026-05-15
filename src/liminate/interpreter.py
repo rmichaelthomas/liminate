@@ -1,4 +1,4 @@
-"""Interpreter for Inscript v1 / v2a / v2b / v2c / v2d / v3a.
+"""Interpreter for Liminate v1 / v2a / v2b / v2c / v2d / v3a.
 
 Sources:
 - inception §24 (interpreter behaviors: auto-show, in-place filter,
@@ -45,10 +45,10 @@ from .analyzer import SymbolEntry, analyze
 # context vars before driving _exec_op; everywhere else they default
 # to False/None (Phase 1 sequential behavior).
 _in_action_block: ContextVar[bool] = ContextVar(
-    "inscript_in_action_block", default=False,
+    "liminate_in_action_block", default=False,
 )
 _live_value_names_ctx: ContextVar[set[str] | None] = ContextVar(
-    "inscript_live_value_names", default=None,
+    "liminate_live_value_names", default=None,
 )
 from .parser import (
     ASTNode,
@@ -80,7 +80,7 @@ from .parser import (
     WhenNode,
 )
 from .renderer import render
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 
 
 # ---------------------------------------------------------------------------
@@ -225,10 +225,10 @@ def execute(
     *,
     handler_table: HandlerTable | None = None,
     live_value_registry: LiveValueRegistry | None = None,
-) -> InscriptResult:
+) -> LiminateResult:
     """Execute a single top-level AST against a mutable symbol table.
 
-    Returns an InscriptResult. For SequenceNode the interpreter loops
+    Returns an LiminateResult. For SequenceNode the interpreter loops
     per-op so that earlier successes commit even if a later op fails
     (v1d §56).
 
@@ -262,7 +262,7 @@ def _execute_when(
     symtab: dict[str, SymbolEntry],
     handler_table: HandlerTable | None,
     live_value_registry: LiveValueRegistry | None,
-) -> InscriptResult:
+) -> LiminateResult:
     """Phase 1 WhenNode handling (v3a §108): validate condition + unless
     against the current symbol table, then register the handler. The
     action block is NOT executed here — Phase 2 fires it (§107)."""
@@ -273,7 +273,7 @@ def _execute_when(
         node, symtab,
         live_value_names=live_value_names,
     )
-    if isinstance(analysis, InscriptResult):
+    if isinstance(analysis, LiminateResult):
         if analysis.canonical is None:
             try:
                 analysis.canonical = render(node)
@@ -285,18 +285,18 @@ def _execute_when(
         # This is a programmer-facing error, not a user-facing one — the
         # CLI and Session always provide a handler table when a Phase 1
         # source contains `when` blocks.
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_SEMANTIC,
             canonical=render(node),
             message=(
                 "'when' handlers require a listener-capable Session. "
-                "Run the program through `python -m inscript` rather "
+                "Run the program through `python -m liminate` rather "
                 "than the bare `execute()` API."
             ),
             executed=False,
         )
     handler_table.register(node)
-    return InscriptResult(
+    return LiminateResult(
         status=ResultStatus.SUCCESS,
         canonical=render(node),
         output=None,
@@ -331,12 +331,12 @@ def _execute_single(
     *,
     handler_table: HandlerTable | None = None,
     live_value_registry: LiveValueRegistry | None = None,
-) -> InscriptResult:
+) -> LiminateResult:
     live_value_names = (
         live_value_registry.names() if live_value_registry is not None else None
     )
     analysis = analyze(node, symtab, live_value_names=live_value_names)
-    if isinstance(analysis, InscriptResult):
+    if isinstance(analysis, LiminateResult):
         # Attach canonical if it's missing — we can render any AST.
         if analysis.canonical is None:
             try:
@@ -347,14 +347,14 @@ def _execute_single(
     try:
         output = _exec_op(node, symtab, current_item)
     except _RuntimeError as e:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_SEMANTIC,
             canonical=render(node),
             message=e.message,
             executed=False,
         )
     _mark_live_value_active_if_remember(node, live_value_registry)
-    return InscriptResult(
+    return LiminateResult(
         status=ResultStatus.SUCCESS,
         canonical=render(node),
         output=output if output else None,
@@ -368,7 +368,7 @@ def _execute_sequence(
     *,
     handler_table: HandlerTable | None = None,
     live_value_registry: LiveValueRegistry | None = None,
-) -> InscriptResult:
+) -> LiminateResult:
     live_value_names = (
         live_value_registry.names() if live_value_registry is not None else None
     )
@@ -376,14 +376,14 @@ def _execute_sequence(
     outputs: list[str] = []
     for op in seq.operations:
         analysis = analyze(op, symtab, live_value_names=live_value_names)
-        if isinstance(analysis, InscriptResult):
+        if isinstance(analysis, LiminateResult):
             return _stepwise_error(op, analysis, completed_canonicals, outputs, seq)
         try:
             op_output = _exec_op(op, symtab)
         except _RuntimeError as e:
             return _stepwise_error(
                 op,
-                InscriptResult(
+                LiminateResult(
                     status=ResultStatus.ERROR_SEMANTIC,
                     message=e.message,
                 ),
@@ -395,7 +395,7 @@ def _execute_sequence(
         completed_canonicals.append(render(op))
         if op_output:
             outputs.extend(op_output)
-    return InscriptResult(
+    return LiminateResult(
         status=ResultStatus.SUCCESS,
         canonical=render(seq),
         output=outputs if outputs else None,
@@ -423,11 +423,11 @@ def _mark_live_value_active_if_remember(
 
 def _stepwise_error(
     failed_op: ASTNode,
-    failure: InscriptResult,
+    failure: LiminateResult,
     completed_canonicals: list[str],
     outputs: list[str],
     seq: SequenceNode,
-) -> InscriptResult:
+) -> LiminateResult:
     """Build the v1d §56 stepwise-failure message."""
     inner = (failure.message or "").strip()
     # Trim leading capital so the inner message blends after "but then".
@@ -448,7 +448,7 @@ def _stepwise_error(
             msg += " The filter has already been applied."
     else:
         msg = failure.message
-    return InscriptResult(
+    return LiminateResult(
         status=ResultStatus.ERROR_SEMANTIC,
         canonical=render(seq),
         output=outputs if outputs else None,
@@ -523,7 +523,7 @@ def _exec_op(
                 in_action_block=_in_action_block.get(),
                 live_value_names=_live_value_names_ctx.get(),
             )
-            if isinstance(analysis, InscriptResult):
+            if isinstance(analysis, LiminateResult):
                 raise _RuntimeError(analysis.message or "")
             outputs.extend(_exec_op(op, symtab, current_item) or [])
         return outputs
@@ -804,7 +804,7 @@ def _exec_composition_call(
                     in_action_block=in_act,
                     live_value_names=live_names,
                 )
-                if isinstance(analysis, InscriptResult):
+                if isinstance(analysis, LiminateResult):
                     raise _RuntimeError(analysis.message or "")
                 out = _exec_op(op, symtab)
                 if out:
@@ -815,7 +815,7 @@ def _exec_composition_call(
             in_action_block=in_act,
             live_value_names=live_names,
         )
-        if isinstance(analysis, InscriptResult):
+        if isinstance(analysis, LiminateResult):
             raise _RuntimeError(analysis.message or "")
         return _exec_op(body, symtab) or []
     finally:
@@ -950,7 +950,7 @@ def _composition_call_value(
                     in_action_block=in_act,
                     live_value_names=live_names,
                 )
-                if isinstance(analysis, InscriptResult):
+                if isinstance(analysis, LiminateResult):
                     raise _RuntimeError(analysis.message or "")
                 _exec_op(op, symtab)
             last = ops[-1]
@@ -961,7 +961,7 @@ def _composition_call_value(
             in_action_block=in_act,
             live_value_names=live_names,
         )
-        if isinstance(analysis, InscriptResult):
+        if isinstance(analysis, LiminateResult):
             raise _RuntimeError(analysis.message or "")
         return _value_of_op(last, symtab)
     finally:

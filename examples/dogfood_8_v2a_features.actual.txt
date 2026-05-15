@@ -1,8 +1,8 @@
-I understand this as: remember a domain called inscript with docs as 6 and words as 30230
+I understand this as: remember a domain called liminate with docs as 6 and words as 30230
 I understand this as: remember a domain called mobius with docs as 91 and words as 381476
 I understand this as: remember a domain called instrument with docs as 4 and words as 19438
 I understand this as: remember a domain called drum with docs as 1 and words as 5880
-I understand this as: remember a list called domains with mobius and inscript and instrument and drum
+I understand this as: remember a list called domains with mobius and liminate and instrument and drum
 I understand this as: each the domains show docs and words
 docs: 91, words: 381476
 docs: 6, words: 30230
@@ -10,7 +10,7 @@ docs: 4, words: 19438
 docs: 1, words: 5880
 I understand this as: show docs of mobius
 91
-I understand this as: show words of inscript
+I understand this as: show words of liminate
 30230
 I understand this as: keep the domains where docs is above 3
 docs: 91, words: 381476

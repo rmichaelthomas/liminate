@@ -1,4 +1,4 @@
-"""Tests for the timer domain pack (src/inscript/packs/timer.py).
+"""Tests for the timer domain pack (src/liminate/packs/timer.py).
 
 The timer pack is the first non-test domain pack — it exercises the
 v3a §116–§120 adapter contract with real threading. Intervals in
@@ -12,8 +12,8 @@ from queue import Empty, Queue
 
 import pytest
 
-from inscript.adapter import AdapterDone, AdapterUpdate, LiveValueDeclaration
-from inscript.packs.timer import TimerAdapter, TimerDomainPack
+from liminate.adapter import AdapterDone, AdapterUpdate, LiveValueDeclaration
+from liminate.packs.timer import TimerAdapter, TimerDomainPack
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +204,7 @@ def test_timer_adapter_elapsed_is_monotonically_non_decreasing():
 
 
 def test_make_timer_pack_reads_config_fields():
-    from inscript.packs.timer import make_timer_pack
+    from liminate.packs.timer import make_timer_pack
 
     pack = make_timer_pack({
         "interval_ms": 75,
@@ -220,7 +220,7 @@ def test_make_timer_pack_reads_config_fields():
 
 
 def test_make_timer_pack_defaults_are_sensible():
-    from inscript.packs.timer import make_timer_pack
+    from liminate.packs.timer import make_timer_pack
 
     pack = make_timer_pack({})
     adapter = pack.adapter()
@@ -229,7 +229,7 @@ def test_make_timer_pack_defaults_are_sensible():
 
 
 def test_make_timer_pack_rejects_unknown_keys():
-    from inscript.packs.timer import make_timer_pack
+    from liminate.packs.timer import make_timer_pack
 
     with pytest.raises(ValueError) as exc:
         make_timer_pack({"interval_ms": 100, "wat": 1})
@@ -237,7 +237,7 @@ def test_make_timer_pack_rejects_unknown_keys():
 
 
 def test_load_pack_from_arg_inline_timer():
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     pack = load_pack_from_arg(
         '{"type": "timer", "interval_ms": 50, "max_ticks": 2}'
@@ -250,7 +250,7 @@ def test_load_pack_from_arg_inline_timer():
 def test_load_pack_from_arg_inline_test_default_type():
     """Configs without a `"type"` key remain TestDomainPack — preserves
     backward compatibility with existing dogfood pack JSON files."""
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     pack = load_pack_from_arg(
         '{"declarations": [["x", "number"]], "script": [["x", 1], "[done]"]}'
@@ -262,7 +262,7 @@ def test_load_pack_from_arg_file_path_still_works(tmp_path):
     """Regression: existing dogfood JSON files (no `"type"` field) load
     as TestDomainPack."""
     import json
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     p = tmp_path / "pack.json"
     p.write_text(json.dumps({
@@ -275,7 +275,7 @@ def test_load_pack_from_arg_file_path_still_works(tmp_path):
 
 
 def test_load_pack_from_arg_unknown_type_raises():
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     with pytest.raises(ValueError) as exc:
         load_pack_from_arg('{"type": "no-such-pack"}')
@@ -293,8 +293,8 @@ def test_load_pack_from_arg_inline_test_reads_sequence_key():
     factory was originally reading only `"script"`, dropping every
     update on the floor — that's the bug this test guards."""
     from queue import Queue
-    from inscript.adapter import AdapterDone, AdapterUpdate
-    from inscript.cli import load_pack_from_arg
+    from liminate.adapter import AdapterDone, AdapterUpdate
+    from liminate.cli import load_pack_from_arg
 
     pack = load_pack_from_arg(
         '{"type": "test", "sequence": [["temperature", 100], ["humidity", 50]]}'
@@ -318,7 +318,7 @@ def test_load_pack_from_arg_inline_test_reads_sequence_key():
 def test_load_pack_from_arg_inline_test_rejects_both_sequence_and_script():
     """Specifying both `"sequence"` and `"script"` is a typo trap — we
     reject the config rather than silently picking one."""
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     with pytest.raises(ValueError) as exc:
         load_pack_from_arg(
@@ -332,7 +332,7 @@ def test_load_pack_from_arg_file_path_with_sequence_key(tmp_path):
     """Mirror of `..._file_path_still_works`, but using the new
     canonical `"sequence"` key."""
     import json
-    from inscript.cli import load_pack_from_arg
+    from liminate.cli import load_pack_from_arg
 
     p = tmp_path / "pack.json"
     p.write_text(json.dumps({
@@ -353,7 +353,7 @@ def test_timer_adapter_with_interval_longer_than_poll_window():
     Uses interval_ms=80 (well above the 50ms poll window) and
     max_ticks=2 to keep the test fast (~160ms).
     """
-    from inscript.result import ResultStatus
+    from liminate.result import ResultStatus
     from tests._v3a_helpers import run_v3a, fires
 
     pack = TimerDomainPack(interval_ms=80, max_ticks=2)
@@ -395,7 +395,7 @@ def test_timer_pack_drives_when_handler_through_listener():
     completes in <200ms even on slow CI machines.
     """
     from tests._v3a_helpers import run_v3a, fires
-    from inscript.result import ResultStatus
+    from liminate.result import ResultStatus
 
     pack = TimerDomainPack(interval_ms=20, max_ticks=4)
     session, results = run_v3a(

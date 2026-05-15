@@ -1,6 +1,6 @@
-# Inscript syntax
+# Liminate syntax
 
-A practical guide to writing Inscript programs. Inscript is a bounded
+A practical guide to writing Liminate programs. Liminate is a bounded
 prose language: 34 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
@@ -18,7 +18,7 @@ If you have not run the interpreter yet, start with
 
 ## Source files
 
-- An Inscript source file uses the `.insc` extension and is plain
+- An Liminate source file uses the `.limn` extension and is plain
   text.
 - **One statement per line.** Each non-blank line is a complete
   statement.
@@ -657,7 +657,7 @@ as values:
 remember a list called items with filter and blue
 ```
 
-> Error: The word 'filter' is a verb in Inscript and can't be used
+> Error: The word 'filter' is a verb in Liminate and can't be used
 > as a value. Try a different word, or wrap it in quotes: "filter".
 
 Wrapping the reserved word in quotes is the v2c remedy — quoted

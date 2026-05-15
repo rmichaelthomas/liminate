@@ -1,4 +1,4 @@
-"""Canonical prose renderer for Inscript v1 / v2c / v2d / v3a.
+"""Canonical prose renderer for Liminate v1 / v2c / v2d / v3a.
 
 Sources:
 - v1a §33 (canonical prose rendering is a parser output requirement —

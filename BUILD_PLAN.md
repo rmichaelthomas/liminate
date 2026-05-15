@@ -1,4 +1,4 @@
-# INSCRIPT v1 BUILD PLAN
+# LIMINATE v1 BUILD PLAN
 ## For Execution by Claude Code
 
 **Date:** May 11, 2026
@@ -12,7 +12,7 @@
 
 **This plan is the original v1 build artifact. It is preserved as written.** v1 shipped through all seven phases; subsequent work (v2a additions, UX polish, v2.1-patches, the drafted v2b addendum) extends the existing modules without introducing new phases. The pipeline shape established here — lexer → reorderer → parser+renderer → analyzer → interpreter → CLI, with structured results everywhere and I/O only in `cli.py` — is unchanged through every addition since.
 
-For the current spec, read `docs/spec/inscript_addendum_v2a_dogfooding_resolutions.md` and `docs/spec/inscript_addendum_v2b_composition_returns.md` after the v1 documents. For the current status, see `README.md` and `docs/roadmap/v1-v2-boundary.md`. The build plan below is the foundation, not the present.
+For the current spec, read `docs/spec/liminate_addendum_v2a_dogfooding_resolutions.md` and `docs/spec/liminate_addendum_v2b_composition_returns.md` after the v1 documents. For the current status, see `README.md` and `docs/roadmap/v1-v2-boundary.md`. The build plan below is the foundation, not the present.
 
 ---
 
@@ -22,33 +22,33 @@ All design decisions are locked in these five documents, located in `docs/spec/`
 
 | Document | What it locks |
 |---|---|
-| `inscript_inception_checkpoint_v1.md` | Language design: vocabulary (§11), pipeline (§8–§9), verb signatures (§17), reorderer architecture (§17), parser rules (§21–§22), semantic analyzer (§23), interpreter behaviors (§24), v1/v2 scope (§25) |
-| `inscript_addendum_v1a_pre_build.md` | Reserved words (§29), mixed-precedence amber (§30), canonical prose rendering (§33) |
-| `inscript_addendum_v1b_design_resolutions.md` | Eight design resolutions: prose descriptors (§36), `each` dual role (§37), `combine` numeric-only (§38), `combine` non-destructive (§39), `gather` stores+shows (§40), composition calls (§41), display format (§42), `from` disambiguation (§43), complete disambiguation ruleset (§44) |
-| `inscript_addendum_v1c_implementation_hardening.md` | Vocab words can't be values (§46), article `an` (§47), blank lines skipped (§48), iterator context (§49), output taxonomy — five outcomes (§50), parser lookahead capability (§51), deterministic interpretation only (§52) |
-| `inscript_addendum_v1d_build_boundary.md` | Reorderer v1 scope (§55), stepwise execution (§56), names lowercase (§57), duplicates overwrite (§58), homogeneous lists (§59), schema homogeneity (§60), single-token strings (§61), descending ranges error (§62), gather cap 10,000 (§63), structured results (§64), hostile tests (§65), build boundary (§66) |
+| `liminate_inception_checkpoint_v1.md` | Language design: vocabulary (§11), pipeline (§8–§9), verb signatures (§17), reorderer architecture (§17), parser rules (§21–§22), semantic analyzer (§23), interpreter behaviors (§24), v1/v2 scope (§25) |
+| `liminate_addendum_v1a_pre_build.md` | Reserved words (§29), mixed-precedence amber (§30), canonical prose rendering (§33) |
+| `liminate_addendum_v1b_design_resolutions.md` | Eight design resolutions: prose descriptors (§36), `each` dual role (§37), `combine` numeric-only (§38), `combine` non-destructive (§39), `gather` stores+shows (§40), composition calls (§41), display format (§42), `from` disambiguation (§43), complete disambiguation ruleset (§44) |
+| `liminate_addendum_v1c_implementation_hardening.md` | Vocab words can't be values (§46), article `an` (§47), blank lines skipped (§48), iterator context (§49), output taxonomy — five outcomes (§50), parser lookahead capability (§51), deterministic interpretation only (§52) |
+| `liminate_addendum_v1d_build_boundary.md` | Reorderer v1 scope (§55), stepwise execution (§56), names lowercase (§57), duplicates overwrite (§58), homogeneous lists (§59), schema homogeneity (§60), single-token strings (§61), descending ranges error (§62), gather cap 10,000 (§63), structured results (§64), hostile tests (§65), build boundary (§66) |
 
-The test specification is in `docs/spec/inscript_v1_thirty_sentences.md` plus sentences 32–48 defined in v1c §53 and v1d §65.
+The test specification is in `docs/spec/liminate_v1_thirty_sentences.md` plus sentences 32–48 defined in v1c §53 and v1d §65.
 
 ---
 
 ## PROJECT STRUCTURE
 
 ```
-inscript/
+liminate/
 ├── CLAUDE.md                  # Claude Code project instructions
 ├── BUILD_PLAN.md              # This file
 ├── pyproject.toml             # Python project config
 ├── docs/
 │   └── spec/                  # The five specification documents + test spec
-│       ├── inscript_inception_checkpoint_v1.md
-│       ├── inscript_addendum_v1a_pre_build.md
-│       ├── inscript_addendum_v1b_design_resolutions.md
-│       ├── inscript_addendum_v1c_implementation_hardening.md
-│       ├── inscript_addendum_v1d_build_boundary.md
-│       └── inscript_v1_thirty_sentences.md
+│       ├── liminate_inception_checkpoint_v1.md
+│       ├── liminate_addendum_v1a_pre_build.md
+│       ├── liminate_addendum_v1b_design_resolutions.md
+│       ├── liminate_addendum_v1c_implementation_hardening.md
+│       ├── liminate_addendum_v1d_build_boundary.md
+│       └── liminate_v1_thirty_sentences.md
 ├── src/
-│   └── inscript/
+│   └── liminate/
 │       ├── __init__.py
 │       ├── vocabulary.py      # Token types, reserved words, verb signatures
 │       ├── lexer.py           # Tokenization
@@ -69,8 +69,8 @@ inscript/
 │   ├── test_renderer.py
 │   └── test_integration.py    # Full pipeline: all 48 sentences end-to-end
 └── examples/
-    ├── program1_basics.insc        # Programs 1–5 from the thirty sentences
-    └── program2_orders.insc
+    ├── program1_basics.limn        # Programs 1–5 from the thirty sentences
+    └── program2_orders.limn
 ```
 
 ---
@@ -147,7 +147,7 @@ class ResultStatus(Enum):
     ERROR_SEMANTIC = "error_semantic"
 
 @dataclass
-class InscriptResult:
+class LiminateResult:
     status: ResultStatus
     canonical: str | None       # Canonical prose rendering (None if parse failed)
     output: list[str] | None    # Display lines (None if no output)
@@ -198,7 +198,7 @@ class InscriptResult:
 ### PHASE 3: Reorderer (`reorderer.py`)
 
 **Input:** List of tokens from lexer.
-**Output:** Canonically-ordered token list, or an InscriptResult with amber/error status.
+**Output:** Canonically-ordered token list, or an LiminateResult with amber/error status.
 
 **Algorithm** (from v1d §55):
 
@@ -218,7 +218,7 @@ class InscriptResult:
 ### PHASE 4: Parser + Renderer (`parser.py`, `renderer.py`)
 
 **Input:** Canonically-ordered token list.
-**Output:** AST node, or an InscriptResult with error/amber status.
+**Output:** AST node, or an LiminateResult with error/amber status.
 
 This is the largest module. Build it verb by verb.
 
@@ -301,7 +301,7 @@ Walk the AST and produce the canonical English sentence. This is the inverse of 
 ### PHASE 5: Semantic Analyzer (`analyzer.py`)
 
 **Input:** AST node + symbol table.
-**Output:** Validated AST (unchanged) or InscriptResult with error_semantic status.
+**Output:** Validated AST (unchanged) or LiminateResult with error_semantic status.
 
 **Checks** (from §23, v1b, v1c, v1d):
 
@@ -346,7 +346,7 @@ class SymbolEntry:
 ### PHASE 6: Interpreter (`interpreter.py`)
 
 **Input:** Validated AST + symbol table (mutable).
-**Output:** InscriptResult with success status + any output + side effects on symbol table.
+**Output:** LiminateResult with success status + any output + side effects on symbol table.
 
 **Behaviors** (from §24, v1b, v1c, v1d):
 
@@ -392,9 +392,9 @@ class SymbolEntry:
 
 ```
 Usage:
-  python -m inscript <file.insc>      # Execute a file
-  python -m inscript                  # Interactive REPL
-  python -m inscript --test <file>    # Test mode (auto-confirm amber)
+  python -m liminate <file.limn>      # Execute a file
+  python -m liminate                  # Interactive REPL
+  python -m liminate --test <file>    # Test mode (auto-confirm amber)
 ```
 
 **REPL loop:**
@@ -428,7 +428,7 @@ These apply to EVERY phase. Violating any one is a build failure.
 
 4. **Test before advancing.** Each phase's gate must pass before starting the next phase. Do not build the parser before the lexer tests pass.
 
-5. **Structured results everywhere.** Every function that can fail returns an InscriptResult. No bare exceptions, no print-and-exit, no silent failures.
+5. **Structured results everywhere.** Every function that can fail returns an LiminateResult. No bare exceptions, no print-and-exit, no silent failures.
 
 6. **The vocabulary is the boundary.** 29 reserved words. 7 verbs. 9 connectives. 5 operators (including multi-word `equal to`). 3 articles. 1 delimiter. Nothing else enters the language in v1.
 
@@ -440,7 +440,7 @@ Copy this as the first message to Claude Code after setup:
 
 ```
 Read BUILD_PLAN.md and all files in docs/spec/ before writing any code. This is the
-Inscript Programming Language v1 interpreter — a prose-as-syntax language designed by
+Liminate Programming Language v1 interpreter — a prose-as-syntax language designed by
 the project architect (Rob). You are the builder. All design decisions are locked in the
 five spec documents. Do not invent behavior the spec doesn't define. Do not guess — read.
 

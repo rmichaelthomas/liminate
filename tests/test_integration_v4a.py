@@ -14,8 +14,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from inscript.adapter import TestDomainPack, parse_pack_verb_signature
-from inscript.result import ResultStatus
+from liminate.adapter import TestDomainPack, parse_pack_verb_signature
+from liminate.result import ResultStatus
 
 from tests._v3a_helpers import outputs, run_v3a
 
@@ -220,7 +220,7 @@ def test_sentence_126_navigate_reserved_as_verb_when_pack_active():
     errors = [r for r in results if r.status is ResultStatus.ERROR_PARSE]
     assert errors, results
     assert errors[0].message == (
-        "The word 'navigate' is reserved in Inscript — "
+        "The word 'navigate' is reserved in Liminate — "
         "it's used as a verb. Please choose a different name."
     )
 
@@ -252,5 +252,5 @@ def test_sentence_127_pack_noun_reserved_when_pack_active():
     )
     errors = [r for r in results if r.status is ResultStatus.ERROR_PARSE]
     assert errors, results
-    assert "reserved in Inscript" in errors[0].message
+    assert "reserved in Liminate" in errors[0].message
     assert "noun" in errors[0].message

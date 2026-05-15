@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-primary-dark.png">
-    <img src="brand/wordmark-primary-light.png" alt="Inscript" width="420">
+    <img src="brand/wordmark-primary-light.png" alt="Liminate" width="420">
   </picture>
 </p>
 
@@ -38,13 +38,13 @@ The interpreter is intentionally bounded: a deterministic text interpreter for s
 
 ## What it is
 
-Inscript is an experimental prose-as-syntax programming language whose interpreter executes bounded, readable English programs directly.
+Liminate is an experimental prose-as-syntax programming language whose interpreter executes bounded, readable English programs directly.
 
 `filter the orders where total is above 50` is not a prompt to an AI. It is the program.
 
-A `.insc` source file is plain text — one statement per line. A bounded vocabulary of 34 base reserved words combines into sentences that lex, parse, type-check, and execute through a normal compiler pipeline. There is no separate code the prose generates; the sentence IS the program. The long-term thesis is general-purpose computation without leaving readable prose. The current build delivers that foundation across sequential execution, reactive listener mode, and a pack verb contract that lets domains extend the language without touching the base vocabulary.
+A `.limn` source file is plain text — one statement per line. A bounded vocabulary of 34 base reserved words combines into sentences that lex, parse, type-check, and execute through a normal compiler pipeline. There is no separate code the prose generates; the sentence IS the program. The long-term thesis is general-purpose computation without leaving readable prose. The current build delivers that foundation across sequential execution, reactive listener mode, and a pack verb contract that lets domains extend the language without touching the base vocabulary.
 
-This is not a natural-language layer over Python, not a code-generating AI, and not a domain-specific query language. Inscript has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. v3a adds a Phase 2 reactive runtime that drives registered `when` handlers from an external event source. v4a adds a general-purpose pack verb contract: packs declare verbs (with slot signatures, type constraints, and execution dispatch) in JSON, and the pipeline's existing parser/analyzer/interpreter dispatch tables extend to handle them. No `print` calls outside the CLI wrapper.
+This is not a natural-language layer over Python, not a code-generating AI, and not a domain-specific query language. Liminate has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. v3a adds a Phase 2 reactive runtime that drives registered `when` handlers from an external event source. v4a adds a general-purpose pack verb contract: packs declare verbs (with slot signatures, type constraints, and execution dispatch) in JSON, and the pipeline's existing parser/analyzer/interpreter dispatch tables extend to handle them. No `print` calls outside the CLI wrapper.
 
 ---
 
@@ -53,8 +53,8 @@ This is not a natural-language layer over Python, not a code-generating AI, and 
 Requires Python 3.10+.
 
 ```bash
-git clone https://github.com/rmichaelthomas/inscript.git
-cd inscript
+git clone https://github.com/rmichaelthomas/liminate.git
+cd liminate
 python -m venv venv
 source venv/bin/activate
 pip install -e ".[dev]"
@@ -69,40 +69,40 @@ pytest tests/
 Run a file (Phase 1 sequential):
 
 ```bash
-python -m inscript examples/program1_basics.insc
+python -m liminate examples/program1_basics.limn
 ```
 
 Run a file with clean output (suppresses the canonical-prose echo):
 
 ```bash
-python -m inscript --quiet examples/dogfood_v2a_14_realistic.insc
+python -m liminate --quiet examples/dogfood_v2a_14_realistic.limn
 ```
 
-Phase 2 listener mode: register `when` handlers in a `.insc` file and drive them with a scripted test domain pack (v3a §118):
+Phase 2 listener mode: register `when` handlers in a `.limn` file and drive them with a scripted test domain pack (v3a §118):
 
 ```bash
-python -m inscript --pack examples/dogfood_v3a_pack.json --test --quiet \
-    examples/dogfood_v3a_event_driven.insc
+python -m liminate --pack examples/dogfood_v3a_pack.json --test --quiet \
+    examples/dogfood_v3a_event_driven.limn
 ```
 
 v4a pack verbs: load the UI domain pack (10 component nouns + the `navigate to <screen-name>` verb) and run a program that uses it:
 
 ```bash
-python -m inscript --pack examples/pack_ui.json --quiet \
-    examples/dogfood_navigate_test.insc
+python -m liminate --pack examples/pack_ui.json --quiet \
+    examples/dogfood_navigate_test.limn
 ```
 
 Start the interactive REPL (`exit` or `quit` to leave; REPL stays in Phase 1):
 
 ```bash
-python -m inscript
+python -m liminate
 ```
 
 ---
 
 ## Try this first
 
-Save this as `demo.insc`:
+Save this as `demo.limn`:
 
 ```
 gather the numbers from 1 to 10
@@ -113,7 +113,7 @@ combine the numbers
 Run it:
 
 ```bash
-python -m inscript demo.insc
+python -m liminate demo.limn
 ```
 
 Expected output (each statement is preceded by the parser's canonical-form preview):
@@ -128,33 +128,33 @@ I understand this as: combine the numbers
 
 `gather` stores the list and auto-shows it. `filter` modifies it in place. `combine` sums the remaining numbers (6+7+8+9+10 = 40) and auto-shows the result. The "I understand this as" line is the canonical rendering of the parser's AST — the user always sees what the interpreter will run before it runs.
 
-For something larger, try `examples/program1_basics.insc` or `examples/program2_orders.insc`.
+For something larger, try `examples/program1_basics.limn` or `examples/program2_orders.limn`.
 
 ---
 
 ## Why it exists
 
-Programming languages stand between human intent and computational execution, and they demand the human learn to speak the machine's language. Inscript inverts that: the machine learns to read English.
+Programming languages stand between human intent and computational execution, and they demand the human learn to speak the machine's language. Liminate inverts that: the machine learns to read English.
 
 The intended use cases are practical. **The sequential feature set (v1 → v2d)** targets business rules, legal and regulatory compliance, data filtering and reporting — domains where the person who understands the problem cannot currently express the solution in code. **The reactive feature set (v3a)** extends to healthcare protocols, smart home automation, and narrative scripting — domains where the writer's document could be the program reacting to live changes. **The pack verb contract (v4a)** lets domains extend the vocabulary safely — the shipped UI pack adds 10 component nouns and a `navigate` verb without touching the base 34 reserved words.
 
-Inscript aims to eliminate the translation step from intent to code by making the readable rule itself executable. The translation step is where errors, cost, and delay concentrate; removing it is a real engineering goal.
+Liminate aims to eliminate the translation step from intent to code by making the readable rule itself executable. The translation step is where errors, cost, and delay concentrate; removing it is a real engineering goal.
 
 ---
 
 ## What makes it different
 
-Five properties combine in Inscript that exist individually in other systems but never together (inception §7):
+Five properties combine in Liminate that exist individually in other systems but never together (inception §7):
 
 1. **Prose-as-syntax where the prose IS the executable code.** Not prose that generates code (Copilot, Cursor). Not prose that describes a game world (Inform 7, which is domain-locked to interactive fiction). Computation expressed as readable English sentences that execute directly.
 
 2. **Bounded vocabulary as design constraint.** 34 base reserved words in the current build. The vocabulary is the language boundary, not a starter set that grows. Expressiveness scales through domain packs (v4a §137), composition over expansion, and named-composition chunking — not through adding more keywords to the base. Each base-vocabulary addition (v2a's `keep`/`of`, v2d's `choose`/`if`/`otherwise`, v3a's `when`/`unless`/`finish`) is the smallest spec change consistent with a dogfooded gap.
 
-3. **Graduation from tiles to text within one language.** The same AST will underlie a tile-composition surface (for first-encounter authoring), a prose surface (for fluent authoring), and an optional symbolic surface (for velocity). Three views, one structure. Scratch-to-Python is two languages; Inscript is one language with three surfaces. The v1 interpreter implements the prose surface.
+3. **Graduation from tiles to text within one language.** The same AST will underlie a tile-composition surface (for first-encounter authoring), a prose surface (for fluent authoring), and an optional symbolic surface (for velocity). Three views, one structure. Scratch-to-Python is two languages; Liminate is one language with three surfaces. The v1 interpreter implements the prose surface.
 
 4. **Authorize, don't author.** The on-ramp is not a blank file. The system proposes a working program based on observed intent; the human modifies. The first program a user touches is one that already runs. (v1 is the interpreter; the proposal engine is a separate branch.)
 
-5. **Designed from the human end.** Inscript's design started with how a non-programmer would express intent and worked backward to the compiler pipeline, not the other way around. The vocabulary, the error messages, the verb semantics, and the amber-not-error pattern are all consequences of that origin.
+5. **Designed from the human end.** Liminate's design started with how a non-programmer would express intent and worked backward to the compiler pipeline, not the other way around. The vocabulary, the error messages, the verb semantics, and the amber-not-error pattern are all consequences of that origin.
 
 ---
 
@@ -309,7 +309,7 @@ The core pipeline has five processing stages, plus canonical rendering and struc
 
 5. **Interpreter** — in-place `filter`, non-destructive `combine`, `gather` stores-and-shows, copy semantics for all data, iterator context for `each`, stepwise commit for multi-operation sequences. `WhenNode` statements register into a handler table rather than executing. v4a's `_exec_pack_verb` dispatches on the pack-verb declaration's `execution.type` — `set_value` is the first shipped dispatch.
 
-A thin CLI wrapper is the only module that calls `input()` or `print()`. Every other module returns a structured `InscriptResult`.
+A thin CLI wrapper is the only module that calls `input()` or `print()`. Every other module returns a structured `LiminateResult`.
 
 ### Phase 2 — reactive listener (v3a)
 
@@ -348,7 +348,7 @@ The prose either runs as written, or it doesn't run at all.
 
 **Currently shipped.** Two-phase execution (Phase 1 sequential, Phase 2 reactive) plus a pack verb extension contract. 10 base verbs. 14 connectives. 34 base reserved words. Numbers (integers and decimals). Strings (single-token bare words plus multi-word quoted strings via v2c, with verbatim case preservation per v3b §127). Lists (homogeneous — numbers, strings, or records). Records (named fields, with descriptor preserved on the symbol for pack-verb type checks). Named compositions with optional parameters (v2d §96). Conditional branching via `choose if/otherwise` (v2d §99). Composition return values via `remember the X from <comp>` (v2b §76). Generalized `of` (`<field> of <record>` in any value position — v2b §77). In-place `filter`, non-destructive `keep`, non-destructive `combine`, copy semantics, iterator context, multi-field `each show`, descriptor preservation, named-offender error wording, stepwise sequences. Event-driven `when`/`unless`/`finish` with indented action blocks (v3a §110), single-threaded event queue, edge-triggered evaluation with deep value equality, depth-first cascading with conservative cycle detection, domain-pack adapter contract (v3a §116) registered externally. v4a general-purpose pack verb contract (§137) — packs declare verbs with slot signatures + type constraints + execution dispatch in JSON; `set_value` is the first execution type. The UI domain pack (§134) ships 10 component nouns and the `navigate to <screen-name>` verb. CLI flags `--quiet`, `--test`, `--pack` (any position).
 
-**Not built (deliberately).** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Real-world domain packs (healthcare, smart home, game) — language ships a test adapter and the UI pack only; domain packs are product work. Domain pack activation via Inscript syntax (a `use`/`load` verb). The verbs `transform` and `compare` — reserved-word slots protected, no grammar yet. Symbolic syntax surface. Interpreter port to TypeScript (the Möbius monorepo ports the validation pipeline only — lexer/reorderer/parser/analyzer/renderer; v4a §138). External data sources beyond domain-pack adapters. Negative numbers. Scope isolation beyond the iterator context and composition parameters. Mixed-type lists. Descending ranges. Ranges over 10,000 items. Nested records (and therefore chained `of`). `choose` inside `each`. Sophisticated cycle detection beyond same-handler-twice. Adapter timeout or preemption. Pack-verb execution types beyond `set_value`.
+**Not built (deliberately).** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Real-world domain packs (healthcare, smart home, game) — language ships a test adapter and the UI pack only; domain packs are product work. Domain pack activation via Liminate syntax (a `use`/`load` verb). The verbs `transform` and `compare` — reserved-word slots protected, no grammar yet. Symbolic syntax surface. Interpreter port to TypeScript (the Möbius monorepo ports the validation pipeline only — lexer/reorderer/parser/analyzer/renderer; v4a §138). External data sources beyond domain-pack adapters. Negative numbers. Scope isolation beyond the iterator context and composition parameters. Mixed-type lists. Descending ranges. Ranges over 10,000 items. Nested records (and therefore chained `of`). `choose` inside `each`. Sophisticated cycle detection beyond same-handler-twice. Adapter timeout or preemption. Pack-verb execution types beyond `set_value`.
 
 The deferrals are not "TODO when we get to it." Each has a specific reason and a documented plan — see [`docs/roadmap/v1-v2-boundary.md`](docs/roadmap/v1-v2-boundary.md) for a readable walkthrough, or the locked addenda for the source (v1d §66, v2a §75, v2b §84, v2d §103, v3a §126, v4a §141).
 
@@ -370,12 +370,12 @@ These are the load-bearing decisions that shape every implementation choice.
 ## Project structure
 
 ```
-inscript/
+liminate/
 ├── LICENSE                            Apache 2.0
 ├── brand/                             Visual identity assets (SVG + USAGE.md)
 ├── docs/spec/                         Specification documents (immutable)
 ├── docs/DEV_README.md                 Full technical reference (former README.md)
-├── src/inscript/
+├── src/liminate/
 │   ├── vocabulary.py                  Token types, reserved-word sets, verb signatures + pack verb dataclasses
 │   ├── lexer.py                       Tokenization + leading_indent for v3a action blocks
 │   ├── reorderer.py                   Narrow table-driven reorderer
@@ -386,21 +386,21 @@ inscript/
 │   ├── listener.py                    Phase 2 generator — initial eval, cascades, cycle detection, shutdown
 │   ├── adapter.py                     DomainPack, Adapter, TestAdapter, LiveValueRegistry + parse_pack_verb_signature
 │   ├── packs/timer.py                 Threaded periodic event source (first real domain pack)
-│   ├── result.py                      InscriptResult + ResultStatus (9 statuses)
+│   ├── result.py                      LiminateResult + ResultStatus (9 statuses)
 │   ├── cli.py                         Session + REPL + file driver + --pack (only I/O boundary)
-│   └── __main__.py                    `python -m inscript` entry point
+│   └── __main__.py                    `python -m liminate` entry point
 ├── tests/                             Per-stage tests + integration suites for all 127 sentences
 │   ├── test_integration.py            v1 / v2a / v2b / v2c / v2d sentences
 │   ├── test_integration_v3a.py        v3a sentences 96–113
 │   ├── test_integration_v4a.py        v4a sentences 118–127 (UI pack + navigate)
 │   └── conftest.py                    Autouse fixture: resets pack vocabulary between tests
 └── examples/
-    ├── program1_basics.insc
-    ├── program2_orders.insc
-    ├── dogfood_*.insc                 Per-addendum dogfood programs
-    ├── dogfood_v3a_event_driven.insc
+    ├── program1_basics.limn
+    ├── program2_orders.limn
+    ├── dogfood_*.limn                 Per-addendum dogfood programs
+    ├── dogfood_v3a_event_driven.limn
     ├── dogfood_v3a_pack.json          Test domain pack for the v3a dogfood
-    ├── dogfood_navigate_test.insc     v4a smoke test for `navigate to <screen>`
+    ├── dogfood_navigate_test.limn     v4a smoke test for `navigate to <screen>`
     └── pack_ui.json                   v4a UI domain pack: 10 nouns + `navigate` verb
 ```
 
@@ -437,19 +437,19 @@ The build specification grows by addendum. Earlier documents are never overwritt
 
 | Document | Status |
 |---|---|
-| `inscript_inception_checkpoint_v1.md` | Locked + implemented |
-| `inscript_addendum_v1a_pre_build.md` | Locked + implemented |
-| `inscript_addendum_v1b_design_resolutions.md` | Locked + implemented |
-| `inscript_addendum_v1c_implementation_hardening.md` | Locked + implemented |
-| `inscript_addendum_v1d_build_boundary.md` | Locked + implemented |
-| `inscript_addendum_v2a_dogfooding_resolutions.md` | Locked + implemented: `keep` verb, `of` connective, multi-field `each show`, descriptor preservation |
-| `inscript_addendum_v2b_composition_returns.md` | Locked + implemented: composition return values, generalized `of` |
-| `inscript_addendum_v2c_multi_word_strings.md` | Locked + implemented: quoting mechanism for multi-word string values |
-| `inscript_addendum_v2d_parameters_and_branching.md` | Locked + implemented: composition parameters with `from`, `choose` verb with `if`/`otherwise` |
-| `inscript_addendum_v3a_event_driven_execution.md` | Locked + implemented: two-phase execution, `when`/`unless`/`finish`, indentation-based action blocks, adapter contract, cascading triggers with cycle detection |
-| `inscript_addendum_v3b_quoted_string_case_preservation.md` | Locked + implemented: quoted-string content preserved verbatim, including case |
-| `inscript_addendum_v4a_pack_verbs_and_port.md` | Locked + implemented: general-purpose pack verb contract, UI domain pack with 10 component nouns + `navigate to <screen-name>`; TypeScript port of the validation pipeline in the Möbius monorepo |
-| `inscript_v1_thirty_sentences.md` | Test specification: 127 sentences (30 + v1c §53 + v1d §65 + v2a §74 + v2b §83 + v2c §94 + v2d §105 + v3a §125 + v3b §131 + v4a §140) |
+| `liminate_inception_checkpoint_v1.md` | Locked + implemented |
+| `liminate_addendum_v1a_pre_build.md` | Locked + implemented |
+| `liminate_addendum_v1b_design_resolutions.md` | Locked + implemented |
+| `liminate_addendum_v1c_implementation_hardening.md` | Locked + implemented |
+| `liminate_addendum_v1d_build_boundary.md` | Locked + implemented |
+| `liminate_addendum_v2a_dogfooding_resolutions.md` | Locked + implemented: `keep` verb, `of` connective, multi-field `each show`, descriptor preservation |
+| `liminate_addendum_v2b_composition_returns.md` | Locked + implemented: composition return values, generalized `of` |
+| `liminate_addendum_v2c_multi_word_strings.md` | Locked + implemented: quoting mechanism for multi-word string values |
+| `liminate_addendum_v2d_parameters_and_branching.md` | Locked + implemented: composition parameters with `from`, `choose` verb with `if`/`otherwise` |
+| `liminate_addendum_v3a_event_driven_execution.md` | Locked + implemented: two-phase execution, `when`/`unless`/`finish`, indentation-based action blocks, adapter contract, cascading triggers with cycle detection |
+| `liminate_addendum_v3b_quoted_string_case_preservation.md` | Locked + implemented: quoted-string content preserved verbatim, including case |
+| `liminate_addendum_v4a_pack_verbs_and_port.md` | Locked + implemented: general-purpose pack verb contract, UI domain pack with 10 component nouns + `navigate to <screen-name>`; TypeScript port of the validation pipeline in the Möbius monorepo |
+| `liminate_v1_thirty_sentences.md` | Test specification: 127 sentences (30 + v1c §53 + v1d §65 + v2a §74 + v2b §83 + v2c §94 + v2d §105 + v3a §125 + v3b §131 + v4a §140) |
 
 The spec documents are immutable build artifacts. The code is built against them, not the other way around. Two triage documents and two gap inventories under `docs/` show how each addendum was scoped against dogfooding evidence.
 
@@ -457,21 +457,21 @@ The spec documents are immutable build artifacts. The code is built against them
 
 ## Lineage
 
-Inscript is the fifth in a sequence of projects applying one thesis at different layers — *the person affected must remain the author of their story*.
+Liminate is the fifth in a sequence of projects applying one thesis at different layers — *the person affected must remain the author of their story*.
 
 - **Narratia.** Educational storytelling. Built on Paulo Freire's pedagogy of the oppressed — learners author their own narratives rather than absorb dominant ones.
 - **Counter-Flow Marketing.** Anti-algorithmic engagement. The algorithm is the obfuscating layer between sender and receiver — bypass it through OS-level primitives the algorithm can't touch.
 - **The Accountability of Systems.** The governed must remain legible to the systems that affect them — no obfuscating layer between the governed and the rules.
-- **Möbius Inscript.** A behavioral-rules DSL with prose-as-syntax, tile composition, and authorize-don't-author. The thesis applied to rule authoring within Möbius.
-- **Inscript Programming Language.** The thesis applied to general computation. *(This repository.)*
+- **Möbius Liminate.** A behavioral-rules DSL with prose-as-syntax, tile composition, and authorize-don't-author. The thesis applied to rule authoring within Möbius.
+- **Liminate Programming Language.** The thesis applied to general computation. *(This repository.)*
 
-Inscript grew from the design principles of Möbius Inscript, a behavioral-rules DSL inside the Möbius platform. They share a thesis — the person affected must remain the author — but Inscript is a standalone general-purpose language with its own pipeline, interpreter, and specification. Neither replaces the other.
+Liminate grew from the design principles of Möbius Liminate, a behavioral-rules DSL inside the Möbius platform. They share a thesis — the person affected must remain the author — but Liminate is a standalone general-purpose language with its own pipeline, interpreter, and specification. Neither replaces the other.
 
 ---
 
 ## Status and what's next
 
-**Currently shipped.** v1 → v2d (sequential) + v3a/v3b (event-driven listener mode + quoted-string case preservation) + v4a (pack verb contract + UI domain pack). 713 tests passing. The interpreter runs in a terminal, reads `.insc` source files, and offers an interactive REPL with `--quiet`, `--test`, and `--pack` flags. A separate TypeScript port of the validation pipeline (lexer/reorderer/parser/analyzer/renderer; no interpreter) lives in the Möbius monorepo at `packages/inscript-lang/` and validates the same 127 sentences against this implementation as its sync contract (v4a §138).
+**Currently shipped.** v1 → v2d (sequential) + v3a/v3b (event-driven listener mode + quoted-string case preservation) + v4a (pack verb contract + UI domain pack). 713 tests passing. The interpreter runs in a terminal, reads `.limn` source files, and offers an interactive REPL with `--quiet`, `--test`, and `--pack` flags. A separate TypeScript port of the validation pipeline (lexer/reorderer/parser/analyzer/renderer; no interpreter) lives in the Möbius monorepo at `packages/liminate-lang/` and validates the same 127 sentences against this implementation as its sync contract (v4a §138).
 
 **The largest remaining work is not language additions.** It's everything around the language:
 
@@ -479,7 +479,7 @@ Inscript grew from the design principles of Möbius Inscript, a behavioral-rules
 - **Narratia integration** — the proposal engine that powers "authorize, don't author."
 - **Domain packs as product surfaces** — healthcare, business, home automation, narrative, legal/compliance. v3a ships only the `TestAdapter` for scripted event-driven testing; v4a adds the UI pack as a reference implementation of the pack verb contract. Real-world packs are downstream product work.
 
-**Smaller language additions still deferred** include the verbs `transform` and `compare` (reserved-word slots protected, no grammar yet), `choose` inside `each`, domain pack activation via an Inscript `use`/`load` verb, sophisticated cycle detection beyond same-handler-twice, adapter timeout/preemption, and pack-verb execution types beyond `set_value`.
+**Smaller language additions still deferred** include the verbs `transform` and `compare` (reserved-word slots protected, no grammar yet), `choose` inside `each`, domain pack activation via an Liminate `use`/`load` verb, sophisticated cycle detection beyond same-handler-twice, adapter timeout/preemption, and pack-verb execution types beyond `set_value`.
 
 ---
 

@@ -3,8 +3,8 @@ v2c §86/§89/§91/§92, v3a §110)."""
 
 import pytest
 
-from inscript.lexer import LexError, leading_indent, tokenize
-from inscript.vocabulary import TokenType
+from liminate.lexer import LexError, leading_indent, tokenize
+from liminate.vocabulary import TokenType
 
 
 # ---------- helpers ----------
@@ -189,7 +189,7 @@ def test_position_skips_decorative_punctuation():
 # ---------- end-to-end: 48 locked test sentences (gate sample) ----------
 
 # Representative success and hostile sentences from the test spec
-# (inscript_v1_thirty_sentences.md plus v1c §53 and v1d §65). The lexer
+# (liminate_v1_thirty_sentences.md plus v1c §53 and v1d §65). The lexer
 # must tokenize all of them without raising, including the hostile cases —
 # semantic and parse errors are detected downstream.
 

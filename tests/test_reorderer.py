@@ -1,9 +1,9 @@
 """Phase 3 gate tests: reorderer (v1d §55)."""
 
-from inscript.lexer import tokenize
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
-from inscript.vocabulary import Token, TokenType
+from liminate.lexer import tokenize
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
+from liminate.vocabulary import Token, TokenType
 
 
 def _values(tokens: list[Token]) -> list[str]:
@@ -80,7 +80,7 @@ def test_target_before_show_reorders():
 def test_verb_at_end_is_rejected():
     src = tokenize("the orders where total is above 50 filter")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert out.executed is False
     assert "verb" in out.message.lower() or "couldn't parse" in out.message.lower()
@@ -90,7 +90,7 @@ def test_condition_scrambled_after_reorder_is_rejected():
     # Condition elements scrambled. v1d §55 example.
     src = tokenize("filter the orders where above 50 total is")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "condition" in out.message.lower()
 
@@ -98,14 +98,14 @@ def test_condition_scrambled_after_reorder_is_rejected():
 def test_condition_scrambled_with_target_before_verb_is_rejected():
     src = tokenize("the orders filter where above 50 total is")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
 def test_all_tokens_scrambled_is_rejected():
     src = tokenize("50 above is total where orders the filter")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -165,7 +165,7 @@ def test_compound_sequencing_passes_through():
 def test_scramble_error_offers_canonical_template():
     src = tokenize("50 above is total where orders the filter")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     # Some pointer to the canonical shape should appear in the message.
     assert "filter the orders" in out.message or "verb" in out.message.lower()
 
@@ -173,6 +173,6 @@ def test_scramble_error_offers_canonical_template():
 def test_condition_scrambled_error_offers_canonical_condition_shape():
     src = tokenize("filter the orders where above 50 total is")
     out = reorder(src)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert "is" in out.message
     assert "field" in out.message.lower() or "comparison" in out.message.lower()

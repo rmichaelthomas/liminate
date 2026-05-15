@@ -1,12 +1,12 @@
 # Build boundary
 
-A guide to what Inscript currently is and what it intentionally is not. Every absence is a design decision, not a missing feature.
+A guide to what Liminate currently is and what it intentionally is not. Every absence is a design decision, not a missing feature.
 
 (This document was originally titled "v1 → v2 boundary" before v2b/v2c/v2d/v3a all shipped. The filename is kept for incoming links; the framing now covers the whole boundary, not just the v1/v2 line.)
 
 ## How to read this document
 
-The Inscript interpreter is a **deliberately bounded artifact**: a deterministic two-phase text interpreter for sequential rules, data operations, reusable parameterized filters, conditional branching, and reactive handlers driven by external event sources. The sequential feature set (v1 → v2d) and the reactive feature set (v3a) together form a structurally complete programming language. Items in the "not yet built" sections below are not on a TODO list — each has a documented reason and either a deferred-to-spec plan or an explicit closed-door decision. Each is referenced in a specification document under `docs/spec/`.
+The Liminate interpreter is a **deliberately bounded artifact**: a deterministic two-phase text interpreter for sequential rules, data operations, reusable parameterized filters, conditional branching, and reactive handlers driven by external event sources. The sequential feature set (v1 → v2d) and the reactive feature set (v3a) together form a structurally complete programming language. Items in the "not yet built" sections below are not on a TODO list — each has a documented reason and either a deferred-to-spec plan or an explicit closed-door decision. Each is referenced in a specification document under `docs/spec/`.
 
 If a feature is shipped, it has a locked specification, a working implementation, and passing tests. If it is not yet shipped, the interpreter does not pretend it exists: it produces a deterministic error.
 
@@ -79,7 +79,7 @@ If a feature is shipped, it has a locked specification, a working implementation
 - **Conservative cycle detection** — same handler firing twice in one cascade chain is rejected with ERROR_RUNTIME; the handler stays active for future events.
 - **Live-value lifecycle** (v3a §117) — declared by domain packs before Phase 1; transitions unset → active (on first adapter update or Phase 1 init) → inactive (on adapter failure). Conditions involving unset live values evaluate as false. `remember` on a live-value name inside an action block is rejected; `filter` on a live-value name is rejected in all contexts.
 - **Domain-pack adapter contract** (v3a §116) — declarations + adapter (start/stop) + lifecycle. v3a ships a single concrete implementation, `TestAdapter`, for scripted, deterministic event-driven testing.
-- **Domain pack registration** — external, via `--pack <path>` (JSON test pack) or `Session(domain_packs=...)`. No Inscript-level `use`/`load` verb.
+- **Domain pack registration** — external, via `--pack <path>` (JSON test pack) or `Session(domain_packs=...)`. No Liminate-level `use`/`load` verb.
 
 ### Display + validation
 
@@ -109,7 +109,7 @@ Each item below is intentionally absent with a documented reason.
 ### Vocabulary extensions (still deferred)
 
 - **Real-world domain packs.** Healthcare, business, home automation, legal/compliance, narrative. Each pack adds 10–15 context-specific terms plus an adapter implementation. The language ships a `TestAdapter` only — real packs are downstream product work, not language work. (v3a §118/§126)
-- **Domain pack activation via Inscript syntax.** A `use`/`load` verb that lets a program declare its adapter dependencies inline rather than via external `--pack` registration. Deferred deliberately at v3a §118.
+- **Domain pack activation via Liminate syntax.** A `use`/`load` verb that lets a program declare its adapter dependencies inline rather than via external `--pack` registration. Deferred deliberately at v3a §118.
 - **`transform` and `compare`.** Reserved-word slots protected; no grammar yet specified. These would extend the verb set if a dogfooded gap surfaces a clear use case. (v2d §103, v3a §124)
 
 ### Execution-model extensions (still deferred)
@@ -154,4 +154,4 @@ The line moves only where dogfooding produces a sharply specified gap. The vocab
 - [`../language/syntax.md`](../language/syntax.md) — what you can write today, including v3a `when`/`unless`/`finish`.
 - [`../architecture/pipeline.md`](../architecture/pipeline.md) — how the interpreter is structured (Phase 1 + Phase 2 layers).
 - [`../spec/`](../spec/) — the locked specification documents.
-- [`../inscript_gap_inventory_2026_05_12_v1_dogfooding.md`](../inscript_gap_inventory_2026_05_12_v1_dogfooding.md) and [`../inscript_gap_inventory_2026_05_12_v2a_dogfooding.md`](../inscript_gap_inventory_2026_05_12_v2a_dogfooding.md) — the dogfooding inventories that drove the v2a and v2b spec work.
+- [`../liminate_gap_inventory_2026_05_12_v1_dogfooding.md`](../liminate_gap_inventory_2026_05_12_v1_dogfooding.md) and [`../liminate_gap_inventory_2026_05_12_v2a_dogfooding.md`](../liminate_gap_inventory_2026_05_12_v2a_dogfooding.md) — the dogfooding inventories that drove the v2a and v2b spec work.

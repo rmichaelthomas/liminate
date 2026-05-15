@@ -4,9 +4,9 @@ v1d §59/§60/§62/§63, v3a §108/§111/§112/§117).
 
 import pytest
 
-from inscript.analyzer import SymbolEntry, analyze
-from inscript.lexer import tokenize
-from inscript.parser import (
+from liminate.analyzer import SymbolEntry, analyze
+from liminate.lexer import tokenize
+from liminate.parser import (
     BareWord,
     CompositionCallNode,
     ConditionNode,
@@ -20,16 +20,16 @@ from inscript.parser import (
     parse,
     parse_when_block,
 )
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
 
 
 def _parse(line: str, comps: set[str] | None = None):
     tokens = tokenize(line)
     reordered = reorder(tokens)
-    assert not isinstance(reordered, InscriptResult), reordered
+    assert not isinstance(reordered, LiminateResult), reordered
     ast = parse(reordered, composition_names=comps)
-    assert not isinstance(ast, InscriptResult), ast
+    assert not isinstance(ast, LiminateResult), ast
     return ast
 
 
@@ -86,13 +86,13 @@ def composition(name, body_ast):
 def test_show_known_name():
     symtab = {"age": number("age", 30)}
     result = _analyze("show age", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_count_a_list():
     symtab = {"colors": list_of_strings("colors", ["red", "blue", "green"])}
     result = _analyze("count the colors", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_filter_on_record_list_with_known_field():
@@ -105,13 +105,13 @@ def test_filter_on_record_list_with_known_field():
         ]),
     }
     result = _analyze("filter the orders where total is above 50", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_filter_each_pronoun_on_flat_list():
     symtab = {"numbers": list_of_numbers("numbers", [1, 2, 3, 4, 5])}
     result = _analyze("filter the numbers where each is above 3", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_each_iteration_over_records():
@@ -120,39 +120,39 @@ def test_each_iteration_over_records():
         {"total": 30, "status": "active"},
     ])}
     result = _analyze("each the orders show total", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_gather_valid_range():
     result = _analyze("gather the numbers from 1 to 10")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_combine_list_of_numbers():
     symtab = {"numbers": list_of_numbers("numbers", [1, 2, 3])}
     result = _analyze("combine the numbers", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_remember_value_with_literal():
     result = _analyze("remember a number called age with 30")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_remember_value_with_existing_name_reference():
     symtab = {"the-data": list_of_numbers("the-data", [1, 2, 3])}
     result = _analyze("remember a copy called backup from the-data", symtab)
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_remember_list_homogeneous_strings():
     result = _analyze("remember a list called colors with red and blue and green")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_remember_record():
     result = _analyze("remember an order called order1 with total as 75 and status as active")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def test_remember_record():
 
 def test_show_unknown_name_is_semantic_error():
     result = _analyze("show missingname")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "missingname" in result.message
     assert "remember" in result.message
@@ -174,7 +174,7 @@ def test_show_unknown_name_is_semantic_error():
 def test_filter_on_scalar_is_type_error():
     symtab = {"age": number("age", 30)}
     result = _analyze("filter age where each is above 5", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "filter a list" in result.message
     assert "'age' is a number" in result.message
@@ -187,7 +187,7 @@ def test_filter_on_scalar_is_type_error():
 def test_combine_strings_is_type_error():
     symtab = {"colors": list_of_strings("colors", ["red", "blue", "green"])}
     result = _analyze("combine colors", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "only combine numbers" in result.message
     assert "'colors' contains text" in result.message
@@ -196,7 +196,7 @@ def test_combine_strings_is_type_error():
 def test_combine_records_is_type_error():
     symtab = {"orders": list_of_records("orders", [{"total": 75}])}
     result = _analyze("combine orders", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert "'orders' contains records" in result.message
 
 
@@ -211,7 +211,7 @@ def test_filter_field_missing_on_singleton_list_of_records():
         ]),
     }
     result = _analyze("filter the orders where missingfield is above 50", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "missingfield" in result.message
     assert "orders" in result.message
@@ -224,7 +224,7 @@ def test_filter_field_missing_on_singleton_list_of_records():
 def test_each_on_scalar_is_type_error():
     symtab = {"age": number("age", 30)}
     result = _analyze("each the age show", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "iterate over a list" in result.message
     assert "'age' is a number" in result.message
@@ -237,7 +237,7 @@ def test_each_on_scalar_is_type_error():
 def test_descriptor_number_with_string_value_succeeds():
     # v1b §36: descriptor is decorative; type inferred from value.
     result = _analyze("remember a number called label with hello")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 # ---------------------------------------------------------------------------
@@ -246,7 +246,7 @@ def test_descriptor_number_with_string_value_succeeds():
 
 def test_mixed_type_list_is_semantic_error():
     result = _analyze("remember a list called mixed with 1 and blue")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "can't mix" in result.message
     assert "'1' is a number" in result.message
@@ -259,7 +259,7 @@ def test_mixed_type_list_is_semantic_error():
 
 def test_descending_range_is_semantic_error():
     result = _analyze("gather the numbers from 10 to 1")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "less than or equal to" in result.message
     assert "10" in result.message and "1" in result.message
@@ -267,7 +267,7 @@ def test_descending_range_is_semantic_error():
 
 def test_equal_endpoints_are_allowed():
     result = _analyze("gather the numbers from 5 to 5")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +276,7 @@ def test_equal_endpoints_are_allowed():
 
 def test_gather_range_cap_is_semantic_error():
     result = _analyze("gather the numbers from 1 to 20000")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "too large" in result.message
     assert "10,000" in result.message
@@ -284,12 +284,12 @@ def test_gather_range_cap_is_semantic_error():
 
 def test_gather_just_under_cap_succeeds():
     result = _analyze("gather the numbers from 1 to 10000")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_gather_just_over_cap_fails():
     result = _analyze("gather the numbers from 1 to 10001")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
 
 
@@ -300,14 +300,14 @@ def test_gather_just_over_cap_fails():
 def test_composition_definition_validates_without_name_resolution():
     # The body references missingname; analyzer must NOT error at definition.
     result = _analyze("remember how to show-missing: show missingname")
-    assert not isinstance(result, InscriptResult)
+    assert not isinstance(result, LiminateResult)
 
 
 def test_composition_call_validates_body_at_call_time():
     body = _parse("show missingname")
     symtab = {"show-missing": composition("show-missing", body)}
     result = _analyze("show-missing", symtab, comps={"show-missing"})
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "missingname" in result.message
 
@@ -324,7 +324,7 @@ def test_filter_on_mixed_schemas_field_not_in_all_records():
         ]),
     }
     result = _analyze("filter the mixed-records where total is above 50", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     # U2/U3: the offending record is named (the test fixture builds the
     # list with raw dicts rather than a `remember` chain, so the analyzer
@@ -341,7 +341,7 @@ def test_filter_on_mixed_schemas_field_not_in_all_records():
 def test_above_with_text_value_is_type_error():
     symtab = {"numbers": list_of_numbers("numbers", [1, 2, 3])}
     result = _analyze("filter the numbers where each is above hello", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "above" in result.message
     assert "hello" in result.message
@@ -353,7 +353,7 @@ def test_above_with_text_field_is_type_error():
         {"status": "pending"},
     ])}
     result = _analyze("filter the orders where status is above 5", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "above" in result.message
     assert "status" in result.message
@@ -366,7 +366,7 @@ def test_above_with_text_field_is_type_error():
 def test_field_name_on_flat_list_is_error():
     symtab = {"numbers": list_of_numbers("numbers", [1, 2, 3])}
     result = _analyze("filter the numbers where missingfield is above 5", symtab)
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
     assert "each" in result.message
 
@@ -379,14 +379,14 @@ def test_field_name_on_flat_list_is_error():
 def _parse_when_for_analysis(header: str, *actions: str):
     """Tokenize/reorder/parse a `when` block for analyzer testing."""
     header_tokens = reorder(tokenize(header))
-    assert not isinstance(header_tokens, InscriptResult)
+    assert not isinstance(header_tokens, LiminateResult)
     action_lists = []
     for a in actions:
         r = reorder(tokenize(a))
-        assert not isinstance(r, InscriptResult)
+        assert not isinstance(r, LiminateResult)
         action_lists.append(r)
     ast = parse_when_block(header_tokens, action_lists)
-    assert not isinstance(ast, InscriptResult), ast
+    assert not isinstance(ast, LiminateResult), ast
     return ast
 
 
@@ -407,7 +407,7 @@ def test_when_condition_with_missing_name_is_semantic_error():
         "when missingname is above 100", 'show "x"',
     )
     out = analyze(ast, {})
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "missingname" in out.message
 
@@ -422,7 +422,7 @@ def test_when_unless_guard_validated_at_registration():
         'show "x"',
     )
     out = analyze(ast, symtab)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "missingguard" in out.message
 
@@ -468,7 +468,7 @@ def test_finish_at_top_level_is_a_semantic_error():
     The parser accepts it (composition bodies need to compile) — the
     analyzer is the gatekeeper for Phase 1 sequential calls."""
     out = analyze(FinishNode(), {})
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "finish" in out.message.lower()
 
@@ -476,7 +476,7 @@ def test_finish_at_top_level_is_a_semantic_error():
 def test_finish_inside_action_block_is_legal():
     """v3a §112: with in_action_block=True, FinishNode passes analysis."""
     out = analyze(FinishNode(), {}, in_action_block=True)
-    assert out is not None and not isinstance(out, InscriptResult)
+    assert out is not None and not isinstance(out, LiminateResult)
 
 
 def test_composition_whose_last_op_is_finish_is_side_effect_only():
@@ -501,7 +501,7 @@ def test_composition_whose_last_op_is_finish_is_side_effect_only():
         comps={"emergency-stop"},
     )
     out = analyze(value_capture, symtab)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "emergency-stop" in out.message
     assert "finish" in out.message
@@ -524,7 +524,7 @@ def test_remember_live_value_in_action_block_is_semantic_error():
         in_action_block=True,
         live_value_names={"temperature"},
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "temperature" in out.message
     assert "live value" in out.message
@@ -555,7 +555,7 @@ def test_filter_live_value_is_rejected_anywhere():
         in_action_block=False,
         live_value_names={"readings"},
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "readings" in out.message
     assert "live value" in out.message
@@ -588,7 +588,7 @@ def test_remember_list_live_value_in_action_block_is_error():
         in_action_block=True,
         live_value_names={"readings"},
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_SEMANTIC
     assert "readings" in out.message
     assert "live value" in out.message

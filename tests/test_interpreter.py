@@ -2,12 +2,12 @@
 
 import pytest
 
-from inscript.analyzer import SymbolEntry
-from inscript.interpreter import execute
-from inscript.lexer import tokenize
-from inscript.parser import parse
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
+from liminate.analyzer import SymbolEntry
+from liminate.interpreter import execute
+from liminate.lexer import tokenize
+from liminate.parser import parse
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
 
 
 # ---------------------------------------------------------------------------
@@ -15,23 +15,23 @@ from inscript.result import InscriptResult, ResultStatus
 # ---------------------------------------------------------------------------
 
 
-def run(line: str, symtab: dict[str, SymbolEntry] | None = None) -> InscriptResult:
+def run(line: str, symtab: dict[str, SymbolEntry] | None = None) -> LiminateResult:
     if symtab is None:
         symtab = {}
     tokens = tokenize(line)
     if not tokens:
-        return InscriptResult(status=ResultStatus.SUCCESS, output=None, executed=True)
+        return LiminateResult(status=ResultStatus.SUCCESS, output=None, executed=True)
     reordered = reorder(tokens)
-    if isinstance(reordered, InscriptResult):
+    if isinstance(reordered, LiminateResult):
         return reordered
     comp_names = {n for n, e in symtab.items() if e.type == "composition"}
     ast = parse(reordered, composition_names=comp_names)
-    if isinstance(ast, InscriptResult):
+    if isinstance(ast, LiminateResult):
         return ast
     return execute(ast, symtab)
 
 
-def run_program(lines: list[str]) -> tuple[dict[str, SymbolEntry], list[InscriptResult]]:
+def run_program(lines: list[str]) -> tuple[dict[str, SymbolEntry], list[LiminateResult]]:
     symtab: dict[str, SymbolEntry] = {}
     results = [run(line, symtab) for line in lines]
     return symtab, results
@@ -754,15 +754,15 @@ def test_mixed_precedence_is_amber_and_does_not_execute():
 # ---------------------------------------------------------------------------
 
 
-from inscript.adapter import LiveValueDeclaration, LiveValueRegistry
-from inscript.interpreter import (
+from liminate.adapter import LiveValueDeclaration, LiveValueRegistry
+from liminate.interpreter import (
     HandlerTable,
     _extract_when_dependencies,
     execute as _execute,
 )
-from inscript.lexer import tokenize as _tokenize
-from inscript.parser import parse as _parse_line, parse_when_block
-from inscript.reorderer import reorder
+from liminate.lexer import tokenize as _tokenize
+from liminate.parser import parse as _parse_line, parse_when_block
+from liminate.reorderer import reorder
 
 
 def _parse_when_for_test(header: str, *actions: str):

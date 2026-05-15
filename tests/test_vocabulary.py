@@ -1,6 +1,6 @@
 """Phase 1 gate tests: vocabulary tables and verb signatures."""
 
-from inscript.vocabulary import (
+from liminate.vocabulary import (
     ALL_RESERVED,
     ARTICLES,
     CONNECTIVES,

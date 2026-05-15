@@ -21,8 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from inscript.cli import Session, display_result
-from inscript.result import ResultStatus
+from liminate.cli import Session, display_result
+from liminate.result import ResultStatus
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -594,8 +594,8 @@ def test_display_result_auto_confirms_amber_and_runs_pending_ast():
 
 
 def test_examples_run_without_error(capsys):
-    from inscript.cli import run_file
-    run_file(str(ROOT / "examples" / "program1_basics.insc"), auto_confirm_amber=True)
+    from liminate.cli import run_file
+    run_file(str(ROOT / "examples" / "program1_basics.limn"), auto_confirm_amber=True)
     out = capsys.readouterr().out
     # v2a §71 (D6): the user wrote `a number called age`, so the canonical
     # rendering preserves the descriptor `number` rather than substituting
@@ -614,8 +614,8 @@ def test_examples_run_without_error(capsys):
 def test_quiet_flag_suppresses_canonical_lines(tmp_path):
     """U1/U4: --quiet drops the 'I understand this as:' echo but keeps data."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text(
         "remember a number called age with 30\n"
         "show age\n"
@@ -640,8 +640,8 @@ def test_quiet_flag_suppresses_canonical_lines(tmp_path):
 def test_quiet_flag_mirrors_blank_lines(tmp_path):
     """U1/U4: blank source lines surface as empty lines in --quiet output."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text(
         "remember a number called age with 30\n"
         "\n"
@@ -661,8 +661,8 @@ def test_quiet_flag_mirrors_blank_lines(tmp_path):
 def test_quiet_flag_without_quiet_keeps_canonical(tmp_path):
     """Default (no --quiet) still emits canonical echo — unchanged behavior."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text("remember a number called age with 30\nshow age\n")
     buf = io.StringIO()
     run_file(str(src), auto_confirm_amber=True, out=buf)
@@ -710,8 +710,8 @@ def test_u3_partial_match_error_calls_out_others():
 def test_u5_gather_above_threshold_is_truncated(tmp_path):
     """U5: gather's auto-show truncates lists > 20 items."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text("gather the nums from 1 to 50\n")
     buf = io.StringIO()
     run_file(str(src), auto_confirm_amber=True, out=buf)
@@ -732,8 +732,8 @@ def test_u5_gather_above_threshold_is_truncated(tmp_path):
 def test_u5_gather_at_threshold_is_not_truncated(tmp_path):
     """U5: lists with exactly 20 items display in full — threshold is exclusive."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text("gather the nums from 1 to 20\n")
     buf = io.StringIO()
     run_file(str(src), auto_confirm_amber=True, out=buf)
@@ -840,8 +840,8 @@ def test_d10_keep_at_top_level_unchanged():
 def test_u5_explicit_show_is_not_truncated(tmp_path):
     """U5: explicit `show <list>` never truncates — user asked for the data."""
     import io
-    from inscript.cli import run_file
-    src = tmp_path / "p.insc"
+    from liminate.cli import run_file
+    src = tmp_path / "p.limn"
     src.write_text(
         "gather the nums from 1 to 50\n"
         "show nums\n"
@@ -856,8 +856,8 @@ def test_u5_explicit_show_is_not_truncated(tmp_path):
 
 
 def test_program2_orders_example_runs(capsys):
-    from inscript.cli import run_file
-    run_file(str(ROOT / "examples" / "program2_orders.insc"), auto_confirm_amber=True)
+    from liminate.cli import run_file
+    run_file(str(ROOT / "examples" / "program2_orders.limn"), auto_confirm_amber=True)
     out = capsys.readouterr().out
     # The each emits one total per record.
     assert "75" in out
@@ -1436,9 +1436,9 @@ def test_all_v2d_sentences_have_a_targeted_test():
 def test_comments_invisible_to_top_level_execution(tmp_path):
     """A program with comments produces the same output as one without."""
     import io
-    from inscript.cli import run_file
+    from liminate.cli import run_file
 
-    with_comments = tmp_path / "with.insc"
+    with_comments = tmp_path / "with.limn"
     with_comments.write_text(
         "-- Set up our orders\n"
         "remember an order called order1 with total as 75 and status as active\n"
@@ -1449,7 +1449,7 @@ def test_comments_invisible_to_top_level_execution(tmp_path):
         "-- Count check\n"
         "count the orders\n"
     )
-    without = tmp_path / "without.insc"
+    without = tmp_path / "without.limn"
     without.write_text(
         "remember an order called order1 with total as 75 and status as active\n"
         "show order1\n"
@@ -1469,9 +1469,9 @@ def test_comment_inside_when_action_block(tmp_path):
     """Indented comment lines inside a `when` block must not break the
     block parser or alter the action sequence."""
     import io
-    from inscript.cli import run_file
+    from liminate.cli import run_file
 
-    src = tmp_path / "w.insc"
+    src = tmp_path / "w.limn"
     src.write_text(
         "remember a number called threshold with 100\n"
         "\n"
@@ -1493,9 +1493,9 @@ def test_comment_at_block_indent_does_not_set_block_depth(tmp_path):
     """A comment whose indent differs from the action lines must not
     establish or violate the block's indentation depth."""
     import io
-    from inscript.cli import run_file
+    from liminate.cli import run_file
 
-    src = tmp_path / "w2.insc"
+    src = tmp_path / "w2.limn"
     # The comment is more deeply indented than the action lines. Under
     # naive handling, this would set block_depth=8 and the 4-space
     # action lines would terminate the block. Comment-as-blank handling

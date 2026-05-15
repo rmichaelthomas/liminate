@@ -1,4 +1,4 @@
-"""Semantic analyzer for Inscript v1 / v2a / v2b / v2c / v2d / v3a.
+"""Semantic analyzer for Liminate v1 / v2a / v2b / v2c / v2d / v3a.
 
 Sources:
 - inception §23 (semantic analysis: symbol table with types, structured
@@ -75,7 +75,7 @@ from .parser import (
     ShowNode,
     WhenNode,
 )
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 
 GATHER_RANGE_CAP = 10_000  # v1d §63
 
@@ -158,12 +158,12 @@ def analyze(
     *,
     in_action_block: bool = False,
     live_value_names: set[str] | None = None,
-) -> ASTNode | InscriptResult:
+) -> ASTNode | LiminateResult:
     """Validate a single AST node.
 
     Returns:
         - The AST node unchanged on success.
-        - InscriptResult with ERROR_SEMANTIC on failure.
+        - LiminateResult with ERROR_SEMANTIC on failure.
 
     SequenceNode is validated by recursing through ops against the same
     symbol-table snapshot; the orchestrator should iterate per-op to
@@ -186,7 +186,7 @@ def analyze(
                     in_action_block=in_action_block,
                     live_value_names=live_value_names,
                 )
-                if isinstance(r, InscriptResult):
+                if isinstance(r, LiminateResult):
                     return r
             return node
         _check(
@@ -195,7 +195,7 @@ def analyze(
             live_value_names=live_value_names,
         )
     except _SemanticError as e:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_SEMANTIC,
             message=e.message,
             executed=False,
