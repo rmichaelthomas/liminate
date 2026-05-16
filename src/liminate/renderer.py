@@ -174,13 +174,15 @@ def render(node: ASTNode) -> str:
         return f"add {render(node.item)} to {node.target.name}"
 
     if isinstance(node, PackVerbNode):
-        # v4a §137: pack verbs render as `<word> [<conn> <value>]...` in
-        # slot order. Empty optional slots are skipped.
+        # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
+        # in slot order. Positional slots (connective is None) render with
+        # no preceding connective word. Empty optional slots are skipped.
         parts: list[str] = [node.word]
         for slot in node.signature.slots:
             if slot.name not in node.slot_values:
                 continue
-            parts.append(slot.connective)
+            if slot.connective is not None:
+                parts.append(slot.connective)
             parts.append(render(node.slot_values[slot.name]))
         return " ".join(parts)
 

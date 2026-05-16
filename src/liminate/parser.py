@@ -685,14 +685,29 @@ def _parse_pack_verb(
 ) -> PackVerbNode:
     """Fill the pack verb's slots in source order.
 
-    For each slot: expect the slot's connective followed by a value
-    token (single UNKNOWN name → NameRef). Missing required slots, wrong
-    connectives, or non-name values produce parse errors. v4a's only
-    pack verb (`navigate`) has a single required slot, but the loop is
-    general so additional packs work without parser changes.
+    v2 (pack verb contract extension):
+    - Positional slots (`connective is None`) consume the next value
+      token directly. `value_type` determines what's accepted.
+    - Connective-introduced slots peek for the connective; if found,
+      consume it then the value per `value_type`.
+    - `value_type == "value"` routes through `_parse_value` (NUMBER,
+      UNKNOWN, QUOTED_STRING, FieldAccessNode).
+    - `value_type == "name"` consumes a single UNKNOWN as NameRef.
     """
     slot_values: dict[str, ASTNode] = {}
     for slot in sig.slots:
+        if slot.connective is None:
+            # Positional slot — consume value directly.
+            peek = stream.peek()
+            if peek is None:
+                if slot.required:
+                    raise _ParseError(
+                        _pack_verb_missing_slot_error(sig, slot)
+                    )
+                continue
+            slot_values[slot.name] = _parse_pack_slot_value(stream, sig, slot)
+            continue
+        # Connective-introduced slot.
         peek = stream.peek()
         if not (
             peek
@@ -703,41 +718,71 @@ def _parse_pack_verb(
                 raise _ParseError(_pack_verb_missing_slot_error(sig, slot))
             continue
         stream.consume()  # eat the connective
-        value_tok = stream.consume()
-        if value_tok is None:
+        if stream.peek() is None:
             raise _ParseError(_pack_verb_missing_slot_error(sig, slot))
-        if value_tok.type is TokenType.QUOTED_STRING:
-            raise _ParseError(
-                f"Names can't have spaces. Try a hyphenated name like "
-                f"'{_hyphenate(value_tok.value)}' instead."
-            )
-        if value_tok.type is not TokenType.UNKNOWN:
-            cat = reserved_category(value_tok.value)
-            if cat:
-                raise _ParseError(
-                    f"The word '{value_tok.value}' is reserved in Liminate "
-                    f"— it's used as a {cat}. Please use a name you've "
-                    f"created."
-                )
-            raise _ParseError(
-                f"I expected a name after '{sig.word} {slot.connective}', "
-                f"not '{value_tok.value}'."
-            )
-        slot_values[slot.name] = NameRef(name=value_tok.value)
+        slot_values[slot.name] = _parse_pack_slot_value(stream, sig, slot)
     return PackVerbNode(word=sig.word, signature=sig, slot_values=slot_values)
+
+
+def _parse_pack_slot_value(
+    stream: TokenStream, sig: PackVerbSignature, slot,
+) -> ASTNode:
+    """v2 — consume one slot value per the slot's `value_type`."""
+    if slot.value_type == "value":
+        return _parse_value(stream)
+    # "name" mode — UNKNOWN-only path.
+    value_tok = stream.consume()
+    if value_tok is None:
+        raise _ParseError(_pack_verb_missing_slot_error(sig, slot))
+    if value_tok.type is TokenType.QUOTED_STRING:
+        raise _ParseError(
+            f"Names can't have spaces. Try a hyphenated name like "
+            f"'{_hyphenate(value_tok.value)}' instead."
+        )
+    if value_tok.type is not TokenType.UNKNOWN:
+        cat = reserved_category(value_tok.value)
+        if cat:
+            raise _ParseError(
+                f"The word '{value_tok.value}' is reserved in Liminate "
+                f"— it's used as a {cat}. Please use a name you've "
+                f"created."
+            )
+        intro = (
+            f"after '{sig.word} {slot.connective}'"
+            if slot.connective is not None
+            else f"after '{sig.word}'"
+        )
+        raise _ParseError(
+            f"I expected a name {intro}, not '{value_tok.value}'."
+        )
+    return NameRef(name=value_tok.value)
 
 
 def _pack_verb_missing_slot_error(
     sig: PackVerbSignature, slot,
 ) -> str:
-    """Generate the missing-slot error for a pack verb. The phrasing is
-    tuned for the most common shape — `<verb> <connective> <target>` —
-    so v4a's `navigate to <screen-name>` produces the exact error wording
-    locked in §140.
-    """
+    """Generate the missing-slot error for a pack verb. v2: positional
+    slots describe themselves by name + type_constraint; connective-
+    introduced slots use the existing `<verb> <connective> <target>`
+    phrasing."""
     constraint = slot.type_constraint or "value"
-    # Friendly slot role: `to <X>` reads as a destination; other
-    # connectives fall back to the slot name.
+    if slot.connective is None:
+        # Positional slot. Build an example from the rest of the signature.
+        rest_example = ""
+        for other in sig.slots:
+            if other is slot or other.connective is None:
+                continue
+            other_constraint = other.type_constraint or "value"
+            rest_example += f" {other.connective} <{other_constraint}-name>"
+        role = "text value" if slot.value_type == "value" else "name"
+        placeholder = (
+            f'"<{slot.name}>"' if slot.value_type == "value"
+            else f"<{slot.name}>"
+        )
+        return (
+            f"'{sig.word}' needs a {role} for '{slot.name}' — try: "
+            f"{sig.word} {placeholder}{rest_example}."
+        )
     role = "destination" if slot.connective == "to" else slot.name
     return (
         f"'{sig.word}' needs a {role} — try: "
