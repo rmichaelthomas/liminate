@@ -45,6 +45,22 @@ This is not a natural-language layer over Python, not a code-generating AI, and 
 
 Requires Python 3.10+.
 
+Install the CLI (recommended via `pipx` so it lands in its own isolated environment):
+
+```bash
+pipx install liminate
+# or:
+pip install liminate
+```
+
+Then check the version:
+
+```bash
+liminate --version
+```
+
+For contributors working on the language itself, clone and install in editable mode with the dev extras:
+
 ```bash
 git clone https://github.com/rmichaelthomas/liminate.git
 cd liminate
@@ -62,34 +78,36 @@ pytest tests/
 Run a file (Phase 1 sequential):
 
 ```bash
-python -m liminate examples/program1_basics.limn
+liminate examples/program1_basics.limn
 ```
 
 Run a file with clean output (suppresses the canonical-prose echo):
 
 ```bash
-python -m liminate --quiet examples/dogfood_v2a_14_realistic.limn
+liminate --quiet examples/dogfood_v2a_14_realistic.limn
 ```
 
 Phase 2 listener mode: register `when` handlers in a `.limn` file and drive them with a scripted test domain pack (v3a §118):
 
 ```bash
-python -m liminate --pack examples/dogfood_v3a_pack.json --test --quiet \
+liminate --pack examples/dogfood_v3a_pack.json --test --quiet \
     examples/dogfood_v3a_event_driven.limn
 ```
 
 v4a pack verbs: load the UI domain pack (10 component nouns + the `navigate to <screen-name>` verb) and run a program that uses it:
 
 ```bash
-python -m liminate --pack examples/pack_ui.json --quiet \
+liminate --pack examples/pack_ui.json --quiet \
     examples/dogfood_navigate_test.limn
 ```
 
 Start the interactive REPL (`exit` or `quit` to leave; REPL stays in Phase 1):
 
 ```bash
-python -m liminate
+liminate
 ```
+
+`python -m liminate` is an equivalent module-invocation form for any of the above (useful when the `liminate` script is not on `PATH`).
 
 ---
 
@@ -106,7 +124,7 @@ combine the numbers
 Run it:
 
 ```bash
-python -m liminate demo.limn
+liminate demo.limn
 ```
 
 Expected output (each statement is preceded by the parser's canonical-form preview):

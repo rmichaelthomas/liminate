@@ -59,6 +59,9 @@ Located in `docs/spec/`. Read the relevant section before writing code that touc
 ## Commands
 
 ```bash
+# Print the installed version (reads importlib.metadata at runtime)
+liminate --version
+
 # Run all tests (713 passing as of v4a Phase 1 — May 13, 2026)
 pytest tests/ -v
 
@@ -68,37 +71,40 @@ pytest tests/test_listener.py -v
 pytest tests/test_integration_v3a.py -v
 
 # Run the interpreter on a file (Phase 1 sequential)
-python -m liminate examples/program1_basics.limn
+liminate examples/program1_basics.limn
 
 # Run a file with the canonical-echo suppressed (clean output)
-python -m liminate examples/dogfood_1_corpus_summary.limn --quiet
+liminate examples/dogfood_1_corpus_summary.limn --quiet
 
 # Test mode (auto-confirms amber outcomes; flags accepted in any position)
-python -m liminate examples/program2_orders.limn --test
-python -m liminate --test --quiet examples/dogfood_v2a_14_realistic.limn
+liminate examples/program2_orders.limn --test
+liminate --test --quiet examples/dogfood_v2a_14_realistic.limn
 
 # Phase 2 event-driven mode: register `when` handlers then drive them
 # with a scripted test domain pack (v3a §118). Multiple --pack flags
 # accumulate. Pack JSON shape:
 #   {"name": "...", "declarations": [["name","type"], ...],
 #    "script": [["name", value], ..., "[done]"]}
-python -m liminate examples/dogfood_v3a_event_driven.limn \
+liminate examples/dogfood_v3a_event_driven.limn \
     --pack examples/dogfood_v3a_pack.json --test --quiet
 
 # Phase 2 event-driven mode with the timer pack (real threaded source).
 # Inline JSON config — same flag, `--pack` now also accepts a JSON
 # string starting with `{`. The `type` field dispatches to the pack
 # factory (`test` is the default for backward compatibility).
-python -m liminate examples/dogfood_v3a_timer_pack.limn \
+liminate examples/dogfood_v3a_timer_pack.limn \
     --pack '{"type": "timer", "interval_ms": 200, "max_ticks": 5}' --quiet
 
 # v4a UI domain pack — pack-level `navigate to <screen>` verb +
 # 10 component nouns reserved while the pack is loaded.
-python -m liminate --pack examples/pack_ui.json --quiet \
+liminate --pack examples/pack_ui.json --quiet \
     examples/dogfood_navigate_test.limn
 
 # Interactive REPL (Phase 1 only — REPL doesn't enter listener mode)
-python -m liminate
+liminate
+
+# `python -m liminate ...` is the equivalent module-invocation form
+# of every command above (useful when the `liminate` script is not on PATH).
 ```
 
 ## Modules (src/liminate/)
