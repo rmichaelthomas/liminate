@@ -1,0 +1,6 @@
+remember a string called changed-file with "_none"
+remember a string called change-type with "_none"
+
+when change-type is equal to "created"
+  show changed-file
+  finish

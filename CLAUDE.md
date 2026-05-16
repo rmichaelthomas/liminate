@@ -100,6 +100,15 @@ liminate examples/dogfood_v3a_timer_pack.limn \
 liminate --pack examples/pack_ui.json --quiet \
     examples/dogfood_navigate_test.limn
 
+# Stdin reader pack — each piped line becomes a `line` live-value update.
+printf "hello\nworld\n" | liminate examples/dogfood_stdin_echo.limn \
+    --pack '{"type": "stdin"}' --quiet
+
+# File watcher pack — polls a directory and emits paired
+# (changed-file, change-type) updates for each created/modified/deleted file.
+liminate examples/dogfood_file_watcher.limn \
+    --pack '{"type": "file-watcher", "path": "./inbox", "max_events": 1}' --quiet
+
 # Interactive REPL (Phase 1 only — REPL doesn't enter listener mode)
 liminate
 
@@ -168,6 +177,16 @@ git push origin v0.x.x
   and `verbs` fields).
 - `packs/timer.py` — `TimerAdapter` + `TimerDomainPack` + `make_timer_pack(config)`
   (v3a §116 — first real domain pack; threaded periodic event source).
+- `packs/stdin.py` — `StdinAdapter` + `StdinDomainPack` + `make_stdin_pack(config)`.
+  Daemon thread reads lines from `sys.stdin` (or an injected stream for tests);
+  each line is pushed as `AdapterUpdate(name="line", value=<line>)`; EOF emits
+  `AdapterDone`. Pure stdlib.
+- `packs/file_watcher.py` — `FileWatcherAdapter` + `FileWatcherDomainPack` +
+  `make_file_watcher_pack(config)`. Polls a directory at `poll_interval_ms`
+  (default 1000 ms) and emits `changed-file` then `change-type` update pairs
+  for created/modified/deleted files (non-recursive; recursive deferred). Pure
+  stdlib (`os.scandir` + `st_mtime`). The 4 registered `--pack` factory types
+  are now `test`, `timer`, `stdin`, `file-watcher`.
 - `result.py` — `LiminateResult` with nine statuses + metadata.
 - `build.py` — Branch G Phase C. `build()` validates a source file
   (lex → reorder → parse, composition-name tracking across statements),

@@ -127,6 +127,22 @@ liminate --pack examples/pack_ui.json --quiet \
     examples/dogfood_navigate_test.limn
 ```
 
+Stdin reader pack: each line of standard input becomes an update to the `line` live value. Pipe input in and the handler fires on the first non-initial line:
+
+```bash
+printf "hello\nworld\n" | liminate examples/dogfood_stdin_echo.limn \
+    --pack '{"type": "stdin"}' --quiet
+```
+
+File watcher pack: polls a directory and emits `(changed-file, change-type)` update pairs for every created/modified/deleted file. The example fires when a new file appears in `./inbox`:
+
+```bash
+mkdir -p ./inbox
+liminate examples/dogfood_file_watcher.limn \
+    --pack '{"type": "file-watcher", "path": "./inbox", "max_events": 1}' --quiet
+# in another shell: touch ./inbox/new.txt
+```
+
 Start the interactive REPL (`exit` or `quit` to leave; REPL stays in Phase 1):
 
 ```bash
@@ -453,6 +469,8 @@ liminate/
 │   ├── listener.py                    Phase 2 generator — initial eval, cascades, cycle detection, shutdown
 │   ├── adapter.py                     DomainPack, Adapter, TestAdapter, LiveValueRegistry + parse_pack_verb_signature
 │   ├── packs/timer.py                 Threaded periodic event source (first real domain pack)
+│   ├── packs/stdin.py                 Reads lines from stdin as `line` updates
+│   ├── packs/file_watcher.py          Polls a directory for created/modified/deleted files
 │   ├── result.py                      LiminateResult + ResultStatus (9 statuses)
 │   ├── cli.py                         Session + REPL + file driver + --pack (only I/O boundary)
 │   └── __main__.py                    `python -m liminate` entry point

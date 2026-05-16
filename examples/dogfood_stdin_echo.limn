@@ -1,0 +1,5 @@
+remember a string called line with "_init"
+
+when line is not equal to "_init"
+  show line
+  finish

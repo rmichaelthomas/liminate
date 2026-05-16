@@ -49,6 +49,8 @@ from .analyzer import SymbolEntry
 from .interpreter import HandlerTable, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
+from .packs.file_watcher import make_file_watcher_pack
+from .packs.stdin import make_stdin_pack
 from .packs.timer import make_timer_pack
 from .parser import parse, parse_when_block
 from .reorderer import reorder
@@ -771,6 +773,8 @@ def _make_test_pack(
 _PACK_FACTORIES = {
     "test": _make_test_pack,
     "timer": lambda config, **_kw: make_timer_pack(config),
+    "stdin": lambda config, **_kw: make_stdin_pack(config),
+    "file-watcher": lambda config, **_kw: make_file_watcher_pack(config),
 }
 
 
