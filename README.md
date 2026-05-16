@@ -1,10 +1,3 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="brand/wordmark-primary-dark.png">
-    <img src="brand/wordmark-primary-light.png" alt="Liminate" width="420">
-  </picture>
-</p>
-
 <p align="center"><em>A prose-as-syntax programming language designed from the human end.</em></p>
 
 **Status:** v4a shipped — sequential execution, reactive listener mode, and a general-purpose pack verb contract. **713 tests passing across 127 locked test sentences.**
