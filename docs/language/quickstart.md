@@ -1,6 +1,6 @@
 # Quickstart
 
-A short first-run guide for Inscript. If you want a deeper tour of
+A short first-run guide for Liminate. If you want a deeper tour of
 the language, read [`syntax.md`](syntax.md) next.
 
 ## Requirements
@@ -11,8 +11,8 @@ the language, read [`syntax.md`](syntax.md) next.
 ## Install
 
 ```bash
-git clone https://github.com/rmichaelthomas/inscript.git
-cd inscript
+git clone https://github.com/rmichaelthomas/liminate.git
+cd liminate
 python -m venv venv
 source venv/bin/activate
 pip install -e ".[dev]"
@@ -34,8 +34,8 @@ up correctly in your environment.
 The repo ships with two example programs in `examples/`:
 
 ```bash
-python -m inscript examples/program1_basics.insc
-python -m inscript examples/program2_orders.insc
+python -m liminate examples/program1_basics.limn
+python -m liminate examples/program2_orders.limn
 ```
 
 Each non-blank line is echoed first as canonical prose — the parser's
@@ -45,25 +45,25 @@ output the statement produces.
 ## Start the REPL
 
 ```bash
-python -m inscript
+python -m liminate
 ```
 
 You'll see:
 
 ```
-Inscript v3a — type 'exit' to quit.
+Liminate v3a — type 'exit' to quit.
 >
 ```
 
 Type a statement and press enter. Type `exit` (or `quit`) to leave.
 The REPL stays in Phase 1 — `when` blocks need the multi-line block
 parser, which only the file driver invokes. To exercise listener
-mode, write the program to a file and run it via `python -m inscript
+mode, write the program to a file and run it via `python -m liminate
 <file> --pack <pack.json>`.
 
 ## Try this first
 
-Save the following three lines as `demo.insc`:
+Save the following three lines as `demo.limn`:
 
 ```
 gather the numbers from 1 to 10
@@ -74,7 +74,7 @@ combine the numbers
 Run it:
 
 ```bash
-python -m inscript demo.insc
+python -m liminate demo.limn
 ```
 
 Expected output (the `I understand this as:` lines are the canonical
@@ -101,12 +101,12 @@ What happened:
 
 ## Test mode and clean output
 
-If you want to run a `.insc` file non-interactively without being
+If you want to run a `.limn` file non-interactively without being
 prompted to confirm amber outcomes (such as a mixed-precedence
 condition), use `--test`:
 
 ```bash
-python -m inscript --test examples/program2_orders.insc
+python -m liminate --test examples/program2_orders.limn
 ```
 
 For clean output with the `I understand this as: ...` echo
@@ -114,7 +114,7 @@ suppressed — useful for any program longer than a few lines — add
 `--quiet`:
 
 ```bash
-python -m inscript --test --quiet examples/dogfood_1_corpus_summary.insc
+python -m liminate --test --quiet examples/dogfood_1_corpus_summary.limn
 ```
 
 Blank source lines mirror through to the output under `--quiet` so
@@ -124,7 +124,7 @@ your paragraph breaks survive. Flags work in any order.
 
 The v3a addendum adds a reactive runtime that watches for changes to
 named values and runs registered handlers when their compound
-eligibility transitions false→true. Save this as `listener.insc`:
+eligibility transitions false→true. Save this as `listener.limn`:
 
 ```
 remember a number called level with 0
@@ -153,7 +153,7 @@ Then save this as `listener-pack.json`:
 Run it with the `--pack` flag pointing at the JSON file:
 
 ```bash
-python -m inscript --pack listener-pack.json --test --quiet listener.insc
+python -m liminate --pack listener-pack.json --test --quiet listener.limn
 ```
 
 Expected output:
@@ -173,7 +173,7 @@ fires (`show "level escalated"`), handler 1's condition is false
 still (150 ≤ 200). The second update (`level=250`) fires handler 1,
 which executes `finish` — immediate total shutdown.
 
-The full v3a dogfood at `examples/dogfood_v3a_event_driven.insc` (with
+The full v3a dogfood at `examples/dogfood_v3a_event_driven.limn` (with
 its companion `examples/dogfood_v3a_pack.json`) exercises every major
 v3a feature: initial evaluation, `unless` guards, `of`-expression
 conditions, multi-statement action blocks, parameterized compositions

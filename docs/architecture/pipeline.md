@@ -1,6 +1,6 @@
 # Pipeline architecture
 
-A guide to how Inscript turns a source line — or a whole listener-mode
+A guide to how Liminate turns a source line — or a whole listener-mode
 program — into a result. This document walks the stages in plain
 English.
 
@@ -17,7 +17,7 @@ evaluation, event-loop drain, cascading, cycle detection, and
 shutdown bookkeeping.
 
 For module-level implementation details, read the source under
-`src/inscript/`. For the authoritative behavior, read `docs/spec/`.
+`src/liminate/`. For the authoritative behavior, read `docs/spec/`.
 
 ## The path of a line (Phase 1)
 
@@ -69,7 +69,7 @@ that.
 
 After Phase 1 completes, the CLI checks two gates: (1) at least one
 `when` handler registered, and (2) zero Phase 1 errors / unresolved
-ambers. If both pass, the listener generator (`src/inscript/listener.py`)
+ambers. If both pass, the listener generator (`src/liminate/listener.py`)
 takes over:
 
 ```
@@ -115,7 +115,7 @@ takes over:
                   └────────────────────────────┘
 ```
 
-The whole listener is a Python generator yielding `InscriptResult`
+The whole listener is a Python generator yielding `LiminateResult`
 objects in order: `LISTENING` → zero or more `HANDLER_FIRE` /
 `ERROR_SEMANTIC` (action errors) / `ERROR_RUNTIME` (cycle / adapter
 failure) → terminal `SHUTDOWN`. The CLI streams them to stdout the
@@ -155,7 +155,7 @@ live; multi-word string values live in quoted-string.
 
 ### Reorderer
 
-Inscript expects canonical word order (`verb the target ...`). The
+Liminate expects canonical word order (`verb the target ...`). The
 reorderer accepts a narrow set of natural variations and rejects
 everything else with a suggestion. In particular it accepts:
 
@@ -388,7 +388,7 @@ at all.
 
 ### CLI display
 
-The CLI wrapper (`src/inscript/cli.py`) is the only module that calls
+The CLI wrapper (`src/liminate/cli.py`) is the only module that calls
 `input()` or `print()`. It receives the structured result and renders
 it for the terminal:
 
@@ -434,8 +434,8 @@ typos error rather than silently falling through.
 
 If you embed the interpreter in another program, you bypass the CLI
 and inspect the structured result directly. The Phase 2 listener is
-a Python generator (`inscript.listener.listen(...)`) yielding the
-same `InscriptResult` objects the CLI streams. Every behavior the
+a Python generator (`liminate.listener.listen(...)`) yielding the
+same `LiminateResult` objects the CLI streams. Every behavior the
 CLI shows the user is available as plain data.
 
 ## Why this shape
@@ -482,7 +482,7 @@ Nothing more.
   syntax tour through v3a.
 - [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) —
   what the interpreter includes and what is intentionally deferred.
-- `src/inscript/` — the module-by-module implementation, including
+- `src/liminate/` — the module-by-module implementation, including
   `listener.py` (Phase 2 generator) and `adapter.py` (DomainPack /
   Adapter / TestAdapter / LiveValueRegistry).
 - [`../spec/`](../spec/) — the locked specification documents.

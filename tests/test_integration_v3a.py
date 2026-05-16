@@ -3,12 +3,12 @@
 These tests exercise the complete pipeline — source string → Session
 (with optional TestDomainPack) → Phase 1 line iteration with `when`
 block buffering → Phase 2 listener — and assert on both the displayed
-output and the structured InscriptResult stream.
+output and the structured LiminateResult stream.
 
 Note on sentence-94/sentence-98-style variable names: a few of the
 canonical sentence programs use names that collide with v1 verbs
 (`count` in §98, `a`/`b` in §101) or articles (`a`). Those names
-can't actually be declared in Inscript because the parser rejects
+can't actually be declared in Liminate because the parser rejects
 reserved-word names at definition time. The integration tests use
 non-reserved substitutes (`tally` for `count`, `score`/`level` for
 `a`/`b`), and the test docstring notes the substitution.
@@ -16,8 +16,8 @@ non-reserved substitutes (`tally` for `count`, `score`/`level` for
 
 from __future__ import annotations
 
-from inscript.adapter import TestDomainPack
-from inscript.result import ResultStatus
+from liminate.adapter import TestDomainPack
+from liminate.result import ResultStatus
 
 from tests._v3a_helpers import run_v3a, fires, outputs
 
@@ -170,7 +170,7 @@ def test_sentence_101_cycle_detection():
     uses three handlers in a ring that produces a genuine cycle under
     §113 deep-equality change detection. Names `a`/`b`/`c` are
     substituted with `alpha`/`beta`/`gamma` because `a` is an article
-    in Inscript. Trace: adapter sets alpha=1 → H1 fires (beta=1) →
+    in Liminate. Trace: adapter sets alpha=1 → H1 fires (beta=1) →
     cascade H2 fires (alpha=0, gamma=1) → cascade H3 fires (alpha=1)
     → cascade would re-fire H1 → same-handler-twice cycle detected."""
     pack = TestDomainPack(
@@ -943,8 +943,8 @@ def test_t19_of_expression_in_unless_guard():
 # ===========================================================================
 
 import io as _io
-from inscript.cli import Session as _Session, display_result as _display_result
-from inscript.cli import _consume_when_block as _consume_when_block  # type: ignore
+from liminate.cli import Session as _Session, display_result as _display_result
+from liminate.cli import _consume_when_block as _consume_when_block  # type: ignore
 
 
 def _render_v3a(source: str, *, pack=None, quiet: bool = True) -> str:
@@ -952,10 +952,10 @@ def _render_v3a(source: str, *, pack=None, quiet: bool = True) -> str:
     captured stdout. Used by the U1/U2/U3 tests to assert on the actual
     user-visible output, not just the structured result stream."""
     import textwrap
-    from inscript.lexer import leading_indent, LexError, tokenize
-    from inscript.listener import listen
-    from inscript.result import InscriptResult, ResultStatus as _RS
-    from inscript.vocabulary import TokenType as _TT
+    from liminate.lexer import leading_indent, LexError, tokenize
+    from liminate.listener import listen
+    from liminate.result import LiminateResult, ResultStatus as _RS
+    from liminate.vocabulary import TokenType as _TT
 
     source = textwrap.dedent(source).strip("\n")
     session = _Session(domain_packs=[pack] if pack else None)
@@ -973,7 +973,7 @@ def _render_v3a(source: str, *, pack=None, quiet: bool = True) -> str:
         try:
             indent = leading_indent(line)
         except LexError as e:
-            err = InscriptResult(
+            err = LiminateResult(
                 status=_RS.ERROR_PARSE, message=e.message, executed=False,
             )
             _display_result(err, session, quiet=quiet, out=buf)

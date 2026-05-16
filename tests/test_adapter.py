@@ -4,7 +4,7 @@ import pytest
 
 from queue import Queue
 
-from inscript.adapter import (
+from liminate.adapter import (
     Adapter,
     AdapterDone,
     AdapterFailure,

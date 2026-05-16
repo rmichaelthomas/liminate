@@ -1,23 +1,23 @@
-I understand this as: remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+I understand this as: remember a doc called doc-1 with domain as liminate and class as inception and words as 10831
 I understand this as: remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
 I understand this as: remember a doc called doc-3 with domain as mobius and class as checkpoint and words as 10190
 I understand this as: remember a doc called doc-4 with domain as mobius and class as checkpoint and words as 8077
 I understand this as: remember a doc called doc-5 with domain as mobius and class as checkpoint and words as 7654
 I understand this as: remember a list called docs with doc-1 and doc-2 and doc-3 and doc-4 and doc-5
 I understand this as: each the docs show domain and class
-domain: inscript, class: inception
+domain: liminate, class: inception
 domain: mobius, class: binder
 domain: mobius, class: checkpoint
 domain: mobius, class: checkpoint
 domain: mobius, class: checkpoint
 I understand this as: each the docs show domain and class and words
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
 domain: mobius, class: checkpoint, words: 8077
 domain: mobius, class: checkpoint, words: 7654
 I understand this as: each the docs show words and domain
-words: 10831, domain: inscript
+words: 10831, domain: liminate
 words: 10399, domain: mobius
 words: 10190, domain: mobius
 words: 8077, domain: mobius
@@ -30,13 +30,13 @@ checkpoint
 checkpoint
 I understand this as: remember a large called large from keep the docs where words is above 7000
 I understand this as: each the large show domain and class and words
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
 domain: mobius, class: checkpoint, words: 8077
 domain: mobius, class: checkpoint, words: 7654
 I understand this as: each the docs show domain and class and class
-domain: inscript, class: inception, class: inception
+domain: liminate, class: inception, class: inception
 domain: mobius, class: binder, class: binder
 domain: mobius, class: checkpoint, class: checkpoint
 domain: mobius, class: checkpoint, class: checkpoint

@@ -1,4 +1,4 @@
-"""Inscript Programming Language v1 / v2a / v2b / v2c / v2d / v3a."""
+"""Liminate Programming Language v1 / v2a / v2b / v2c / v2d / v3a."""
 
 from .adapter import (
     Adapter,
@@ -20,7 +20,7 @@ from .lexer import leading_indent, tokenize
 from .parser import parse, parse_when_block
 from .renderer import render
 from .reorderer import reorder
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 
 __all__ = [
     "Adapter",
@@ -28,7 +28,7 @@ __all__ = [
     "AdapterFailure",
     "AdapterUpdate",
     "DomainPack",
-    "InscriptResult",
+    "LiminateResult",
     "LiveValueDeclaration",
     "LiveValueEntry",
     "LiveValueRegistry",

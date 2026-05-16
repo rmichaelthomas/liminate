@@ -15,7 +15,7 @@ from typing import Iterable
 
 import pytest
 
-from inscript.adapter import (
+from liminate.adapter import (
     AdapterDone,
     AdapterFailure,
     AdapterUpdate,
@@ -23,16 +23,16 @@ from inscript.adapter import (
     LiveValueRegistry,
     TestAdapter,
 )
-from inscript.analyzer import SymbolEntry
-from inscript.interpreter import (
+from liminate.analyzer import SymbolEntry
+from liminate.interpreter import (
     HandlerTable,
     execute as _execute,
 )
-from inscript.lexer import tokenize
-from inscript.listener import listen
-from inscript.parser import parse_when_block
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
+from liminate.lexer import tokenize
+from liminate.listener import listen
+from liminate.parser import parse_when_block
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ def _build_when_node(header: str, *actions: str):
     htoks = reorder(tokenize(header))
     atoks = [reorder(tokenize(a)) for a in actions]
     ast = parse_when_block(htoks, atoks)
-    assert not isinstance(ast, InscriptResult), ast
+    assert not isinstance(ast, LiminateResult), ast
     return ast
 
 
@@ -75,7 +75,7 @@ def _set_string(symtab, name, value):
     symtab[name] = SymbolEntry(name=name, value=value, type="string")
 
 
-def _drain(it: Iterable[InscriptResult]) -> list[InscriptResult]:
+def _drain(it: Iterable[LiminateResult]) -> list[LiminateResult]:
     return list(it)
 
 

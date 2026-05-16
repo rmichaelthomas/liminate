@@ -1,6 +1,6 @@
-# Reactive Patterns in Inscript
+# Reactive Patterns in Liminate
 
-Inscript's `when` blocks register reactive handlers (v3a §107–§125).
+Liminate's `when` blocks register reactive handlers (v3a §107–§125).
 This guide documents the common patterns and the pitfalls that come
 with edge-triggered, dependency-driven evaluation. It is an education
 document, not a spec change.
@@ -11,7 +11,7 @@ A handler fires when a value it *references* changes. If your condition
 mentions `systolic`, the handler does not re-fire when `alert-level`
 changes — even when both are relevant to your intent.
 
-```inscript
+```liminate
 when systolic is above 140
   show "warning: elevated blood pressure"
 ```
@@ -28,7 +28,7 @@ when that other value changes.
 
 Anti-pattern:
 
-```inscript
+```liminate
 when systolic is above 140
   choose if alert-level is equal to critical: show "escalated" otherwise show "warning"
 ```
@@ -38,7 +38,7 @@ flips to `critical` while `systolic` stays the same, nothing happens.
 
 Better — split into two handlers, each watching the names it needs:
 
-```inscript
+```liminate
 when systolic is above 140
   show "warning: elevated blood pressure"
 
@@ -72,7 +72,7 @@ absorbed.
 If you need to react to *every* update regardless of state change, use
 a dedicated trigger value the adapter increments on each push:
 
-```inscript
+```liminate
 when update-count is above 0
   show "new reading received"
 ```
@@ -91,13 +91,13 @@ queued adapter updates are all skipped. Put `finish` at the end of an
 action block — or inside a `choose` branch whose condition is the
 program's terminating event:
 
-```inscript
+```liminate
 when score is above 100
   show "VICTORY"
   finish
 ```
 
-```inscript
+```liminate
 when status is equal to fatal
   choose if confirmation is equal to acknowledged: finish otherwise show "awaiting acknowledgment"
 ```
@@ -107,7 +107,7 @@ taken. The `otherwise` branch keeps the listener alive.
 
 ## Reference programs
 
-See `examples/dogfood_v3a_healthcare.insc`,
-`examples/dogfood_v3a_smart_home.insc`, and
-`examples/dogfood_v3a_game.insc` for complete reactive programs that
+See `examples/dogfood_v3a_healthcare.limn`,
+`examples/dogfood_v3a_smart_home.limn`, and
+`examples/dogfood_v3a_game.limn` for complete reactive programs that
 exercise these patterns end-to-end against scripted domain packs.

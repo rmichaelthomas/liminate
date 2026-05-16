@@ -1,5 +1,5 @@
 [project]
-name = "inscript"
+name = "liminate"
 version = "0.1.0"
 description = "A prose-as-syntax programming language designed from the human end."
 requires-python = ">=3.10"
@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [project.urls]
-Repository = "https://github.com/rmichaelthomas/inscript"
+Repository = "https://github.com/rmichaelthomas/liminate"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]

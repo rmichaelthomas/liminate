@@ -1,4 +1,4 @@
-"""Parser for Inscript v1.
+"""Parser for Liminate v1.
 
 Sources:
 - inception §17 (slot-filling, verb signatures)
@@ -19,7 +19,7 @@ Sources:
 
 Output:
 - An AST node on success.
-- An InscriptResult on amber (mixed-precedence) or parse error.
+- An LiminateResult on amber (mixed-precedence) or parse error.
 
 Note on the "list" descriptor (v1b §36 + v1d §65 sentence 38):
 v1b §36 states unknown words between article and `called` are decorative.
@@ -38,7 +38,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 from .vocabulary import (
     PackVerbSignature,
     Token,
@@ -360,18 +360,18 @@ class TokenStream:
 def parse(
     tokens: list[Token],
     composition_names: set[str] | None = None,
-) -> ASTNode | InscriptResult:
+) -> ASTNode | LiminateResult:
     """Parse a canonically-ordered token list into an AST.
 
     Returns:
         - ASTNode on success.
-        - InscriptResult with status AMBER_PRECEDENCE if a `where` clause
+        - LiminateResult with status AMBER_PRECEDENCE if a `where` clause
           uses both `and` and `or` (v1a §30). The pending AST is attached
           so the caller can resume after confirmation.
-        - InscriptResult with status ERROR_PARSE on any other parse failure.
+        - LiminateResult with status ERROR_PARSE on any other parse failure.
     """
     if not tokens:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message="There's nothing to parse here.",
             executed=False,
@@ -388,7 +388,7 @@ def parse(
                 f"I didn't expect '{unexpected.value}' here."
             )
     except _ParseError as e:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message=e.message,
             executed=False,
@@ -397,7 +397,7 @@ def parse(
     # v1a §30: mixed and/or in any `where` clause -> AMBER_PRECEDENCE.
     if _contains_mixed_precedence(ast):
         from .renderer import render, render_with_explicit_precedence
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.AMBER_PRECEDENCE,
             canonical=render(ast),
             message=(
@@ -420,7 +420,7 @@ def parse_when_block(
     header_tokens: list[Token],
     action_token_lists: list[list[Token]],
     composition_names: set[str] | None = None,
-) -> ASTNode | InscriptResult:
+) -> ASTNode | LiminateResult:
     """Parse a `when <cond> [unless <guard>] [:]` header plus its
     indented action block (v3a §108/§109/§110).
 
@@ -433,12 +433,12 @@ def parse_when_block(
 
     Returns:
         - WhenNode on success.
-        - InscriptResult AMBER_PRECEDENCE if any condition or action
+        - LiminateResult AMBER_PRECEDENCE if any condition or action
           sub-statement contains mixed `and`/`or` (v3a §123).
-        - InscriptResult ERROR_PARSE on grammar errors.
+        - LiminateResult ERROR_PARSE on grammar errors.
     """
     if not header_tokens:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message="There's nothing to parse here.",
             executed=False,
@@ -448,7 +448,7 @@ def parse_when_block(
         header_tokens[0].type is TokenType.CONNECTIVE
         and header_tokens[0].value == "when"
     ):
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message=(
                 f"I expected a 'when' statement here, not "
@@ -460,7 +460,7 @@ def parse_when_block(
     # v3a §110: an empty action block is a parse error. The header alone
     # has no executable body.
     if not action_token_lists:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message=(
                 "'when' needs an indented action block — at least one "
@@ -507,7 +507,7 @@ def parse_when_block(
                 f"I didn't expect '{unexpected.value}' in the 'when' header."
             )
     except _ParseError as e:
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message=e.message,
             executed=False,
@@ -520,7 +520,7 @@ def parse_when_block(
     action_asts: list[ASTNode] = []
     for tokens in action_token_lists:
         sub = parse(tokens, composition_names=comp)
-        if isinstance(sub, InscriptResult):
+        if isinstance(sub, LiminateResult):
             # Propagate parse / amber outcomes directly. Amber from an
             # action statement still blocks Phase 2 per v3a §107.
             return sub
@@ -539,7 +539,7 @@ def parse_when_block(
     # header's two condition ASTs.
     if _contains_mixed_precedence(when_node):
         from .renderer import render, render_with_explicit_precedence
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.AMBER_PRECEDENCE,
             canonical=render(when_node),
             message=(
@@ -701,7 +701,7 @@ def _parse_pack_verb(
             cat = reserved_category(value_tok.value)
             if cat:
                 raise _ParseError(
-                    f"The word '{value_tok.value}' is reserved in Inscript "
+                    f"The word '{value_tok.value}' is reserved in Liminate "
                     f"— it's used as a {cat}. Please use a name you've "
                     f"created."
                 )
@@ -832,7 +832,7 @@ def _consume_remember_intro(stream: TokenStream) -> tuple[str | None, bool]:
         cat = reserved_category(t.value)
         if cat:
             raise _ParseError(
-                f"The word '{t.value}' is reserved in Inscript — "
+                f"The word '{t.value}' is reserved in Liminate — "
                 f"it's used as a {cat}. Please choose a different name."
             )
         raise _ParseError(f"I didn't expect '{t.value}' before 'called'.")
@@ -913,7 +913,7 @@ def _parse_record_field(stream: TokenStream) -> tuple[str, ASTNode]:
         cat = reserved_category(field_tok.value)
         if cat:
             raise _ParseError(
-                f"The word '{field_tok.value}' is reserved in Inscript — "
+                f"The word '{field_tok.value}' is reserved in Liminate — "
                 f"it's used as a {cat}. Please choose a different name."
             )
         raise _ParseError(f"I expected a field name, not '{field_tok.value}'.")
@@ -980,7 +980,7 @@ def _parse_remember_from(
     cat = reserved_category(peek.value)
     if cat:
         raise _ParseError(
-            f"The word '{peek.value}' is reserved in Inscript — "
+            f"The word '{peek.value}' is reserved in Liminate — "
             f"it's used as a {cat} and can't be used as a value."
         )
     raise _ParseError(f"I didn't expect '{peek.value}' after 'from'.")
@@ -1043,7 +1043,7 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
                 if rcat:
                     raise _ParseError(
                         f"The word '{rec_tok.value}' is reserved in "
-                        f"Inscript — it's used as a {rcat} and can't be "
+                        f"Liminate — it's used as a {rcat} and can't be "
                         f"used as a record name."
                     )
                 raise _ParseError(
@@ -1102,13 +1102,13 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
     if cat:
         if peek.value == "each":
             raise _ParseError(
-                "'each' is a verb in Inscript — it iterates a list, or "
+                "'each' is a verb in Liminate — it iterates a list, or "
                 "acts as a self-reference pronoun inside a 'where' "
                 "clause. It can't appear as a target on its own."
             )
         raise _ParseError(
             f"I expected a target after 'show', but '{peek.value}' is a "
-            f"{cat} in Inscript. Targets must be names you've created "
+            f"{cat} in Liminate. Targets must be names you've created "
             f"with 'remember' or 'gather'."
         )
     raise _ParseError(f"I didn't expect '{peek.value}' after 'show'.")
@@ -1140,7 +1140,7 @@ def _parse_gather(stream: TokenStream) -> GatherNode:
         cat = reserved_category(name_tok.value)
         if cat:
             raise _ParseError(
-                f"The word '{name_tok.value}' is reserved in Inscript — "
+                f"The word '{name_tok.value}' is reserved in Liminate — "
                 f"it's used as a {cat}. Please choose a different name."
             )
         raise _ParseError(f"I expected a name after 'gather', not '{name_tok.value}'.")
@@ -1182,7 +1182,7 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
         if cat:
             raise _ParseError(
                 f"I expected a collection after 'each', but "
-                f"'{coll_tok.value}' is a {cat} in Inscript. Collections "
+                f"'{coll_tok.value}' is a {cat} in Liminate. Collections "
                 f"must be names you've created with 'remember' or 'gather'."
             )
         raise _ParseError(f"I expected a collection after 'each'.")
@@ -1361,7 +1361,7 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
                 if rcat:
                     raise _ParseError(
                         f"The word '{rec_tok.value}' is reserved in "
-                        f"Inscript — it's used as a {rcat} and can't be "
+                        f"Liminate — it's used as a {rcat} and can't be "
                         f"used as a record name."
                     )
                 raise _ParseError(
@@ -1388,7 +1388,7 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
         cat = reserved_category(head.value)
         if cat:
             raise _ParseError(
-                f"The word '{head.value}' is reserved in Inscript — "
+                f"The word '{head.value}' is reserved in Liminate — "
                 f"it's used as a {cat} and can't be used as a field name."
             )
         raise _ParseError(f"I didn't expect '{head.value}' as a field name.")
@@ -1463,7 +1463,7 @@ def _parse_value(stream: TokenStream) -> ASTNode:
     cat = reserved_category(tok.value)
     if cat:
         raise _ParseError(
-            f"The word '{tok.value}' is a {cat} in Inscript and can't be "
+            f"The word '{tok.value}' is a {cat} in Liminate and can't be "
             f"used as a value. Try a different word, or wrap it in quotes: "
             f'"{tok.value}".'
         )
@@ -1496,7 +1496,7 @@ def _maybe_field_access(stream: TokenStream, first_unknown: str) -> ASTNode:
         if rcat:
             raise _ParseError(
                 f"The word '{rec_tok.value}' is reserved in "
-                f"Inscript — it's used as a {rcat} and can't be "
+                f"Liminate — it's used as a {rcat} and can't be "
                 f"used as a record name."
             )
         raise _ParseError(
@@ -1553,13 +1553,13 @@ def _consume_target(stream: TokenStream, *, verb: str) -> NameRef:
             # surface that distinction when it appears as a target.
             if tok.value == "each":
                 raise _ParseError(
-                    "'each' is a verb in Inscript — it iterates a list, or "
+                    "'each' is a verb in Liminate — it iterates a list, or "
                     "acts as a self-reference pronoun inside a 'where' "
                     "clause. It can't appear as a target on its own."
                 )
             raise _ParseError(
                 f"I expected a target after '{verb}', but '{tok.value}' "
-                f"is a {cat} in Inscript. Targets must be names you've "
+                f"is a {cat} in Liminate. Targets must be names you've "
                 f"created with 'remember' or 'gather'."
             )
         raise _ParseError(f"I expected a target after '{verb}', not '{tok.value}'.")
@@ -1587,7 +1587,7 @@ def _consume_parameter_arg(stream: TokenStream, *, comp_name: str) -> str:
         cat = reserved_category(tok.value)
         if cat:
             raise _ParseError(
-                f"The word '{tok.value}' is reserved in Inscript — "
+                f"The word '{tok.value}' is reserved in Liminate — "
                 f"it's used as a {cat}. Please use a name you've created."
             )
         raise _ParseError(
@@ -1618,7 +1618,7 @@ def _consume_name(stream: TokenStream, *, after: str) -> str:
         cat = reserved_category(tok.value)
         if cat:
             raise _ParseError(
-                f"The word '{tok.value}' is reserved in Inscript — "
+                f"The word '{tok.value}' is reserved in Liminate — "
                 f"it's used as a {cat}. Please choose a different name."
             )
         raise _ParseError(f"I expected a name after {after}, not '{tok.value}'.")
@@ -1628,7 +1628,7 @@ def _consume_name(stream: TokenStream, *, after: str) -> str:
     cat = reserved_category(tok.value)
     if cat:
         raise _ParseError(
-            f"The word '{tok.value}' is reserved in Inscript — "
+            f"The word '{tok.value}' is reserved in Liminate — "
             f"it's used as a {cat}. Please choose a different name."
         )
     return tok.value

@@ -1,4 +1,4 @@
-"""Adapter infrastructure for Inscript v3a event-driven execution.
+"""Adapter infrastructure for Liminate v3a event-driven execution.
 
 Sources:
 - v3a §116 (event sources: adapter contract — declaration, adapter, lifecycle)
@@ -142,7 +142,7 @@ class DomainPack(ABC):
 
     A pack groups one or more live value declarations with the adapter
     that produces them. Packs are registered with the interpreter at
-    construction time — no Inscript-level `use`/`load` verb in v3a
+    construction time — no Liminate-level `use`/`load` verb in v3a
     (§118).
     """
 

@@ -12,8 +12,8 @@ Verifies:
 
 import pytest
 
-from inscript.lexer import tokenize
-from inscript.parser import (
+from liminate.lexer import tokenize
+from liminate.parser import (
     ASTNode,
     BareWord,
     CombineNode,
@@ -39,9 +39,9 @@ from inscript.parser import (
     parse,
     parse_when_block,
 )
-from inscript.renderer import render, render_with_explicit_precedence
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
+from liminate.renderer import render, render_with_explicit_precedence
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
 
 
 def _parse(line: str, comps=None):
@@ -329,11 +329,11 @@ ROUND_TRIP_SENTENCES = [
 @pytest.mark.parametrize("line,comps", ROUND_TRIP_SENTENCES)
 def test_round_trip(line, comps):
     first_ast = _parse(line, comps=comps)
-    assert not isinstance(first_ast, InscriptResult), f"first parse returned {first_ast}"
+    assert not isinstance(first_ast, LiminateResult), f"first parse returned {first_ast}"
 
     rendered = render(first_ast)
     second_ast = _parse(rendered, comps=comps)
-    assert not isinstance(second_ast, InscriptResult), (
+    assert not isinstance(second_ast, LiminateResult), (
         f"re-parse of canonical form failed: {rendered} -> {second_ast}"
     )
     assert second_ast == first_ast, (
@@ -348,7 +348,7 @@ def test_amber_result_carries_paren_free_canonical():
     result = _parse(
         "filter the orders where total is above 50 and status is active or status is pending"
     )
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.AMBER_PRECEDENCE
     assert result.canonical is not None
     assert "(" not in result.canonical and ")" not in result.canonical
@@ -432,7 +432,7 @@ def test_render_when_with_explicit_precedence_parenthesizes_mixed():
     with parens so the user sees how the parser grouped them.
 
     (Uses `score`/`level`/`humidity` rather than `a`/`b`/`c` because
-    `a` is an article in Inscript — reserved words can't appear as
+    `a` is an article in Liminate — reserved words can't appear as
     field names.)"""
     node = WhenNode(
         condition=CompoundConditionNode(
@@ -461,7 +461,7 @@ def _round_trip_when(header: str, *actions: str) -> tuple[ASTNode, str]:
     header_tokens = reorder(tokenize(header))
     action_lists = [reorder(tokenize(a)) for a in actions]
     first = parse_when_block(header_tokens, action_lists)
-    assert not isinstance(first, InscriptResult), f"first parse: {first}"
+    assert not isinstance(first, LiminateResult), f"first parse: {first}"
 
     rendered = render(first)
     lines = rendered.split("\n")
@@ -473,7 +473,7 @@ def _round_trip_when(header: str, *actions: str) -> tuple[ASTNode, str]:
             continue
         re_actions.append(reorder(tokenize(stripped)))
     second = parse_when_block(re_header, re_actions)
-    assert not isinstance(second, InscriptResult), f"re-parse: {second}"
+    assert not isinstance(second, LiminateResult), f"re-parse: {second}"
     assert second == first, f"\n  rendered: {rendered!r}\n  first: {first}\n  second: {second}"
     return first, rendered
 

@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import textwrap
 
-from inscript.adapter import DomainPack
-from inscript.cli import Session
-from inscript.lexer import leading_indent, LexError, tokenize
-from inscript.listener import listen
-from inscript.result import InscriptResult, ResultStatus
-from inscript.vocabulary import TokenType
+from liminate.adapter import DomainPack
+from liminate.cli import Session
+from liminate.lexer import leading_indent, LexError, tokenize
+from liminate.listener import listen
+from liminate.result import LiminateResult, ResultStatus
+from liminate.vocabulary import TokenType
 
 
 # ---------------------------------------------------------------------------
@@ -28,10 +28,10 @@ def run_v3a(
     source: str,
     *,
     pack: DomainPack | None = None,
-) -> tuple[Session, list[InscriptResult]]:
+) -> tuple[Session, list[LiminateResult]]:
     """Run a v3a program through Phase 1 + (if any handlers register)
     Phase 2. Returns the Session and the full ordered list of yielded
-    InscriptResult objects.
+    LiminateResult objects.
 
     Source is a multi-line string. `textwrap.dedent` strips the common
     Python-source leading indentation before line iteration so action
@@ -40,7 +40,7 @@ def run_v3a(
     """
     source = textwrap.dedent(source).strip("\n")
     session = Session(domain_packs=[pack] if pack else None)
-    results: list[InscriptResult] = []
+    results: list[LiminateResult] = []
     lines = source.splitlines()
 
     i = 0
@@ -52,7 +52,7 @@ def run_v3a(
         try:
             indent = leading_indent(line)
         except LexError as e:
-            err = InscriptResult(
+            err = LiminateResult(
                 status=ResultStatus.ERROR_PARSE,
                 message=e.message,
                 executed=False,
@@ -104,7 +104,7 @@ def run_v3a(
                 action_lines.append(next_line.lstrip(" "))
                 j += 1
             if block_error is not None:
-                err = InscriptResult(
+                err = LiminateResult(
                     status=ResultStatus.ERROR_PARSE,
                     message=block_error,
                     executed=False,
@@ -143,11 +143,11 @@ def run_v3a(
     return session, results
 
 
-def fires(results: list[InscriptResult]) -> list[InscriptResult]:
+def fires(results: list[LiminateResult]) -> list[LiminateResult]:
     return [r for r in results if r.status is ResultStatus.HANDLER_FIRE]
 
 
-def outputs(results: list[InscriptResult]) -> list[str]:
+def outputs(results: list[LiminateResult]) -> list[str]:
     """Flatten all data output across SUCCESS / HANDLER_FIRE results."""
     lines: list[str] = []
     for r in results:

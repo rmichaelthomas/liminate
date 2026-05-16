@@ -31,7 +31,7 @@ class ResultStatus(Enum):
 
 
 @dataclass
-class InscriptResult:
+class LiminateResult:
     status: ResultStatus
     canonical: str | None = None
     output: list[str] | None = None

@@ -1,8 +1,8 @@
 Error: I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'combine', or 'each'.
 I understand this as: show nonexistent
 Error: I can't find 'nonexistent'. You might need to 'remember' it first.
-Error: The word 'filter' is a verb in Inscript and can't be used as a value. Try a different word.
-Error: The word 'each' is reserved in Inscript — it's used as a verb. Please choose a different name.
+Error: The word 'filter' is a verb in Liminate and can't be used as a value. Try a different word.
+Error: The word 'each' is reserved in Liminate — it's used as a verb. Please choose a different name.
 I understand this as: remember a list called colors with red and blue and green
 I understand this as: combine the colors
 Error: I can only combine numbers. 'colors' contains text.

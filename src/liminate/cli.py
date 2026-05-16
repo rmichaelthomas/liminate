@@ -1,4 +1,4 @@
-"""CLI wrapper for Inscript v1 / v2c / v2d / v3a.
+"""CLI wrapper for Liminate v1 / v2c / v2d / v3a.
 
 This is the ONLY module permitted to call `input()` or `print()`
 (v1d §64). It is a thin layer over the structured-result pipeline:
@@ -6,11 +6,11 @@ lexer → reorderer → parser → interpreter (which gates on the analyzer
 per-op). All other modules return data.
 
 Usage:
-    python -m inscript                  # Interactive REPL
-    python -m inscript <file.insc>      # Execute a file
-    python -m inscript --test <file>    # Test mode (auto-confirm amber)
-    python -m inscript <file> --test    # --test may appear in any position
-    python -m inscript <file> --quiet   # Suppress "I understand this as: ..."
+    python -m liminate                  # Interactive REPL
+    python -m liminate <file.limn>      # Execute a file
+    python -m liminate --test <file>    # Test mode (auto-confirm amber)
+    python -m liminate <file> --test    # --test may appear in any position
+    python -m liminate <file> --quiet   # Suppress "I understand this as: ..."
                                         # echo; mirror blank source lines so
                                         # visual grouping survives. U1/U4.
 
@@ -47,7 +47,7 @@ from .listener import listen
 from .packs.timer import make_timer_pack
 from .parser import parse, parse_when_block
 from .reorderer import reorder
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 from .vocabulary import TokenType
 
 
@@ -106,14 +106,14 @@ class Session:
     def composition_names(self) -> set[str]:
         return {n for n, e in self.symtab.items() if e.type == "composition"}
 
-    def run_line(self, line: str) -> InscriptResult | None:
+    def run_line(self, line: str) -> LiminateResult | None:
         """Execute one source line. Returns the result, or None for blank."""
         try:
             tokens = tokenize(line)
         except LexError as e:
             # v2c §86/§92 — unclosed or empty quoted strings surface as
             # ERROR_PARSE (Outcome 4 per v1c §50).
-            return InscriptResult(
+            return LiminateResult(
                 status=ResultStatus.ERROR_PARSE,
                 message=e.message,
                 executed=False,
@@ -121,10 +121,10 @@ class Session:
         if not tokens:
             return None
         reordered = reorder(tokens)
-        if isinstance(reordered, InscriptResult):
+        if isinstance(reordered, LiminateResult):
             return reordered
         ast = parse(reordered, composition_names=self.composition_names())
-        if isinstance(ast, InscriptResult):
+        if isinstance(ast, LiminateResult):
             # Amber outcomes carry a pending_ast for confirmation flow.
             return ast
         return execute(
@@ -137,7 +137,7 @@ class Session:
         self,
         header_line: str,
         action_lines: list[str],
-    ) -> InscriptResult | None:
+    ) -> LiminateResult | None:
         """Execute a v3a `when` block — header line plus its already-
         de-indented action lines.
 
@@ -150,13 +150,13 @@ class Session:
         try:
             header_tokens = tokenize(header_line)
         except LexError as e:
-            return InscriptResult(
+            return LiminateResult(
                 status=ResultStatus.ERROR_PARSE,
                 message=e.message,
                 executed=False,
             )
         header_reordered = reorder(header_tokens)
-        if isinstance(header_reordered, InscriptResult):
+        if isinstance(header_reordered, LiminateResult):
             return header_reordered
 
         action_token_lists: list = []
@@ -164,7 +164,7 @@ class Session:
             try:
                 toks = tokenize(raw)
             except LexError as e:
-                return InscriptResult(
+                return LiminateResult(
                     status=ResultStatus.ERROR_PARSE,
                     message=e.message,
                     executed=False,
@@ -172,7 +172,7 @@ class Session:
             if not toks:
                 continue  # blank line inside the block — v1c §48
             re_ordered = reorder(toks)
-            if isinstance(re_ordered, InscriptResult):
+            if isinstance(re_ordered, LiminateResult):
                 return re_ordered
             action_token_lists.append(re_ordered)
 
@@ -180,7 +180,7 @@ class Session:
             header_reordered, action_token_lists,
             composition_names=self.composition_names(),
         )
-        if isinstance(ast, InscriptResult):
+        if isinstance(ast, LiminateResult):
             return ast
         return execute(
             ast, self.symtab,
@@ -193,7 +193,7 @@ class Session:
         registration order."""
         return [pack.adapter() for pack in self.domain_packs]
 
-    def record_result(self, result: InscriptResult | None) -> None:
+    def record_result(self, result: LiminateResult | None) -> None:
         """Track whether Phase 1 had any blocking outcomes (v3a §107).
 
         Called by the display layer after each result so the Session can
@@ -331,7 +331,7 @@ def _maybe_truncate(lines: list[str]) -> list[str]:
 
 
 def display_result(
-    result: InscriptResult | None,
+    result: LiminateResult | None,
     session: Session,
     *,
     auto_confirm_amber: bool = False,
@@ -339,7 +339,7 @@ def display_result(
     out=None,
     _suppress_canonical: bool = False,
 ) -> None:
-    """Render an InscriptResult to stdout per v1c §50 + v1a §33.
+    """Render an LiminateResult to stdout per v1c §50 + v1a §33.
 
     When `quiet` is True (U1/U4), the "I understand this as: ..." echo
     is suppressed. Data output, error messages, and amber prompts still
@@ -477,7 +477,7 @@ def run_file(
     domain_packs: list[DomainPack] | None = None,
     out=None,
 ) -> None:
-    """Execute an Inscript source file (Phase 1 + optional Phase 2).
+    """Execute an Liminate source file (Phase 1 + optional Phase 2).
 
     Phase 1 reads the file line-by-line. Top-level `when` lines start
     an indentation-aware block: subsequent indented lines belong to
@@ -510,7 +510,7 @@ def run_file(
         try:
             indent = leading_indent(line)
         except LexError as e:
-            err = InscriptResult(
+            err = LiminateResult(
                 status=ResultStatus.ERROR_PARSE,
                 message=e.message,
                 executed=False,
@@ -665,7 +665,7 @@ def _consume_when_block(
         j += 1
 
     if block_error is not None:
-        err = InscriptResult(
+        err = LiminateResult(
             status=ResultStatus.ERROR_PARSE,
             message=block_error,
             executed=False,
@@ -690,7 +690,7 @@ def _consume_when_block(
 
 def repl() -> None:
     session = Session()
-    print("Inscript v3a — type 'exit' to quit.")
+    print("Liminate v3a — type 'exit' to quit.")
     while True:
         try:
             line = input("> ")

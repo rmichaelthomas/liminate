@@ -1,7 +1,7 @@
 """Phase 1 gate tests: structured result objects
 (v1c §50, v1d §64, v3a §122)."""
 
-from inscript.result import InscriptResult, ResultStatus
+from liminate.result import LiminateResult, ResultStatus
 
 
 def test_all_nine_statuses_present():
@@ -17,7 +17,7 @@ def test_all_nine_statuses_present():
 
 
 def test_construct_success_with_output():
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.SUCCESS,
         canonical="show age",
         output=["30"],
@@ -30,7 +30,7 @@ def test_construct_success_with_output():
 
 
 def test_construct_amber_precedence():
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.AMBER_PRECEDENCE,
         canonical="filter the orders where (a and b) or c",
         message="I'll read this as: (A AND B) OR C. Is that what you mean?",
@@ -42,7 +42,7 @@ def test_construct_amber_precedence():
 
 
 def test_construct_amber_ambiguity():
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.AMBER_AMBIGUITY,
         message="I'm not sure if you mean X or Y — can you clarify?",
     )
@@ -51,7 +51,7 @@ def test_construct_amber_ambiguity():
 
 
 def test_construct_error_parse():
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.ERROR_PARSE,
         message="I don't recognize a command here.",
     )
@@ -61,7 +61,7 @@ def test_construct_error_parse():
 
 
 def test_construct_error_semantic():
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.ERROR_SEMANTIC,
         canonical="show missingname",
         message="I can't find 'missingname'.",
@@ -72,7 +72,7 @@ def test_construct_error_semantic():
 
 
 def test_default_fields():
-    r = InscriptResult(status=ResultStatus.SUCCESS)
+    r = LiminateResult(status=ResultStatus.SUCCESS)
     assert r.canonical is None
     assert r.output is None
     assert r.message is None
@@ -90,7 +90,7 @@ def test_construct_listening_marker():
     """LISTENING is yielded once when Phase 2 begins. `watching` lists
     every name referenced by any registered handler (v3a §108 dependency
     extraction + §122 marker shape)."""
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.LISTENING,
         metadata={"watching": ["temperature", "humidity"]},
     )
@@ -102,7 +102,7 @@ def test_construct_handler_fire_with_trigger_metadata():
     """HANDLER_FIRE wraps each action-block statement result with
     trigger metadata identifying source, handler index, and what
     changed (v3a §122 trigger envelope)."""
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.HANDLER_FIRE,
         canonical='show "alert"',
         output=["alert"],
@@ -126,7 +126,7 @@ def test_construct_shutdown_with_reason():
     """SHUTDOWN carries a `reason` identifying why the listener stopped
     (v3a §122 — one of: finish, adapter_complete, external, no_adapters,
     error)."""
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.SHUTDOWN,
         output=["Program stopped."],
         metadata={"reason": "finish", "handler_index": 2},
@@ -139,7 +139,7 @@ def test_construct_shutdown_with_reason():
 def test_construct_error_runtime():
     """ERROR_RUNTIME covers listener-specific failures: cycle detection
     (v3a §114), adapter failure (v3a §120), type mismatch (v3a §116)."""
-    r = InscriptResult(
+    r = LiminateResult(
         status=ResultStatus.ERROR_RUNTIME,
         message="A handler fired twice in one cascade — cycle detected.",
         metadata={"kind": "cycle", "path": ["h0", "h1", "h0"]},
@@ -149,11 +149,11 @@ def test_construct_error_runtime():
 
 
 def test_metadata_is_independent_per_instance():
-    """Each InscriptResult must own its metadata dict — the default
+    """Each LiminateResult must own its metadata dict — the default
     mustn't be a shared mutable. Defensive against the common dataclass
     default-mutable-arg footgun."""
-    a = InscriptResult(status=ResultStatus.SUCCESS)
-    b = InscriptResult(status=ResultStatus.SUCCESS)
+    a = LiminateResult(status=ResultStatus.SUCCESS)
+    b = LiminateResult(status=ResultStatus.SUCCESS)
     assert a.metadata is None
     assert b.metadata is None
     # Setting one must not affect the other.

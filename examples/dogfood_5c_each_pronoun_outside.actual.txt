@@ -1,2 +1,2 @@
 I understand this as: remember a list called nums with 1 and 2 and 3
-Error: 'each' is a verb in Inscript — it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.
+Error: 'each' is a verb in Liminate — it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.

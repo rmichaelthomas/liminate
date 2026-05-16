@@ -4,8 +4,8 @@ v1b §36/§37/§41/§43/§44, v1c §46/§51, v1d §65, v3a §108–§112).
 
 import pytest
 
-from inscript.lexer import tokenize
-from inscript.parser import (
+from liminate.lexer import tokenize
+from liminate.parser import (
     BareWord,
     ChooseBranch,
     ChooseNode,
@@ -33,8 +33,8 @@ from inscript.parser import (
     parse,
     parse_when_block,
 )
-from inscript.reorderer import reorder
-from inscript.result import InscriptResult, ResultStatus
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult, ResultStatus
 
 
 def parse_line(line: str, comps: set[str] | None = None):
@@ -133,7 +133,7 @@ def test_remember_record_missing_value_after_field():
     result = parse_line(
         "remember an order called order1 with total as 75 and status"
     )
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_PARSE
     assert "status" in result.message
     assert "as" in result.message
@@ -256,7 +256,7 @@ def test_filter_compound_precedence_and_binds_tighter_than_or():
         "filter the orders where total is above 50 and status is active or status is pending"
     )
     # Mixed precedence -> AMBER, not a raw AST.
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.AMBER_PRECEDENCE
     ast = result.pending_ast
     assert isinstance(ast.condition, CompoundConditionNode)
@@ -269,7 +269,7 @@ def test_amber_precedence_message_contains_parenthesized_form():
     result = parse_line(
         "filter the orders where total is above 50 and status is active or status is pending"
     )
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert "(total is above 50 and status is active)" in result.message
     assert "status is pending" in result.message
 
@@ -340,7 +340,7 @@ def test_composition_call_falls_back_when_no_verb():
 def test_no_verb_no_composition_is_parse_error():
     # Sentence 34.
     result = parse_line("orders total above 50")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_PARSE
     assert "verb" in result.message.lower()
 
@@ -356,7 +356,7 @@ def test_no_verb_lists_available_verbs():
 
 def test_reserved_word_in_name_position_is_error():
     result = parse_line("remember a value called filter with 10")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_PARSE
     assert "'filter'" in result.message
     assert "reserved" in result.message
@@ -366,7 +366,7 @@ def test_reserved_word_in_name_position_is_error():
 def test_reserved_word_in_value_position_is_error():
     # v1c §46 / sentence 32.
     result = parse_line("remember a list called items with filter and blue")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_PARSE
     assert "'filter'" in result.message
 
@@ -375,7 +375,7 @@ def test_reserved_word_in_value_position_is_error():
 
 def test_gather_with_non_number_from_is_parse_error():
     result = parse_line("gather the numbers from hello to 10")
-    assert isinstance(result, InscriptResult)
+    assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_PARSE
 
 
@@ -433,7 +433,7 @@ PARSEABLE = [
 def test_every_parseable_sentence_yields_an_ast(line, comps):
     out = parse_line(line, comps=comps)
     # Some lines are AMBER; the rest are AST nodes.
-    if isinstance(out, InscriptResult):
+    if isinstance(out, LiminateResult):
         assert out.status in (ResultStatus.AMBER_PRECEDENCE, ResultStatus.AMBER_AMBIGUITY)
     else:
         assert out is not None
@@ -452,7 +452,7 @@ SYNTAX_ERROR_SENTENCES = [
 @pytest.mark.parametrize("line", SYNTAX_ERROR_SENTENCES)
 def test_syntax_errors_produce_error_parse(line):
     out = parse_line(line)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -480,7 +480,7 @@ def test_composition_definition_param_reserved_word_rejected():
     out = parse_line(
         "remember how to find-big from filter: keep the orders where total is above 50"
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "reserved" in out.message
 
@@ -501,14 +501,14 @@ def test_composition_call_without_parameter_argument():
 
 def test_composition_call_arg_must_be_a_name_not_a_literal():
     out = parse_line("find-big from 5", comps={"find-big"})
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
 def test_composition_call_arg_must_be_a_name_not_a_reserved_word():
     # v2d §96: names-only — reserved words are rejected at parse time.
     out = parse_line("find-big from filter", comps={"find-big"})
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "reserved" in out.message
 
@@ -520,7 +520,7 @@ def test_v2a_70_chaining_error_path_is_removed():
     # Either a successful parse (parser-level) — Phase 5 catches the
     # mismatch semantically — or some other error, but NEVER the
     # superseded v2a §70 wording.
-    if isinstance(out, InscriptResult):
+    if isinstance(out, LiminateResult):
         assert "Composition chaining isn't supported" not in (out.message or "")
 
 
@@ -639,7 +639,7 @@ def test_choose_inside_each_is_a_parse_error():
     out = parse_line(
         'each the orders choose if total is above 50: show "big"'
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "can't appear inside 'each'" in out.message
     assert "keep" in out.message
@@ -647,13 +647,13 @@ def test_choose_inside_each_is_a_parse_error():
 
 def test_choose_missing_if_after_verb_is_a_parse_error():
     out = parse_line('choose score is above 50: show "pass"')
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
 def test_choose_missing_colon_is_a_parse_error():
     out = parse_line('choose if score is above 50 show "pass"')
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -680,7 +680,7 @@ def test_finish_inside_composition_body_is_parse_legal():
 def test_finish_with_trailing_tokens_is_a_parse_error():
     """`finish` takes no slots — anything after it is unexpected."""
     out = parse_line("finish now")
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -694,7 +694,7 @@ def _parse_when(header: str, *actions: str, comps=None):
     parser's)."""
     header_tokens = tokenize(header)
     header_reordered = reorder(header_tokens)
-    if isinstance(header_reordered, InscriptResult):
+    if isinstance(header_reordered, LiminateResult):
         return header_reordered
     action_lists: list = []
     for a in actions:
@@ -702,7 +702,7 @@ def _parse_when(header: str, *actions: str, comps=None):
         if not toks:
             continue
         r = reorder(toks)
-        if isinstance(r, InscriptResult):
+        if isinstance(r, LiminateResult):
             return r
         action_lists.append(r)
     return parse_when_block(
@@ -798,7 +798,7 @@ def test_when_with_of_expression_in_condition():
 def test_when_empty_action_block_is_a_parse_error():
     """v3a §110: an empty action block is a parse error."""
     out = _parse_when("when temperature is above 100")
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "action block" in out.message.lower()
 
@@ -807,7 +807,7 @@ def test_when_missing_condition_is_a_parse_error():
     """A bare `when` header with nothing after the keyword fails — there
     is no condition to register."""
     out = _parse_when("when", 'show "x"')
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -815,7 +815,7 @@ def test_when_unless_without_guard_is_a_parse_error():
     """`unless` requires its own guard condition; a dangling `unless`
     after a `when` is a parse error."""
     out = _parse_when("when x is above 5 unless", 'show "x"')
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -825,7 +825,7 @@ def test_when_inside_composition_body_is_a_parse_error():
     out = parse_line(
         "remember how to register-handler: when x is above 5"
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "top-level" in out.message.lower() or "top level" in out.message.lower()
 
@@ -833,7 +833,7 @@ def test_when_inside_composition_body_is_a_parse_error():
 def test_when_inside_each_body_is_a_parse_error():
     """v3a §108: `when` cannot appear inside an `each` body either."""
     out = parse_line("each the orders when total is above 50")
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "top-level" in out.message.lower() or "top level" in out.message.lower()
 
@@ -845,7 +845,7 @@ def test_nested_when_inside_action_block_is_a_parse_error():
         "when temperature is above 100",
         "when humidity is above 80",  # nested when as the action statement
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     assert "top-level" in out.message.lower() or "top level" in out.message.lower()
 
@@ -854,7 +854,7 @@ def test_unless_standalone_is_a_parse_error():
     """v3a §109: `unless` is a guard clause on `when`, not a standalone
     statement."""
     out = parse_line("unless x is equal to true")
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
     # The error message should redirect the user to the correct usage.
     assert "unless" in out.message.lower()
@@ -901,13 +901,13 @@ def test_parse_when_block_rejects_non_when_header():
     header_tokens = tokenize("show alert")
     action_tokens = [tokenize('show "alert"')]
     out = parse_when_block(header_tokens, action_tokens)
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
 def test_parse_when_block_empty_header_is_a_parse_error():
     out = parse_when_block([], [tokenize('show "x"')])
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.ERROR_PARSE
 
 
@@ -923,7 +923,7 @@ def test_when_with_mixed_precedence_condition_is_amber():
         "when score is above 1 and level is above 2 or humidity is above 3",
         'show "high alert"',
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.AMBER_PRECEDENCE
     assert out.pending_ast is not None
     assert isinstance(out.pending_ast, WhenNode)
@@ -937,5 +937,5 @@ def test_when_with_mixed_precedence_unless_guard_is_amber():
         "or temperature is above 3",
         'show "high alert"',
     )
-    assert isinstance(out, InscriptResult)
+    assert isinstance(out, LiminateResult)
     assert out.status is ResultStatus.AMBER_PRECEDENCE

@@ -1,7 +1,7 @@
 remember a doc called doc-a with domain as mobius and words as 10000
 remember a doc called doc-b with domain as mobius and words as 8000
-remember a doc called doc-c with domain as inscript and words as 6000
-remember a doc called doc-d with domain as inscript and words as 4000
+remember a doc called doc-c with domain as liminate and words as 6000
+remember a doc called doc-d with domain as liminate and words as 4000
 remember a doc called doc-e with domain as instrument and words as 2000
 
 remember a list called docs with doc-a and doc-b and doc-c and doc-d and doc-e

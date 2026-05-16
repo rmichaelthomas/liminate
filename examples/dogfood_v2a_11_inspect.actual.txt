@@ -1,9 +1,9 @@
-I understand this as: remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+I understand this as: remember a doc called doc-1 with domain as liminate and class as inception and words as 10831
 I understand this as: remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
 I understand this as: remember a doc called doc-19 with domain as mobius and class as spec and words as 6293
 I understand this as: remember a doc called doc-28 with domain as cnxct and class as inception and words as 5057
 I understand this as: show domain of doc-1
-inscript
+liminate
 I understand this as: show class of doc-19
 spec
 I understand this as: show words of doc-28

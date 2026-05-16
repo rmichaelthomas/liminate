@@ -5,10 +5,10 @@ I understand this as: each the nums show
 3
 4
 5
-I understand this as: remember a list called names with mobius and inscript and instrument
+I understand this as: remember a list called names with mobius and liminate and instrument
 I understand this as: each the names show
 mobius
-inscript
+liminate
 instrument
 I understand this as: remember a doc called d1 with class as checkpoint and words as 1000
 I understand this as: remember a doc called d2 with class as addendum and words as 2000

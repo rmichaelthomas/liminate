@@ -1,4 +1,4 @@
-"""Reorderer for Inscript v1.
+"""Reorderer for Liminate v1.
 
 Sources:
 - inception §17 (slot-filling architecture)
@@ -28,10 +28,10 @@ raises a no-verb error (v1c §53 sentence 34).
 
 from __future__ import annotations
 
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 from .vocabulary import Token, TokenType
 
-ReorderOutput = list[Token] | InscriptResult
+ReorderOutput = list[Token] | LiminateResult
 
 
 def reorder(tokens: list[Token]) -> ReorderOutput:
@@ -57,7 +57,7 @@ def reorder(tokens: list[Token]) -> ReorderOutput:
         moved = [tokens[verb_idx]] + prefix + tokens[verb_idx + 1:]
         return _validate_where_head(moved)
 
-    return InscriptResult(
+    return LiminateResult(
         status=ResultStatus.ERROR_PARSE,
         message=(
             "I couldn't parse this. Try putting the verb at the front, "
@@ -116,7 +116,7 @@ def _validate_where_head(tokens: list[Token]) -> ReorderOutput:
                 second.type is TokenType.OPERATOR and second.value == "is"
             )
             if not (head_ok and second_ok):
-                return InscriptResult(
+                return LiminateResult(
                     status=ResultStatus.ERROR_PARSE,
                     message=(
                         "I couldn't parse the condition after 'where'. "
