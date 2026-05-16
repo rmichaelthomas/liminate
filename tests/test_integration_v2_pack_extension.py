@@ -420,3 +420,162 @@ def test_value_type_name_rejects_quoted_string():
     errors = [r for r in results if r.status is ResultStatus.ERROR_PARSE]
     assert errors
     assert "spaces" in errors[0].message
+
+
+# ---------------------------------------------------------------------------
+# Descriptor propagation (SC-Q1 prerequisite — May 16, 2026)
+#
+# Descriptors (the word between article and `called`, e.g. `source` in
+# `remember a source called readme`) used to be stored only on records.
+# They are now stored on values and lists too, and the pack-verb
+# type_constraint check works against any descriptor regardless of the
+# variable's underlying Liminate type.
+# ---------------------------------------------------------------------------
+
+
+def _source_constraint_pack() -> TestDomainPack:
+    """A minimal pack with one verb whose `from` slot requires
+    type_constraint='source'. Used to exercise descriptor checks across
+    value, list, and record types."""
+    sig = parse_pack_verb_signature({
+        "word": "cite",
+        "slots": [
+            {"name": "text", "connective": None, "required": True, "value_type": "value"},
+            {
+                "name": "source", "connective": "from", "required": True,
+                "value_type": "name", "type_constraint": "source",
+            },
+        ],
+        "execution": {
+            "type": "substring_check",
+            "check_slot": "text",
+            "against_slot": "source",
+        },
+    })
+    return TestDomainPack(
+        declarations=[], script=[], name="src-constraint",
+        vocabulary=[("source", "noun"), ("claim", "noun")], verbs=[sig],
+    )
+
+
+def test_descriptor_propagation_on_value():
+    """`remember a source called readme with "text"` stores descriptor='source'."""
+    src = '''
+    remember a source called readme with "the original text"
+    '''
+    session, _ = run_v3a(src, pack=_source_constraint_pack())
+    entry = session.symtab["readme"]
+    assert entry.descriptor == "source"
+    assert entry.type == "string"
+
+
+def test_descriptor_propagation_on_list():
+    """`remember a source called items with item1 and item2` stores descriptor='source'."""
+    src = '''
+    remember a source called items with "alpha" and "beta"
+    '''
+    session, _ = run_v3a(src, pack=_source_constraint_pack())
+    entry = session.symtab["items"]
+    assert entry.descriptor == "source"
+    assert entry.type == "list_of_strings"
+
+
+def test_type_constraint_passes_on_string_with_descriptor():
+    """SC-Q1 prerequisite: string-typed variable with the right descriptor
+    satisfies a pack-verb type_constraint."""
+    src = '''
+    remember a source called readme with "Newton was born in 1643"
+    cite "Newton" from readme
+    '''
+    _, results = run_v3a(src, pack=_source_constraint_pack())
+    errors = [
+        r for r in results
+        if r.status in (ResultStatus.ERROR_RUNTIME, ResultStatus.ERROR_SEMANTIC)
+    ]
+    assert errors == []
+
+
+def test_type_constraint_fails_on_string_without_descriptor():
+    """String without a descriptor fails the type_constraint check with a
+    message that names the underlying type, not 'a record'."""
+    src = '''
+    remember a value called readme with "Newton was born in 1643"
+    cite "Newton" from readme
+    '''
+    _, results = run_v3a(src, pack=_source_constraint_pack())
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert errors
+    msg = errors[0].message
+    assert "'readme'" in msg
+    assert "source" in msg
+    # Must not claim 'a record' for a string-typed variable.
+    assert "record" not in msg
+
+
+def _decision_constraint_pack() -> TestDomainPack:
+    """A `lock to <decision>` verb (set_value execution) that requires
+    the decision descriptor on the only constrained slot — used to test
+    the type_constraint gate in isolation, without any
+    execution-specific analyzer checks on top."""
+    sig = parse_pack_verb_signature({
+        "word": "lock",
+        "slots": [
+            {
+                "name": "decision", "connective": "to", "required": True,
+                "value_type": "name", "type_constraint": "decision",
+            },
+        ],
+        "execution": {
+            "type": "set_value",
+            "target_name": "locked-decision",
+            "source_slot": "decision",
+        },
+    })
+    return TestDomainPack(
+        declarations=[], script=[], name="dec-constraint",
+        vocabulary=[("decision", "noun")], verbs=[sig],
+    )
+
+
+def test_type_constraint_passes_on_record_with_descriptor():
+    """Regression: a record carrying the right descriptor satisfies the
+    type_constraint gate (the path the v4a `navigate to screen` verb
+    has always used)."""
+    src = '''
+    remember a decision called policy with budget as 50000 and name as "alpha"
+    lock to policy
+    '''
+    _, results = run_v3a(src, pack=_decision_constraint_pack())
+    semantic_errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert semantic_errors == []
+
+
+def test_type_constraint_fails_on_record_with_wrong_descriptor():
+    """Record with a non-matching descriptor errors and names both the
+    actual and expected descriptor in the message."""
+    src = '''
+    remember a claim called policy with budget as 50000
+    lock to policy
+    '''
+    _, results = run_v3a(src, pack=_decision_constraint_pack())
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert errors
+    msg = errors[0].message
+    assert "'policy'" in msg
+    assert "claim" in msg
+    assert "decision" in msg
+
+
+def test_pack_ui_navigate_with_descriptor_still_works():
+    """Regression: pack_ui.json `navigate to <screen>` — a record with
+    descriptor='screen' — still satisfies its type_constraint."""
+    pack = _make_pack("pack_ui.json")
+    src = '''
+    remember a screen called settings with title as "Settings"
+    navigate to settings
+    show current-screen
+    '''
+    _, results = run_v3a(src, pack=pack)
+    semantic_errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert semantic_errors == []
+    assert outputs(results)[-1] == "settings"

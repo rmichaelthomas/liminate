@@ -1128,16 +1128,20 @@ def _check_pack_verb(
         entry = symtab[name]
         constraint = slot.type_constraint
         slot_label = _pack_slot_label(node.word, slot)
-        if entry.type != "record":
-            raise _SemanticError(
-                f"'{name}' is {_singular(entry.type)}, not a {constraint}. "
-                f"'{slot_label}' expects a {constraint}."
-            )
         descriptor = (entry.descriptor or "").lower()
         if descriptor != constraint.lower():
-            shown = entry.descriptor if entry.descriptor else "a record"
+            # SC-Q1 prerequisite: type_constraint applies regardless of
+            # the variable's underlying Liminate type. A string with the
+            # right descriptor passes; a string with no descriptor fails
+            # with a message that names the type.
+            if entry.descriptor:
+                shown = f"a {entry.descriptor}"
+            elif entry.type == "record":
+                shown = "a record"
+            else:
+                shown = _singular(entry.type)
             raise _SemanticError(
-                f"'{name}' is a {shown}, not a {constraint}. "
+                f"'{name}' is {shown}, not a {constraint}. "
                 f"'{slot_label}' expects a {constraint}."
             )
 

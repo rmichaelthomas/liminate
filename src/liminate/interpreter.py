@@ -551,7 +551,7 @@ def _exec_remember_value(
     current_item: Any,
 ) -> list[str]:
     value = _evaluate_expression(node.value, symtab, current_item)
-    _store(symtab, node.name, value)
+    _store(symtab, node.name, value, descriptor=node.descriptor)
     return []
 
 
@@ -581,6 +581,7 @@ def _exec_remember_list(
         node.name,
         items,
         source_names=source_names if has_named else None,
+        descriptor=node.descriptor,
     )
     return []
 
@@ -1321,6 +1322,7 @@ def _store(
     value: Any,
     *,
     source_names: list[str | None] | None = None,
+    descriptor: str | None = None,
 ) -> None:
     """Store value under name. Existing entries are overwritten (v1d §58).
     Copy-on-store enforces v1's copy semantics (§24 line 486).
@@ -1328,12 +1330,17 @@ def _store(
     `source_names` (U2) carries the names of the records the list was
     built from, when applicable, so schema-mismatch errors can name the
     offender. None for all non-list-of-records cases.
+
+    `descriptor` is the user-written word between article and `called`
+    (e.g. `source` in `remember a source called readme`). Only the
+    `remember` exec paths pass this; interpreter-internal stores
+    (gather, pack verb writes, add) leave it None.
     """
     value = copy.deepcopy(value)
     type_, schema = _infer_type_and_schema(value)
     symtab[name] = SymbolEntry(
         name=name, value=value, type=type_, schema=schema,
-        source_names=source_names,
+        source_names=source_names, descriptor=descriptor,
     )
 
 
