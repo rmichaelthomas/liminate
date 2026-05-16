@@ -105,6 +105,17 @@ liminate
 
 # `python -m liminate ...` is the equivalent module-invocation form
 # of every command above (useful when the `liminate` script is not on PATH).
+
+# Build a standalone single-file binary for the current platform
+# (PyInstaller, output at dist/liminate). Requires the `build` extra.
+./build/build_binary.sh
+
+# Release a new version (pushes a v* tag, which triggers
+# .github/workflows/release.yml to build macOS / Linux / Windows
+# binaries and create a GitHub Release with all three attached).
+# See RELEASING.md for the full checklist and required secrets.
+git tag v0.x.x
+git push origin v0.x.x
 ```
 
 ## Modules (src/liminate/)
