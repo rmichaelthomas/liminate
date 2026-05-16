@@ -28,9 +28,22 @@ from queue import Queue
 from typing import Any
 
 from .vocabulary import (
+    AppendToListExecution,
+    CompareValuesExecution,
     PackVerbExecution,
     PackVerbSignature,
     PackVerbSlot,
+    SetFieldExecution,
+    SetValueExecution,
+    SubstringCheckExecution,
+)
+
+
+_VALID_VALUE_TYPES = {"name", "value"}
+_WRITE_TARGET_TYPES = (
+    SetValueExecution,
+    AppendToListExecution,
+    SetFieldExecution,
 )
 
 
@@ -186,19 +199,165 @@ class DomainPack(ABC):
 # ---------------------------------------------------------------------------
 
 
+def _parse_execution(exec_def: dict) -> PackVerbExecution:
+    """v2 factory: dispatch on the JSON `type` field to construct the
+    appropriate frozen dataclass."""
+    exec_type = exec_def.get("type", "")
+    if exec_type == "set_value":
+        return SetValueExecution(
+            target_name=exec_def.get("target_name"),
+            target_slot=exec_def.get("target_slot"),
+            source_slot=exec_def.get("source_slot"),
+            literal_value=exec_def.get("literal_value"),
+        )
+    if exec_type == "substring_check":
+        return SubstringCheckExecution(
+            check_slot=exec_def["check_slot"],
+            against_slot=exec_def["against_slot"],
+        )
+    if exec_type == "append_to_list":
+        return AppendToListExecution(
+            target_name=exec_def.get("target_name"),
+            target_slot=exec_def.get("target_slot"),
+            source_slot=exec_def.get("source_slot"),
+            literal_value=exec_def.get("literal_value"),
+        )
+    if exec_type == "set_field":
+        return SetFieldExecution(
+            field_name=exec_def["field_name"],
+            target_name=exec_def.get("target_name"),
+            target_slot=exec_def.get("target_slot"),
+            source_slot=exec_def.get("source_slot"),
+            literal_value=exec_def.get("literal_value"),
+        )
+    if exec_type == "compare_values":
+        return CompareValuesExecution(
+            left_slot=exec_def["left_slot"],
+            right_slot=exec_def["right_slot"],
+            comparison=exec_def["comparison"],
+            on_mismatch=exec_def["on_mismatch"],
+            status_target=exec_def["status_target"],
+            details_target=exec_def.get("details_target"),
+        )
+    raise ValueError(
+        f"Unknown execution type '{exec_type}'. "
+        f"Supported: set_value, substring_check, append_to_list, "
+        f"set_field, compare_values."
+    )
+
+
+def _validate_pack_verb_signature(sig: PackVerbSignature) -> None:
+    """v2 §3 / §8 — nine load-time validation rules. Raises ValueError on
+    the first failure."""
+    word = sig.word
+
+    # Rule 1+2: at most one positional slot, in first position.
+    positional_indices = [
+        i for i, s in enumerate(sig.slots) if s.connective is None
+    ]
+    if len(positional_indices) > 1:
+        raise ValueError(
+            f"Pack verb '{word}' has multiple positional slots. Only one "
+            f"direct-object slot is allowed, and it must be first."
+        )
+    if positional_indices and positional_indices[0] != 0:
+        raise ValueError(
+            f"Pack verb '{word}' has a positional slot at position "
+            f"{positional_indices[0]}. The positional slot must be the "
+            f"first slot in the signature."
+        )
+
+    # Rule 3: no duplicate connectives on required slots.
+    seen_conn: set[str] = set()
+    for s in sig.slots:
+        if s.connective is None or not s.required:
+            continue
+        if s.connective in seen_conn:
+            raise ValueError(
+                f"Pack verb '{word}' has two slots using the connective "
+                f"'{s.connective}'. Each slot needs a unique connective."
+            )
+        seen_conn.add(s.connective)
+
+    # Rule 4: known value_type.
+    for s in sig.slots:
+        if s.value_type not in _VALID_VALUE_TYPES:
+            raise ValueError(
+                f"Pack verb '{word}' slot '{s.name}' has unknown "
+                f"value_type '{s.value_type}'. Use 'name' or 'value'."
+            )
+
+    # Rule 5: execution type already validated by _parse_execution (raises
+    # ValueError on unknown). Nothing to do here.
+
+    execution = sig.execution
+
+    # Rules 6–9: target/source resolution model for write-target types.
+    if isinstance(execution, _WRITE_TARGET_TYPES):
+        tn = execution.target_name
+        ts = execution.target_slot
+        if tn is not None and ts is not None:
+            raise ValueError(
+                f"Pack verb '{word}' specifies both target_name and "
+                f"target_slot. Use one or the other."
+            )
+        if tn is None and ts is None:
+            raise ValueError(
+                f"Pack verb '{word}' needs either target_name or "
+                f"target_slot."
+            )
+        sv = execution.source_slot
+        lv = execution.literal_value
+        if sv is not None and lv is not None:
+            raise ValueError(
+                f"Pack verb '{word}' specifies both source_slot and "
+                f"literal_value. Use one or the other."
+            )
+        if sv is None and lv is None:
+            raise ValueError(
+                f"Pack verb '{word}' needs either source_slot or "
+                f"literal_value."
+            )
+
+    # compare_values: extra validation.
+    if isinstance(execution, CompareValuesExecution):
+        if execution.comparison not in ("equality", "structural"):
+            raise ValueError(
+                f"Pack verb '{word}' uses unknown comparison "
+                f"'{execution.comparison}'. Use 'equality' or 'structural'."
+            )
+        if execution.on_mismatch not in ("error", "flag"):
+            raise ValueError(
+                f"Pack verb '{word}' uses unknown on_mismatch "
+                f"'{execution.on_mismatch}'. Use 'error' or 'flag'."
+            )
+        if (
+            execution.comparison == "structural"
+            and execution.details_target is None
+        ):
+            raise ValueError(
+                f"Pack verb '{word}': structural comparison requires a "
+                f"'details_target' field."
+            )
+
+
 def parse_pack_verb_signature(definition: dict) -> PackVerbSignature:
     """Convert a single JSON `verbs[]` entry into a PackVerbSignature.
 
-    The JSON schema (§137):
+    The JSON schema (v4a §137, extended by v2 pack verb contract extension):
       {
         "word": "<verb-name>",
         "slots": [
-          {"name": "...", "connective": "...", "required": true,
-           "type_constraint": "..."}
+          {"name": "...", "connective": "..." | null, "required": true,
+           "type_constraint": "...", "value_type": "name" | "value"}
         ],
-        "execution": {"type": "set_value", "target_name": "...",
-                      "source_slot": "..."}
+        "execution": {"type": "set_value" | "substring_check" |
+                      "append_to_list" | "set_field" | "compare_values",
+                      ...type-specific fields...}
       }
+
+    Slots default to value_type="name" if unspecified. Connective null
+    indicates a positional (direct-object) slot — see v2 §1.
     """
     word = definition["word"]
     raw_slots = definition.get("slots", [])
@@ -207,20 +366,19 @@ def parse_pack_verb_signature(definition: dict) -> PackVerbSignature:
         slots.append(
             PackVerbSlot(
                 name=s["name"],
-                connective=s["connective"],
+                connective=s.get("connective"),
                 required=bool(s.get("required", True)),
                 type_constraint=s.get("type_constraint"),
+                value_type=s.get("value_type", "name"),
             )
         )
     exec_def = definition.get("execution") or {}
-    execution = PackVerbExecution(
-        type=exec_def.get("type", ""),
-        target_name=exec_def.get("target_name"),
-        source_slot=exec_def.get("source_slot"),
-    )
-    return PackVerbSignature(
+    execution = _parse_execution(exec_def)
+    sig = PackVerbSignature(
         word=word, slots=tuple(slots), execution=execution,
     )
+    _validate_pack_verb_signature(sig)
+    return sig
 
 
 # ---------------------------------------------------------------------------

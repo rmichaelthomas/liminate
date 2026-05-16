@@ -37,6 +37,13 @@ from typing import Any
 
 from .adapter import LiveValueRegistry
 from .analyzer import SymbolEntry, analyze
+from .vocabulary import (
+    AppendToListExecution,
+    CompareValuesExecution,
+    SetFieldExecution,
+    SetValueExecution,
+    SubstringCheckExecution,
+)
 
 
 # v3a — the interpreter's re-analyses inside _exec_composition_call and
@@ -608,37 +615,227 @@ def _exec_pack_verb(
     node: PackVerbNode,
     symtab: dict[str, SymbolEntry],
 ) -> list[str]:
-    """Dispatch a pack-defined verb by its execution type.
-
-    v4a defines exactly one execution type — `set_value` — which writes
-    the source slot's resolved name into a symbol named `target_name`.
-    The analyzer has already validated slot values and type constraints,
-    so the dispatch can assume well-formed inputs.
-    """
+    """v2 — dispatch by execution type via isinstance."""
     execution = node.signature.execution
-    if execution.type == "set_value":
-        slot_name = execution.source_slot
-        target_name = execution.target_name
-        if slot_name is None or target_name is None:
-            raise _RuntimeError(
-                f"Pack verb '{node.word}' has an incomplete set_value "
-                f"execution definition."
-            )
-        value_node = node.slot_values.get(slot_name)
-        if value_node is None:
-            raise _RuntimeError(
-                f"Pack verb '{node.word}' is missing its '{slot_name}' slot."
-            )
+    if isinstance(execution, SetValueExecution):
+        return _exec_pack_set_value(node, execution, symtab)
+    if isinstance(execution, SubstringCheckExecution):
+        return _exec_pack_substring_check(node, execution, symtab)
+    if isinstance(execution, AppendToListExecution):
+        return _exec_pack_append_to_list(node, execution, symtab)
+    if isinstance(execution, SetFieldExecution):
+        return _exec_pack_set_field(node, execution, symtab)
+    if isinstance(execution, CompareValuesExecution):
+        return _exec_pack_compare_values(node, execution, symtab)
+    raise _RuntimeError(
+        f"Pack verb '{node.word}' has an unrecognized execution type."
+    )
+
+
+def _resolve_target(execution, node: PackVerbNode, symtab) -> str:
+    """v2 §8 — resolve the symbol name to write to. `target_slot` wins
+    over `target_name` (load-time validation guarantees exactly one is
+    non-None for write-target executions)."""
+    if execution.target_slot is not None:
+        value_node = node.slot_values.get(execution.target_slot)
+        if isinstance(value_node, NameRef):
+            return value_node.name
+        if isinstance(value_node, BareWord):
+            return value_node.word
+        raise _RuntimeError(
+            f"Pack verb '{node.word}' needs a name for its target, "
+            f"not a literal value."
+        )
+    return execution.target_name
+
+
+def _resolve_source(execution, node: PackVerbNode, symtab) -> Any:
+    """v2 §8 — resolve the value to write. `source_slot` is evaluated via
+    `_evaluate_expression`; `literal_value` is returned as-is."""
+    if execution.source_slot is not None:
+        value_node = node.slot_values.get(execution.source_slot)
+        return _evaluate_expression(value_node, symtab, None)
+    return execution.literal_value
+
+
+def _exec_pack_set_value(
+    node: PackVerbNode,
+    execution: SetValueExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v2 §8 — set_value with name-vs-value special case preserved:
+    when source_slot resolves to a NameRef, store the *name string* (so
+    `navigate to settings` stores `"settings"`, not the screen record's
+    contents). For literal_value, store the literal directly."""
+    target_name = _resolve_target(execution, node, symtab)
+    if execution.source_slot is not None:
+        value_node = node.slot_values.get(execution.source_slot)
         if isinstance(value_node, NameRef):
             value: Any = value_node.name
         else:
             value = _evaluate_expression(value_node, symtab, None)
-        _store(symtab, target_name, value)
-        return []
-    raise _RuntimeError(
-        f"Pack verb '{node.word}' uses unknown execution type "
-        f"'{execution.type}'."
+    else:
+        value = execution.literal_value
+    _store(symtab, target_name, value)
+    return []
+
+
+def _exec_pack_substring_check(
+    node: PackVerbNode,
+    execution: SubstringCheckExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v2 §4 — case-sensitive substring containment."""
+    check_node = node.slot_values.get(execution.check_slot)
+    against_node = node.slot_values.get(execution.against_slot)
+    check_raw = _evaluate_expression(check_node, symtab, None)
+    check_value = _format_scalar(check_raw)
+    against_value = _evaluate_expression(against_node, symtab, None)
+    if not isinstance(against_value, str):
+        against_value = _format_scalar(against_value)
+    if check_value not in against_value:
+        against_name = (
+            against_node.name if isinstance(against_node, NameRef)
+            else execution.against_slot
+        )
+        preview = against_value[:80]
+        suffix = "..." if len(against_value) > 80 else ""
+        raise _RuntimeError(
+            f"The text '{check_value}' was not found in '{against_name}'. "
+            f"The source begins: '{preview}{suffix}'"
+        )
+    return []
+
+
+def _exec_pack_append_to_list(
+    node: PackVerbNode,
+    execution: AppendToListExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v2 §5 — deep-copy append to a list."""
+    target_name = _resolve_target(execution, node, symtab)
+    resolved_value = _resolve_source(execution, node, symtab)
+    entry = symtab[target_name]
+    # v1 §7 `none` placeholder seed pattern — clear the sentinel on first add.
+    if (
+        entry.type == "list_of_strings"
+        and len(entry.value) == 1
+        and entry.value == ["none"]
+    ):
+        entry.value.clear()
+        new_type, new_schema = _infer_type_and_schema([resolved_value])
+        entry.type = new_type
+        entry.schema = new_schema
+    entry.value.append(copy.deepcopy(resolved_value))
+    return []
+
+
+def _exec_pack_set_field(
+    node: PackVerbNode,
+    execution: SetFieldExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v2 §6 — set one field on a record. Creates the field if absent."""
+    target_name = _resolve_target(execution, node, symtab)
+    resolved_value = _resolve_source(execution, node, symtab)
+    entry = symtab[target_name]
+    entry.value[execution.field_name] = copy.deepcopy(resolved_value)
+    if entry.schema is None:
+        entry.schema = {}
+    entry.schema[execution.field_name] = _scalar_type(resolved_value)
+    return []
+
+
+def _exec_pack_compare_values(
+    node: PackVerbNode,
+    execution: CompareValuesExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v2 §7 — compare two slot values; store status (and details for
+    structural mode); raise on mismatch when on_mismatch == 'error'."""
+    left_node = node.slot_values.get(execution.left_slot)
+    right_node = node.slot_values.get(execution.right_slot)
+    left_value = _evaluate_expression(left_node, symtab, None)
+    right_value = _evaluate_expression(right_node, symtab, None)
+    left_name = (
+        left_node.name if isinstance(left_node, NameRef)
+        else execution.left_slot
     )
+    right_name = (
+        right_node.name if isinstance(right_node, NameRef)
+        else execution.right_slot
+    )
+
+    status: str
+    details: list[Any] = []
+
+    if execution.comparison == "equality":
+        status = "match" if left_value == right_value else "mismatch"
+    else:  # structural
+        l_is_record = isinstance(left_value, dict)
+        r_is_record = isinstance(right_value, dict)
+        l_is_list = isinstance(left_value, list)
+        r_is_list = isinstance(right_value, list)
+        if l_is_record and r_is_record:
+            divergent: list[str] = []
+            for k in left_value:
+                if k not in right_value or left_value[k] != right_value[k]:
+                    divergent.append(k)
+            for k in right_value:
+                if k not in left_value and k not in divergent:
+                    divergent.append(k)
+            status = "match" if not divergent else "mismatch"
+            details = divergent
+        elif l_is_list and r_is_list:
+            if len(left_value) != len(right_value):
+                status = "length_mismatch"
+                details = []
+            else:
+                indices = [
+                    i for i, (a, b) in enumerate(zip(left_value, right_value))
+                    if a != b
+                ]
+                status = "match" if not indices else "mismatch"
+                details = indices
+        elif type(left_value) is type(right_value):
+            status = "match" if left_value == right_value else "mismatch"
+        else:
+            status = "type_mismatch"
+            details = []
+
+    _store(symtab, execution.status_target, status)
+    if execution.details_target is not None:
+        _store(symtab, execution.details_target, list(details))
+
+    if execution.on_mismatch == "error" and status != "match":
+        if execution.comparison == "equality":
+            raise _RuntimeError(
+                f"'{left_name}' does not match '{right_name}'."
+            )
+        if status == "length_mismatch":
+            raise _RuntimeError(
+                f"'{left_name}' and '{right_name}' have different lengths."
+            )
+        if status == "type_mismatch":
+            raise _RuntimeError(
+                f"'{left_name}' and '{right_name}' have different shapes."
+            )
+        if details and all(isinstance(d, str) for d in details):
+            fields_str = ", ".join(f"'{d}'" for d in details)
+            raise _RuntimeError(
+                f"'{left_name}' and '{right_name}' diverge on fields: "
+                f"{fields_str}."
+            )
+        if details:
+            idx_str = ", ".join(str(d) for d in details)
+            raise _RuntimeError(
+                f"'{left_name}' and '{right_name}' differ at positions: "
+                f"{idx_str}."
+            )
+        raise _RuntimeError(
+            f"'{left_name}' does not match '{right_name}'."
+        )
+    return []
 
 
 def _exec_remember_composition(

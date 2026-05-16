@@ -380,6 +380,29 @@ def _read_pack_json(arg: str) -> dict[str, Any]:
     return json.loads(Path(arg).read_text(encoding="utf-8"))
 
 
+_EXECUTION_TYPE_NAMES = {
+    "SetValueExecution": "set_value",
+    "SubstringCheckExecution": "substring_check",
+    "AppendToListExecution": "append_to_list",
+    "SetFieldExecution": "set_field",
+    "CompareValuesExecution": "compare_values",
+}
+
+
+def _execution_to_dict(execution: Any) -> dict[str, Any]:
+    """v2: serialize any execution dataclass to its JSON form. Strips None
+    fields and prepends the canonical type string."""
+    type_str = _EXECUTION_TYPE_NAMES.get(
+        type(execution).__name__, "unknown"
+    )
+    out: dict[str, Any] = {"type": type_str}
+    for f in execution.__dataclass_fields__:
+        v = getattr(execution, f)
+        if v is not None:
+            out[f] = v
+    return out
+
+
 def _verb_to_dict(sig: Any) -> dict[str, Any]:
     return {
         "word": sig.word,
@@ -389,14 +412,11 @@ def _verb_to_dict(sig: Any) -> dict[str, Any]:
                 "connective": s.connective,
                 "required": s.required,
                 "type_constraint": s.type_constraint,
+                "value_type": s.value_type,
             }
             for s in sig.slots
         ],
-        "execution": {
-            "type": sig.execution.type,
-            "target_name": sig.execution.target_name,
-            "source_slot": sig.execution.source_slot,
-        },
+        "execution": _execution_to_dict(sig.execution),
     }
 
 
