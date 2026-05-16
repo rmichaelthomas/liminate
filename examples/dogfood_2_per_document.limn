@@ -1,4 +1,4 @@
-remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+remember a doc called doc-1 with domain as liminate and class as inception and words as 10831
 remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
 remember a doc called doc-3 with domain as mobius and class as checkpoint and words as 10190
 remember a doc called doc-4 with domain as mobius and class as checkpoint and words as 8077
@@ -33,21 +33,12 @@ remember a list called docs with doc-1 and doc-2 and doc-3 and doc-4 and doc-5 a
 
 count the docs
 
-remember the mob called mob from keep the docs where domain is equal to mobius
-count the mob
+filter the docs where domain is equal to mobius
 count the docs
 
-remember the checkpoints called checkpoints from keep the docs where class is checkpoint
-count the checkpoints
+filter the docs where class is checkpoint
 count the docs
 
-remember the large called large from keep the docs where words is above 7000
-count the large
+filter the docs where words is above 7000
 count the docs
-
-remember the major called major from keep the large where domain is equal to mobius
-count the major
-count the large
-count the docs
-
-each the major show domain and class and words
+each the docs show words

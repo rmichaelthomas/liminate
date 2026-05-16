@@ -1,4 +1,4 @@
-"""Vocabulary tables and token types for Inscript v1 / v2a / v2d / v3a.
+"""Vocabulary tables and token types for Liminate v1 / v2a / v2d / v3a.
 
 Sources:
 - inception §11 (vocabulary table), §17 (verb signatures), §22 (lexer rules)
@@ -104,7 +104,7 @@ def reserved_category(word: str) -> str | None:
     """Return the user-facing category name for a reserved word.
 
     Used by the parser to produce the v1a §29 reserved-word error message:
-    "The word '[word]' is reserved in Inscript — it's used as a [category]."
+    "The word '[word]' is reserved in Liminate — it's used as a [category]."
     Returns None if the word is not reserved.
 
     v4a §137: active pack verbs report as "verb"; active pack nouns

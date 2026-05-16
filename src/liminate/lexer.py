@@ -1,4 +1,4 @@
-"""Lexer for Inscript v1 + v2c + v3a.
+"""Lexer for Liminate v1 + v2c + v3a.
 
 Sources:
 - inception §22 (lexer specification)

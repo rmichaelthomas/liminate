@@ -1,6 +1,6 @@
 # Brand assets
 
-Visual identity for the Inscript Programming Language. The full identity reference (system, scale, in-context surfaces) lives in `inscript_visual_identity.html` at the project root during build sessions; the files here are the extracted production assets.
+Visual identity for the Liminate Programming Language. The full identity reference (system, scale, in-context surfaces) lives in `liminate_visual_identity.html` at the project root during build sessions; the files here are the extracted production assets.
 
 ## Files
 

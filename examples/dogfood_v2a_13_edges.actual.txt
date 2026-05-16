@@ -1,18 +1,18 @@
-I understand this as: remember a doc called doc-1 with domain as inscript and class as inception and words as 10831
+I understand this as: remember a doc called doc-1 with domain as liminate and class as inception and words as 10831
 I understand this as: remember a doc called doc-2 with domain as mobius and class as binder and words as 10399
 I understand this as: remember a doc called doc-3 with domain as mobius and class as checkpoint and words as 10190
 I understand this as: remember a list called docs with doc-1 and doc-2 and doc-3
 I understand this as: keep the docs where words is above 9000 and show docs
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190
-Error: I expected a target after 'keep', but 'where' is a connective in Inscript. Targets must be names you've created with 'remember' or 'gather'.
+Error: I expected a target after 'keep', but 'where' is a connective in Liminate. Targets must be names you've created with 'remember' or 'gather'.
 I understand this as: each the docs show domain and class and missing
 Error: Not every item in 'docs' has a field called 'missing'.
 I understand this as: keep the docs where domain is equal to mobius or words is above 10500
-domain: inscript, class: inception, words: 10831
+domain: liminate, class: inception, words: 10831
 domain: mobius, class: binder, words: 10399
 domain: mobius, class: checkpoint, words: 10190

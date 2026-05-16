@@ -10,7 +10,7 @@ count the classes           -> 11
 each the classes show words -> 275542 / 86152 / 24145 / 24116 / 13119 / 10399 / 9728 / 5776 / 5594 / 5267 / 2802
 combine the class-words     -> 462640
 
-find-major-domains          -> destructive: domains now = [mobius (91), inscript (6), instrument (4)]
+find-major-domains          -> destructive: domains now = [mobius (91), liminate (6), instrument (4)]
 count the domains           -> 3
 each the domains show words -> 381476 / 30230 / 19438
 

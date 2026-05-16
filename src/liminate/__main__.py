@@ -1,4 +1,4 @@
-"""Entry point for `python -m inscript`."""
+"""Entry point for `python -m liminate`."""
 
 from .cli import main
 

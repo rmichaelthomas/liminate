@@ -1,4 +1,4 @@
-"""Phase 2 listener (event-driven runtime) for Inscript v3a.
+"""Phase 2 listener (event-driven runtime) for Liminate v3a.
 
 Sources:
 - v3a §107 (two-phase execution; Phase 2 gated on zero Phase 1 errors)
@@ -57,7 +57,7 @@ from .parser import (
     WhenNode,
 )
 from .renderer import render
-from .result import InscriptResult, ResultStatus
+from .result import LiminateResult, ResultStatus
 
 
 # How long to block on queue.get when adapters might still push. Short
@@ -75,7 +75,7 @@ def listen(
     handler_table: HandlerTable,
     live_value_registry: LiveValueRegistry,
     adapters: list[Adapter],
-) -> Iterator[InscriptResult]:
+) -> Iterator[LiminateResult]:
     """Run Phase 2 — the event-driven listener (§107 startup sequence).
 
     Yields, in order:
@@ -109,11 +109,11 @@ class _Runner:
     finish_requested: bool = False
     finish_handler_index: int | None = None
 
-    def run(self) -> Iterator[InscriptResult]:
+    def run(self) -> Iterator[LiminateResult]:
         # §122 — listener entry marker. Watching names come from the
         # union of all handler dependencies; ordering is deterministic
         # (handler_table.watching_names).
-        yield InscriptResult(
+        yield LiminateResult(
             status=ResultStatus.LISTENING,
             metadata={"watching": self.handler_table.watching_names()},
         )
@@ -177,7 +177,7 @@ class _Runner:
     # Initial evaluation (§121)
     # -------------------------------------------------------------------
 
-    def _initial_evaluation(self) -> Iterator[InscriptResult]:
+    def _initial_evaluation(self) -> Iterator[LiminateResult]:
         """Evaluate every registered handler in registration order. Fire
         the ones whose compound eligibility is true (§115 complete-turn
         semantics). Updates `last_eligibility` for every handler so the
@@ -207,10 +207,10 @@ class _Runner:
 
     def _handle_adapter_update(
         self, update: AdapterUpdate,
-    ) -> Iterator[InscriptResult]:
+    ) -> Iterator[LiminateResult]:
         """One update is processed to completion before the next dequeue.
 
-        §113 — change detection uses deep Inscript value equality.
+        §113 — change detection uses deep Liminate value equality.
         Equal new value: silent absorb. Different (or unset → any):
         write to symbol table, mark live value active, re-evaluate
         handlers that depend on this name, fire any false→true
@@ -257,7 +257,7 @@ class _Runner:
         new_values: dict[str, Any],
         source: str,
         cascade_chain: frozenset[int],
-    ) -> Iterator[InscriptResult]:
+    ) -> Iterator[LiminateResult]:
         """For each handler dependent on `modified_names`, evaluate the
         compound eligibility. If a handler transitioned false→true,
         fire it (§113). Handlers fire in registration order (§115)."""
@@ -303,7 +303,7 @@ class _Runner:
         values_changed: list[str],
         new_values: dict[str, Any],
         cascade_chain: frozenset[int],
-    ) -> Iterator[InscriptResult]:
+    ) -> Iterator[LiminateResult]:
         """Execute a handler's action block. Yields one result per
         statement (HANDLER_FIRE on success, ERROR_SEMANTIC on action-
         statement failure — both wrapped with §122 trigger metadata).
@@ -351,7 +351,7 @@ class _Runner:
         statements: list[ASTNode],
         pre_snapshot: dict[str, Any],
         watched_names: list[str],
-    ) -> Iterator[InscriptResult]:
+    ) -> Iterator[LiminateResult]:
         for stmt in statements:
             # Analyze each action statement at firing time with full
             # context (live-value names + in_action_block=True). Name
@@ -361,7 +361,7 @@ class _Runner:
                 in_action_block=True,
                 live_value_names=self.live_value_registry.names(),
             )
-            if isinstance(analysis, InscriptResult):
+            if isinstance(analysis, LiminateResult):
                 if analysis.canonical is None:
                     try:
                         analysis.canonical = render(stmt)
@@ -388,7 +388,7 @@ class _Runner:
                 return  # no further statements, no cascades
             except _RuntimeError as e:
                 yield self._wrap_with_trigger(
-                    InscriptResult(
+                    LiminateResult(
                         status=ResultStatus.ERROR_SEMANTIC,
                         canonical=render(stmt),
                         message=e.message,
@@ -400,7 +400,7 @@ class _Runner:
 
             # §122 — successful action statements are HANDLER_FIRE.
             yield self._wrap_with_trigger(
-                InscriptResult(
+                LiminateResult(
                     status=ResultStatus.HANDLER_FIRE,
                     canonical=render(stmt),
                     output=output if output else None,
@@ -510,12 +510,12 @@ class _Runner:
 
     def _wrap_with_trigger(
         self,
-        base: InscriptResult,
+        base: LiminateResult,
         source: str,
         handler: Any,
         values_changed: list[str],
         new_values: dict[str, Any],
-    ) -> InscriptResult:
+    ) -> LiminateResult:
         """v3a §122 — attach the trigger envelope to an action-statement
         result. Successful results were already created with
         HANDLER_FIRE status; error results keep their original status."""
@@ -533,11 +533,11 @@ class _Runner:
         self,
         handler: Any,
         cascade_chain: frozenset[int],
-    ) -> InscriptResult:
+    ) -> LiminateResult:
         """v3a §114: produce ERROR_RUNTIME with the traced chain. The
         chain is sorted by handler index for stable presentation."""
         path = sorted(cascade_chain) + [handler.index]
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.ERROR_RUNTIME,
             message=(
                 f"Cycle detected — handler {handler.index} would fire "
@@ -553,11 +553,11 @@ class _Runner:
 
     def _handle_adapter_failure(
         self, msg: AdapterFailure,
-    ) -> Iterator[InscriptResult]:
+    ) -> Iterator[LiminateResult]:
         """v3a §120: isolate the failed adapter. Mark its live values
         inactive; disable any handler whose dependencies are now all
         inactive."""
-        yield InscriptResult(
+        yield LiminateResult(
             status=ResultStatus.ERROR_RUNTIME,
             message=(
                 f"Adapter '{msg.adapter_name}' failed: {msg.reason}"
@@ -593,27 +593,27 @@ class _Runner:
     # Shutdown builders (§122)
     # -------------------------------------------------------------------
 
-    def _shutdown_finish(self) -> InscriptResult:
+    def _shutdown_finish(self) -> LiminateResult:
         for adapter in self.adapters:
             adapter.stop()
         meta: dict[str, Any] = {"reason": "finish"}
         if self.finish_handler_index is not None:
             meta["handler_index"] = self.finish_handler_index
-        return InscriptResult(
+        return LiminateResult(
             status=ResultStatus.SHUTDOWN,
             output=["Listener stopped: finish called."],
             metadata=meta,
         )
 
-    def _shutdown_adapter_complete(self) -> InscriptResult:
-        return InscriptResult(
+    def _shutdown_adapter_complete(self) -> LiminateResult:
+        return LiminateResult(
             status=ResultStatus.SHUTDOWN,
             output=["Listener stopped: all event sources completed."],
             metadata={"reason": "adapter_complete"},
         )
 
-    def _shutdown_no_adapters(self) -> InscriptResult:
-        return InscriptResult(
+    def _shutdown_no_adapters(self) -> LiminateResult:
+        return LiminateResult(
             status=ResultStatus.SHUTDOWN,
             output=["Listener stopped: no event sources registered."],
             metadata={"reason": "no_adapters"},
@@ -638,10 +638,10 @@ _UNSET = _Unset()
 
 
 def _values_equal(a: Any, b: Any) -> bool:
-    """Inscript deep value equality (v3a §113): numbers/strings are
+    """Liminate deep value equality (v3a §113): numbers/strings are
     scalar-equal; lists are deep-equal element-wise; records are
     deep-equal by fields. Note: this is not Python identity, and `True`
-    vs `1` are distinguished only by type (Inscript has no booleans —
+    vs `1` are distinguished only by type (Liminate has no booleans —
     `True` shouldn't appear in user values)."""
     if type(a) is not type(b):
         # Numbers and booleans share `==` semantics; we keep that.
