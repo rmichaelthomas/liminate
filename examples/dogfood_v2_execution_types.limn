@@ -1,0 +1,28 @@
+-- v2 pack verb extension — exercise each new execution type.
+-- Run with: --pack examples/pack_test_execution_types.json
+
+-- substring_check: cite text from a string source.
+remember a string called doc with "Newton was born in 1643"
+cite "Newton" from doc
+
+-- append_to_list: reveal items into the fixed visible-items list.
+remember a list called visible-items with none
+remember a string called sword with "iron sword"
+reveal sword to alice
+show visible-items
+
+-- set_field: activate a record (target_slot + literal_value).
+remember a device called thermostat with model as "T1000"
+activate thermostat
+show status of thermostat
+
+-- compare_values: structural compare, flag mode.
+remember a contract called left with title as "X" and value as 10
+remember a contract called right with title as "X" and value as 10
+verify left from right
+show verification-status
+
+-- set_value: assign with target_slot + source_slot.
+remember a number called score with 0
+assign 42 to score
+show score

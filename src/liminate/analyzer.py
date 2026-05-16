@@ -77,6 +77,13 @@ from .parser import (
     WhenNode,
 )
 from .result import LiminateResult, ResultStatus
+from .vocabulary import (
+    AppendToListExecution,
+    CompareValuesExecution,
+    SetFieldExecution,
+    SetValueExecution,
+    SubstringCheckExecution,
+)
 
 GATHER_RANGE_CAP = 10_000  # v1d §63
 
@@ -282,10 +289,12 @@ def _check(
         # resolution within actions is deferred to firing time (§111).
         _check_when(node, symtab)
     elif isinstance(node, PackVerbNode):
-        # v4a §137 — type-constraint checking per slot. Pack verbs do
-        # their semantic validation here; the interpreter dispatches by
-        # execution type.
-        _check_pack_verb(node, symtab)
+        # v4a §137 + v2 (pack verb contract extension) — type-constraint
+        # checking per slot, plus execution-specific checks.
+        _check_pack_verb(
+            node, symtab, iterator,
+            live_value_names=live_value_names,
+        )
     elif isinstance(node, AddNode):
         _check_add(
             node, symtab, iterator,
@@ -1084,25 +1093,31 @@ def _check_when(
 def _check_pack_verb(
     node: PackVerbNode,
     symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None = None,
+    *,
+    live_value_names: set[str] | None = None,
 ) -> None:
-    """v4a §137 — validate each filled slot against its `type_constraint`.
+    """v4a §137 + v2 (pack verb contract extension) — validate slot
+    type_constraints, then dispatch on execution type for additional
+    checks.
 
-    For each slot with a constraint:
-      1. The slot value must resolve to a name (parser enforces; defensive
-         check here).
-      2. The name must exist in the symbol table.
-      3. If the constraint matches a built-in type name (e.g. "number"),
-         the symbol's type must equal it. Otherwise the constraint is
-         treated as a descriptor — the symbol must be a record whose
-         descriptor matches case-insensitively.
+    Slots whose `value_type == "value"` may carry NumberLiteral,
+    QuotedString, BareWord, or FieldAccessNode — only NameRef slots are
+    checked for type_constraint matching, and only NameRef-resolvable
+    slots can carry a constraint at all (the type table refers to symbols).
     """
     for slot in node.signature.slots:
         if slot.name not in node.slot_values:
             continue
         value_node = node.slot_values[slot.name]
+        if slot.type_constraint is None:
+            # No type constraint — anything goes at this layer; execution
+            # checks below may still resolve names.
+            continue
         if not isinstance(value_node, NameRef):
+            slot_label = _pack_slot_label(node.word, slot)
             raise _SemanticError(
-                f"'{node.word} {slot.connective}' expects a name."
+                f"'{slot_label}' expects a name."
             )
         name = value_node.name
         if name not in symtab:
@@ -1110,24 +1125,170 @@ def _check_pack_verb(
                 f"I can't find '{name}'. "
                 f"You might need to 'remember' it first."
             )
-        if slot.type_constraint is None:
-            continue
         entry = symtab[name]
         constraint = slot.type_constraint
-        # The constraint is a descriptor — the symbol must be a record
-        # whose descriptor matches. Non-record types report their type
-        # (per spec sentence 120: "'counter' is a number, not a screen").
+        slot_label = _pack_slot_label(node.word, slot)
         if entry.type != "record":
             raise _SemanticError(
                 f"'{name}' is {_singular(entry.type)}, not a {constraint}. "
-                f"'{node.word} {slot.connective}' expects a {constraint}."
+                f"'{slot_label}' expects a {constraint}."
             )
         descriptor = (entry.descriptor or "").lower()
         if descriptor != constraint.lower():
             shown = entry.descriptor if entry.descriptor else "a record"
             raise _SemanticError(
                 f"'{name}' is a {shown}, not a {constraint}. "
-                f"'{node.word} {slot.connective}' expects a {constraint}."
+                f"'{slot_label}' expects a {constraint}."
+            )
+
+    # v2 — execution-type-specific validation.
+    execution = node.signature.execution
+    if isinstance(execution, SubstringCheckExecution):
+        _check_pack_substring(node, execution, symtab)
+    elif isinstance(execution, AppendToListExecution):
+        _check_pack_append(
+            node, execution, symtab, iterator,
+            live_value_names=live_value_names,
+        )
+    elif isinstance(execution, SetFieldExecution):
+        _check_pack_set_field(node, execution, symtab)
+    elif isinstance(execution, CompareValuesExecution):
+        _check_pack_compare(node, execution, symtab)
+    # SetValueExecution: nothing further beyond type_constraint loop.
+
+
+def _pack_slot_label(verb: str, slot) -> str:
+    """v2 — friendly label for a pack slot in error messages. Positional
+    slots use `<verb> <slot-name>`; connective-introduced use
+    `<verb> <connective>`."""
+    if slot.connective is None:
+        return f"{verb} {slot.name}"
+    return f"{verb} {slot.connective}"
+
+
+def _resolve_slot_target_name(
+    node: PackVerbNode, execution, symtab,
+) -> str:
+    """v2 — resolve a write-target execution's target to a symbol name.
+    Used by analyzer checks. Mirrors the interpreter's `_resolve_target`."""
+    if execution.target_slot is not None:
+        value_node = node.slot_values.get(execution.target_slot)
+        if isinstance(value_node, NameRef):
+            return value_node.name
+        if isinstance(value_node, BareWord):
+            return value_node.word
+        raise _SemanticError(
+            f"Pack verb '{node.word}' needs a name for its target."
+        )
+    return execution.target_name
+
+
+def _check_pack_substring(
+    node: PackVerbNode,
+    execution: SubstringCheckExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """v2 §4 — `substring_check` analyzer validation."""
+    against_node = node.slot_values.get(execution.against_slot)
+    if not isinstance(against_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the source text."
+        )
+    name = against_node.name
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type != "string":
+        raise _SemanticError(
+            f"'{node.word} from' expects text, but '{name}' is "
+            f"{_singular(entry.type)}."
+        )
+    # check_slot: NameRef must exist; literals/field-access trivially valid.
+    check_node = node.slot_values.get(execution.check_slot)
+    if isinstance(check_node, NameRef):
+        if check_node.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{check_node.name}'. "
+                f"You might need to 'remember' it first."
+            )
+    elif isinstance(check_node, FieldAccessNode):
+        _check_field_access(check_node, symtab)
+
+
+def _check_pack_append(
+    node: PackVerbNode,
+    execution: AppendToListExecution,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+    *,
+    live_value_names: set[str] | None,
+) -> None:
+    """v2 §5 — `append_to_list` analyzer validation."""
+    target_name = _resolve_slot_target_name(node, execution, symtab)
+    if execution.source_slot is not None:
+        item_node = node.slot_values.get(execution.source_slot)
+        if item_node is None:
+            raise _SemanticError(
+                f"Pack verb '{node.word}' missing source value."
+            )
+    else:
+        # literal_value — synthesize a QuotedString item for type inference.
+        item_node = QuotedString(content=execution.literal_value or "")
+    _check_list_append(
+        target_name, item_node, symtab, iterator,
+        live_value_names=live_value_names,
+        verb=node.word,
+    )
+
+
+def _check_pack_set_field(
+    node: PackVerbNode,
+    execution: SetFieldExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """v2 §6 — `set_field` analyzer validation."""
+    target_name = _resolve_slot_target_name(node, execution, symtab)
+    if target_name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{target_name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[target_name]
+    if entry.type != "record":
+        raise _SemanticError(
+            f"'{node.word}' expects a record, but '{target_name}' is "
+            f"{_singular(entry.type)}."
+        )
+    if execution.source_slot is not None:
+        src = node.slot_values.get(execution.source_slot)
+        if isinstance(src, NameRef) and src.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{src.name}'. "
+                f"You might need to 'remember' it first."
+            )
+        elif isinstance(src, FieldAccessNode):
+            _check_field_access(src, symtab)
+
+
+def _check_pack_compare(
+    node: PackVerbNode,
+    execution: CompareValuesExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """v2 §7 — `compare_values` analyzer validation."""
+    for slot_name in (execution.left_slot, execution.right_slot):
+        value_node = node.slot_values.get(slot_name)
+        if not isinstance(value_node, NameRef):
+            raise _SemanticError(
+                f"'{node.word}' expects a name for '{slot_name}'."
+            )
+        if value_node.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{value_node.name}'. "
+                f"You might need to 'remember' it first."
             )
 
 
@@ -1166,43 +1327,57 @@ def _check_add(
     *,
     live_value_names: set[str] | None = None,
 ) -> None:
-    """v1 §10 — five validation checks:
+    """v1 §10 — `add` verb validation, factored to `_check_list_append`."""
+    _check_list_append(
+        node.target.name, node.item, symtab, iterator,
+        live_value_names=live_value_names,
+        verb="add",
+    )
+
+
+def _check_list_append(
+    target_name: str,
+    item_node: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+    *,
+    live_value_names: set[str] | None,
+    verb: str,
+) -> None:
+    """v2 — shared list-append validation. Five checks:
       1. Live-value restriction (§7).
       2. Target exists and is a list.
       3. Item resolves to a value (NameRef must exist; field access checked).
       4. Item type matches the list's element category (§3).
       5. Self-mutation guard inside `each` (§6).
     """
-    name = node.target.name
     names = live_value_names or set()
-    if name in names:
+    if target_name in names:
         raise _SemanticError(
-            f"'{name}' is a live value provided by the domain pack. "
-            f"'add' modifies the list and can't be used on it — the "
+            f"'{target_name}' is a live value provided by the domain pack. "
+            f"'{verb}' modifies the list and can't be used on it — the "
             f"domain pack controls this value."
         )
-    if name not in symtab:
+    if target_name not in symtab:
         raise _SemanticError(
-            f"I can't find '{name}'. You might need to 'remember' it first."
+            f"I can't find '{target_name}'. "
+            f"You might need to 'remember' it first."
         )
-    entry = symtab[name]
+    entry = symtab[target_name]
     if entry.type not in _LIST_ITEM_CATEGORY:
         raise _SemanticError(
-            f"I can only add to a list. '{name}' is {_singular(entry.type)}."
+            f"I can only {verb} to a list. "
+            f"'{target_name}' is {_singular(entry.type)}."
         )
 
-    if iterator is not None and iterator.collection_name == name:
+    if iterator is not None and iterator.collection_name == target_name:
         raise _SemanticError(
-            f"'{name}' is the list being iterated — you can't add to "
-            f"it while iterating. Try adding to a different list."
+            f"'{target_name}' is the list being iterated — you can't "
+            f"{verb} to it while iterating. Try {verb}ing to a different list."
         )
 
-    item_type, item_label = _infer_add_item_type(node.item, symtab, iterator)
+    item_type, item_label = _infer_add_item_type(item_node, symtab, iterator)
     expected = _LIST_ITEM_CATEGORY[entry.type]
-    # v1 §7 placeholder pattern (`remember a list called X with none`): a
-    # list whose only content is the sentinel string "none" is treated as
-    # type-polymorphic so the user can seed accumulators before knowing
-    # the eventual element type.
     if (
         entry.type == "list_of_strings"
         and all(v == "none" for v in entry.value)
@@ -1210,7 +1385,7 @@ def _check_add(
         return
     if item_type != expected:
         raise _SemanticError(
-            f"'{name}' is {_singular(entry.type)}. "
+            f"'{target_name}' is {_singular(entry.type)}. "
             f"'{item_label}' is {_singular(item_type)} and can't be added to it."
         )
 

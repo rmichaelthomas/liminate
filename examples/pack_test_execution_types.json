@@ -1,0 +1,72 @@
+{
+  "name": "test-execution-types",
+  "vocabulary": [],
+  "verbs": [
+    {
+      "word": "cite",
+      "slots": [
+        { "name": "text", "connective": null, "required": true, "value_type": "value" },
+        { "name": "source", "connective": "from", "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "substring_check",
+        "check_slot": "text",
+        "against_slot": "source"
+      }
+    },
+    {
+      "word": "reveal",
+      "slots": [
+        { "name": "item", "connective": null, "required": true, "value_type": "name" },
+        { "name": "player", "connective": "to", "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "append_to_list",
+        "target_name": "visible-items",
+        "source_slot": "item"
+      }
+    },
+    {
+      "word": "activate",
+      "slots": [
+        { "name": "target", "connective": null, "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "set_field",
+        "target_slot": "target",
+        "field_name": "status",
+        "literal_value": "active"
+      }
+    },
+    {
+      "word": "verify",
+      "slots": [
+        { "name": "claim", "connective": null, "required": true, "value_type": "name" },
+        { "name": "source", "connective": "from", "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "compare_values",
+        "left_slot": "claim",
+        "right_slot": "source",
+        "comparison": "structural",
+        "on_mismatch": "flag",
+        "status_target": "verification-status",
+        "details_target": "verification-divergences"
+      }
+    },
+    {
+      "word": "assign",
+      "slots": [
+        { "name": "value", "connective": null, "required": true, "value_type": "value" },
+        { "name": "target", "connective": "to", "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "set_value",
+        "target_slot": "target",
+        "source_slot": "value"
+      }
+    }
+  ],
+  "declarations": [],
+  "script": []
+}

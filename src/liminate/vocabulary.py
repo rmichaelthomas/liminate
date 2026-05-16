@@ -137,29 +137,70 @@ def reserved_category(word: str) -> str | None:
 class PackVerbSlot:
     """One slot in a pack-defined verb's signature.
 
-    - `name` is the slot's internal identifier (used by execution definitions
-      and in error messages).
-    - `connective` is the connective word that introduces this slot at a
-      call site (e.g. "to" in `navigate to <screen>`).
-    - `required` is True when the slot must be filled.
-    - `type_constraint`, when present, is the descriptor (or type label)
-      the slot's resolved value must match — the semantic analyzer enforces
-      it case-insensitively against the target record's descriptor.
+    v2 (pack verb contract extension): `connective` may be None to indicate
+    a positional (direct-object) slot. `value_type` selects what the parser
+    accepts — "name" (UNKNOWN token only, default) or "value" (any value
+    type via `_parse_value`).
     """
     name: str
-    connective: str
+    connective: str | None       # None = positional (direct object)
     required: bool
     type_constraint: str | None = None
+    value_type: str = "name"     # "name" or "value"
+
+
+# v2 — discriminated execution class union. Five frozen dataclasses, one
+# per execution type. The interpreter dispatches with isinstance. The JSON
+# `type` field is consumed only by the factory function in adapter.py.
+
+@dataclass(frozen=True)
+class SetValueExecution:
+    target_name: str | None = None      # literal symbol name to store into
+    target_slot: str | None = None      # resolve symbol name from this slot
+    source_slot: str | None = None      # resolve value from this slot (name-vs-value special case)
+    literal_value: str | None = None    # use this literal value
 
 
 @dataclass(frozen=True)
-class PackVerbExecution:
-    """v4a §137 execution definition. v4a defines exactly one execution
-    type — `set_value` — which sets `target_name` in the symbol table to
-    the resolved value of `source_slot`."""
-    type: str
+class SubstringCheckExecution:
+    check_slot: str
+    against_slot: str
+
+
+@dataclass(frozen=True)
+class AppendToListExecution:
     target_name: str | None = None
+    target_slot: str | None = None
     source_slot: str | None = None
+    literal_value: str | None = None
+
+
+@dataclass(frozen=True)
+class SetFieldExecution:
+    field_name: str
+    target_name: str | None = None
+    target_slot: str | None = None
+    source_slot: str | None = None
+    literal_value: str | None = None
+
+
+@dataclass(frozen=True)
+class CompareValuesExecution:
+    left_slot: str
+    right_slot: str
+    comparison: str         # "equality" | "structural"
+    on_mismatch: str        # "error" | "flag"
+    status_target: str
+    details_target: str | None  # required for "structural"
+
+
+PackVerbExecution = (
+    SetValueExecution
+    | SubstringCheckExecution
+    | AppendToListExecution
+    | SetFieldExecution
+    | CompareValuesExecution
+)
 
 
 @dataclass(frozen=True)
