@@ -6,13 +6,17 @@ lexer → reorderer → parser → interpreter (which gates on the analyzer
 per-op). All other modules return data.
 
 Usage:
-    python -m liminate                  # Interactive REPL
-    python -m liminate <file.limn>      # Execute a file
-    python -m liminate --test <file>    # Test mode (auto-confirm amber)
-    python -m liminate <file> --test    # --test may appear in any position
-    python -m liminate <file> --quiet   # Suppress "I understand this as: ..."
+    liminate                            # Interactive REPL
+    liminate <file.limn>                # Execute a file
+    liminate --test <file>              # Test mode (auto-confirm amber)
+    liminate <file> --test              # --test may appear in any position
+    liminate <file> --quiet             # Suppress "I understand this as: ..."
                                         # echo; mirror blank source lines so
                                         # visual grouping survives. U1/U4.
+    liminate --version                  # Print "Liminate <version>" and exit.
+
+`python -m liminate` is the equivalent module-invocation form and works
+in every position above.
 
 v3a additions:
 - Session owns a HandlerTable (registered `when` handlers) and a
@@ -28,6 +32,7 @@ from __future__ import annotations
 
 import json
 import sys
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 from .adapter import (
@@ -816,6 +821,9 @@ def main(argv: list[str] | None = None) -> int:
             auto = True
         elif a == "--quiet":
             quiet = True
+        elif a == "--version":
+            print(f"Liminate {_pkg_version('liminate')}")
+            return 0
         elif a == "--pack":
             # `--pack <arg>` registers a domain pack. `<arg>` may be
             # either a JSON file path or an inline JSON string (starts
