@@ -4,7 +4,9 @@
 
 Liminate is a prose-as-syntax programming language designed by Rob Thomas (R. Michael Thomas). You are the builder. Rob is the architect. All design decisions are locked in the specification documents.
 
-**Current state (May 13, 2026):** v1 interpreter + v2a (`keep` verb, `of` connective, multi-field `each show`, descriptor preservation) + UX polish (`--quiet` flag, named-offender error wording, auto-show truncation) + v2.1-patches (duplicate-field rejection, `of`-on-list suggestion, list-operations-only error) + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings) + v2d (composition parameters with `from`, `choose` verb with `if`/`otherwise`) + v3a (event-driven listener mode: `when`/`unless` connectives, `finish` verb, two-phase execution, indentation-based action blocks, adapter contract, cascading triggers, conservative cycle detection) + v3b (quoted-string case preservation: lexer no longer folds case inside quotes; renderer adds case-bearing as a third conditional-quoting trigger) + **v4a (general-purpose pack verb contract: packs declare verbs with slot signatures, type constraints, and execution dispatch in JSON; UI domain pack with 10 component nouns and `navigate to <screen-name>`)**. The Phase 1 pipeline architecture from §8–§9 is unchanged through all extensions; Phase 2 adds a single-threaded event-queue runtime layered on top; v4a extends the parser/analyzer/interpreter dispatch tables without changing the base vocabulary. A separate TypeScript port of the validation pipeline (lexer + reorderer + parser + analyzer + renderer; no interpreter) lives in `mobius/packages/liminate-lang/` and validates against this implementation via the 127-sentence sync contract.
+**Current state (May 16, 2026):** v1 interpreter + v2a (`keep` verb, `of` connective, multi-field `each show`, descriptor preservation) + UX polish (`--quiet` flag, named-offender error wording, auto-show truncation) + v2.1-patches (duplicate-field rejection, `of`-on-list suggestion, list-operations-only error) + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings) + v2d (composition parameters with `from`, `choose` verb with `if`/`otherwise`) + v3a (event-driven listener mode: `when`/`unless` connectives, `finish` verb, two-phase execution, indentation-based action blocks, adapter contract, cascading triggers, conservative cycle detection) + v3b (quoted-string case preservation: lexer no longer folds case inside quotes; renderer adds case-bearing as a third conditional-quoting trigger) + v4a (general-purpose pack verb contract: packs declare verbs with slot signatures, type constraints, and execution dispatch in JSON; UI domain pack with 10 component nouns and `navigate to <screen-name>`) + liminate-v1-add (`add` verb — append an item to an existing list, with five live-value/type/iterator safety checks) + **liminate-v2 (pack verb contract extension: four new execution types — `substring_check`, `append_to_list`, `set_field`, `compare_values` — plus positional/connective-less slots, per-slot `value_type` declarations, and a target/source resolution model with literal-or-slot-derived dimensions on every write-target type; discriminated execution-class union with `isinstance` dispatch; nine load-time validation rules)**. The Phase 1 pipeline architecture from §8–§9 is unchanged through all extensions; Phase 2 adds a single-threaded event-queue runtime layered on top; v4a/liminate-v2 extend the parser/analyzer/interpreter dispatch tables without changing the base vocabulary. A separate TypeScript port of the validation pipeline (lexer + reorderer + parser + analyzer + renderer; no interpreter) lives in `mobius/packages/liminate-lang/` and validates against this implementation via the 127-sentence sync contract.
+
+**A note on the two version chains.** The `liminate_addendum_v1_*` and `liminate_addendum_v2_*` documents are the first and second addenda of the new `liminate_*` chain that begins after the Inscript→Liminate rename (May 15, 2026). They are NOT successors to the Inscript v1/v2 addenda — those are `liminate_addendum_v1a/b/c/d`, `liminate_addendum_v2a/b/c/d`, etc. (preserved through the rename). When reading, treat `liminate_addendum_v1_add_verb.md` and `liminate_addendum_v2_pack_verb_contract_extension.md` as the post-rename chain endpoints; everything else is upstream.
 
 ## Critical Rules
 
@@ -50,11 +52,17 @@ Located in `docs/spec/`. Read the relevant section before writing code that touc
 
 - `liminate_addendum_v4a_pack_verbs_and_port.md` — **LOCKED + IMPLEMENTED (Python Phase 1; TypeScript Phase 2 in Möbius monorepo).** §134 UI domain pack vocabulary: 10 nouns (`screen`, `button`, `input`, `text`, `list-view`, `card`, `image`, `section`, `header`, `nav`). §135 `navigate` as pack-level verb (only active with UI pack), slot signature `navigate to <screen-name>`, type constraint `screen`, execution `set_value` writing `current-screen`. §136 component schemas predefined with freeform overflow. §137 general-purpose pack verb contract: packs JSON declares `vocabulary` (noun additions to the reserved list while loaded) and `verbs` (slot signatures with optional `type_constraint` + an `execution` block whose `type` selects dispatch — `set_value` is the first); pack verbs registered as VERB tokens by the lexer, dispatched after base verbs by the parser, type-checked against record descriptors by the analyzer, and executed by the interpreter; backward-compatible with v3a pack JSON (no `verbs` field). §138 TypeScript port scope — `@mobius/liminate-lang` ports lexer/reorderer/parser/analyzer/renderer (NOT interpreter or listener) with the pack verb contract from day one; the 127 sentences are the sync contract. §139 two-phase build (Phase 1 Python + UI pack, Phase 2 TS port). §140 test sentences 118–127. §141 build boundary; v4a does not build Möbius client, proposal engine, tile interface, or interpreter TS port. Vocabulary unchanged: still **10 verbs, 14 connectives, 34 base reserved words**. `SymbolEntry` gains a `descriptor` field populated by `_exec_remember_record` so `navigate to` can check it.
 
+**Liminate addenda (post-rename chain, May 16, 2026):**
+
+- `liminate_addendum_v1_add_verb.md` — **LOCKED + IMPLEMENTED.** Adds `add <item> to <list>` as a base verb (analyzer-enforced live-value, target-is-list, item-resolves, type-compat, and self-mutation-inside-each checks; deep-copy append; the v1 §7 polymorphic `none` seed pattern is preserved). Vocabulary: **11 verbs, 14 connectives, 35 reserved words**. The rationale (`add` as base verb, not pack verb) is that the v4a pack contract — `set_value` only — could not express list-append; this gap motivated the liminate-v2 contract extension that followed.
+
+- `liminate_addendum_v2_pack_verb_contract_extension.md` — **LOCKED + IMPLEMENTED.** Resolves V4-Q1 (execution types beyond `set_value`) and partially resolves V4-Q2 (connective reuse — positional-slot constraint). §1 positional (connective-less) slots: `PackVerbSlot.connective` may be `None`; at most one positional slot per verb, first position, enforced at load. §2 slot value-type declarations: `value_type: "name"` (UNKNOWN→NameRef, default) or `"value"` (any value via `_parse_value` — NUMBER, UNKNOWN, QUOTED_STRING, FieldAccessNode). §3 + §8 nine load-time validation rules (in `_validate_pack_verb_signature`). §4 `substring_check` (case-sensitive containment; error on miss; analyzer requires `against_slot` of type `string`). §5 `append_to_list` (deep-copy append; reuses the v1-add five checks via the factored `_check_list_append`). §6 `set_field` (single-field mutation on a record, creates field if absent, updates `schema`). §7 `compare_values` (`equality` or `structural` mode × `error` or `flag` on mismatch; dual-target output `status_target` + `details_target` with field-name or index lists for structural diffs). §8 target/source resolution model — `set_value`/`append_to_list`/`set_field` all support `target_name | target_slot` (literal vs slot-derived target) and `source_slot | literal_value` (slot value vs fixed literal); exactly-one-of for each pair; `_resolve_target` and `_resolve_source` shared interpreter helpers; `set_value` preserves its existing name-vs-value special case for `source_slot`. §9 discriminated execution-class union — five frozen dataclasses (`SetValueExecution`, `SubstringCheckExecution`, `AppendToListExecution`, `SetFieldExecution`, `CompareValuesExecution`) replace the flat `PackVerbExecution`; `isinstance` dispatch in `interpreter.py` and `analyzer.py`; factory function `_parse_execution` in `adapter.py`. §10 file-by-file changes (vocabulary, adapter, parser, analyzer, interpreter; renderer extends the positional-slot guard). §11 complete JSON schema with examples for `cite` / `verify` / `reveal` / `activate` / `assign`. Vocabulary unchanged from v1-add: **11 verbs, 14 connectives, 35 reserved words**.
+
 **Test specification:**
 
 - `liminate_v1_thirty_sentences.md` — Test specification (sentences 1–30 + design questions). Additional sentences 31–34 in v1c §53, 35–48 in v1d §65, 49–59 in v2a §74, 60–68 in v2b §83, 69–80 in v2c §94, 81–95 in v2d §105, 96–113 in v3a §125, 114–117 in v3b §131, 118–127 in v4a §140.
 
-**Reading order for a fresh session:** inception checkpoint → v1a/v1b/v1c/v1d in order → v2a → v2b → v2c → v2d → v3a → v3b → v4a. Each addendum locks decisions on top of all prior; v3b is the first to supersede a sub-decision (v2c §91), with explicit rationale in §127. v4a is the first addendum to extend the pipeline's dispatch tables (parser verb-dispatch, analyzer type-constraint check, interpreter execution dispatch) without changing base vocabulary.
+**Reading order for a fresh session:** inception checkpoint → v1a/v1b/v1c/v1d in order → v2a → v2b → v2c → v2d → v3a → v3b → v4a → liminate-v1-add → liminate-v2 (pack verb contract extension). Each addendum locks decisions on top of all prior; v3b is the first to supersede a sub-decision (v2c §91), with explicit rationale in §127. v4a is the first addendum to extend the pipeline's dispatch tables (parser verb-dispatch, analyzer type-constraint check, interpreter execution dispatch) without changing base vocabulary. liminate-v2 is the first to replace a vocabulary dataclass (the flat `PackVerbExecution` becomes a discriminated union of five frozen dataclasses), but still without touching the 35-word base vocabulary.
 
 ## Commands
 
@@ -62,7 +70,7 @@ Located in `docs/spec/`. Read the relevant section before writing code that touc
 # Print the installed version (reads importlib.metadata at runtime)
 liminate --version
 
-# Run all tests (713 passing as of v4a Phase 1 — May 13, 2026)
+# Run all tests (802 passing as of liminate-v2 — May 16, 2026)
 pytest tests/ -v
 
 # Run a single module's tests
@@ -99,6 +107,12 @@ liminate examples/dogfood_v3a_timer_pack.limn \
 # 10 component nouns reserved while the pack is loaded.
 liminate --pack examples/pack_ui.json --quiet \
     examples/dogfood_navigate_test.limn
+
+# liminate-v2 test pack — exercises all five execution types
+# (set_value, substring_check, append_to_list, set_field,
+# compare_values) plus positional slots and slot-derived targets.
+liminate --pack examples/pack_test_execution_types.json --quiet \
+    examples/dogfood_v2_execution_types.limn
 
 # Stdin reader pack — each piped line becomes a `line` live-value update.
 printf "hello\nworld\n" | liminate examples/dogfood_stdin_echo.limn \
@@ -148,20 +162,46 @@ git push origin v0.x.x
 
 - `lexer.py` — tokenizer + `leading_indent` (v3a §110).
 - `vocabulary.py` — verb/connective/operator/article tables +
-  `PackVerbSignature`/`PackVerbSlot`/`PackVerbExecution` dataclasses +
+  `PackVerbSignature`/`PackVerbSlot` dataclasses (with `connective:
+  str | None` and `value_type` per liminate-v2 §1/§2) + discriminated
+  execution-class union `PackVerbExecution = SetValueExecution |
+  SubstringCheckExecution | AppendToListExecution | SetFieldExecution
+  | CompareValuesExecution` (liminate-v2 §9) +
   `activate_pack_words`/`deactivate_all_pack_words` for runtime pack
-  registration (v4a §137).
+  registration (v4a §137). Base vocabulary: 11 verbs, 14 connectives,
+  35 reserved words.
 - `reorderer.py` — small permutation acceptor (v1d §55).
 - `parser.py` — AST + `parse(tokens)` for single statements +
   `parse_when_block(header, action_lines)` for v3a §110 blocks +
   `PackVerbNode` AST + pack-verb dispatch after base verbs (v4a §137).
+  liminate-v2: `_parse_pack_verb` handles positional (`connective is
+  None`) slots before connective-introduced ones, and routes each slot
+  through `_parse_pack_slot_value` per its `value_type` (`"name"` =
+  UNKNOWN-only NameRef; `"value"` = `_parse_value` — accepts NUMBER,
+  UNKNOWN, QUOTED_STRING, FieldAccessNode).
 - `renderer.py` — canonical prose, including multi-line `when` output.
 - `analyzer.py` — semantic checks + v3a `in_action_block` /
   `live_value_names` parameters + v4a pack-verb type-constraint
   checking (`_check_pack_verb`) against the record's `descriptor`.
+  liminate-v2: `_check_pack_verb` extends to `isinstance`-dispatch
+  the execution-specific validators `_check_pack_substring` (against
+  must be `string`), `_check_pack_append` (delegates to the factored
+  `_check_list_append` shared with `_check_add`), `_check_pack_set_field`
+  (target must be `record`), and `_check_pack_compare` (both slots
+  must resolve to symbol-table names).
 - `interpreter.py` — Phase 1 execution + `HandlerTable` +
   `_FinishRequested` exception + ContextVars for listener context +
-  v4a pack-verb dispatch (`_exec_pack_verb`, currently `set_value`).
+  v4a pack-verb dispatch (`_exec_pack_verb`). liminate-v2 rewrites
+  `_exec_pack_verb` as a five-branch `isinstance` dispatch into
+  `_exec_pack_set_value` (preserves the name-vs-value special case for
+  `source_slot`), `_exec_pack_substring_check`, `_exec_pack_append_to_list`
+  (deep-copy append; handles the v1 §7 `none` polymorphic seed),
+  `_exec_pack_set_field` (creates field if absent + updates `schema`),
+  and `_exec_pack_compare_values` (equality vs structural — record
+  field-diff, list index-diff, length/type mismatch — with
+  `on_mismatch: error` or `flag`). Two shared helpers — `_resolve_target`
+  and `_resolve_source` — implement the liminate-v2 §8 target/source
+  resolution model (literal vs slot-derived for both dimensions).
 - `listener.py` — Phase 2 generator (`listen(...)`) — initial
   evaluation, event-queue drain, cascading, cycle detection,
   shutdown.
@@ -170,6 +210,15 @@ git push origin v0.x.x
   optional `verbs()` / `vocabulary()` on `DomainPack` and the
   `parse_pack_verb_signature` JSON helper (v4a §137 — backward-
   compatible: packs without these methods/fields keep working).
+  liminate-v2: factory `_parse_execution(exec_def)` dispatches on
+  the JSON `type` field to one of the five execution dataclasses;
+  `_validate_pack_verb_signature(sig)` enforces the nine load-time
+  rules (one positional slot, first position; unique connectives on
+  required slots; known `value_type` and execution-`type`; exactly-
+  one-of for target_name/target_slot and source_slot/literal_value
+  on write-target types; `details_target` required for structural
+  comparison). Pack JSON that fails validation raises `ValueError`
+  at load and never activates.
 - `cli.py` — `Session` (owns symtab + handler table + registry +
   packs; resets active pack vocabulary on construction per v4a §137),
   `run_file` (with v3a §110 block buffering and Phase 2 entry),
