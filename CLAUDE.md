@@ -70,7 +70,7 @@ Located in `docs/spec/`. Read the relevant section before writing code that touc
 # Print the installed version (reads importlib.metadata at runtime)
 liminate --version
 
-# Run all tests (802 passing as of liminate-v2 — May 16, 2026)
+# Run all tests (809 passing as of the descriptor-propagation fix — May 16, 2026)
 pytest tests/ -v
 
 # Run a single module's tests
@@ -182,7 +182,11 @@ git push origin v0.x.x
 - `renderer.py` — canonical prose, including multi-line `when` output.
 - `analyzer.py` — semantic checks + v3a `in_action_block` /
   `live_value_names` parameters + v4a pack-verb type-constraint
-  checking (`_check_pack_verb`) against the record's `descriptor`.
+  checking (`_check_pack_verb`) against the entry's `descriptor`
+  regardless of underlying type (descriptor-propagation fix removed
+  the prior `entry.type == "record"` gate so `type_constraint` works
+  on string and list variables too — enables session-contracts
+  SC-Q1's `cite from <source>` on string-typed sources).
   liminate-v2: `_check_pack_verb` extends to `isinstance`-dispatch
   the execution-specific validators `_check_pack_substring` (against
   must be `string`), `_check_pack_append` (delegates to the factored
