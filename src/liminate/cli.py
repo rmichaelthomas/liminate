@@ -808,8 +808,104 @@ def load_pack_from_path(path: str) -> DomainPack:
     return load_pack_from_arg(path)
 
 
+def _run_build_subcommand(args: list[str]) -> int:
+    """`liminate build <source.limn> [--pack ...] --output <name>`.
+
+    Routed from main() when the first argv is `build`. PyInstaller is
+    imported lazily inside build() so users who never invoke `build`
+    don't pay the import cost (and so the package keeps loading even
+    when the optional `[build]` extra isn't installed)."""
+    from .build import build  # late import — PyInstaller is an optional dep
+
+    source: str | None = None
+    output: str | None = None
+    pack_args: list[str] = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--pack":
+            if i + 1 >= len(args):
+                print("Error: --pack requires an argument", file=sys.stderr)
+                return 2
+            pack_args.append(args[i + 1])
+            i += 2
+            continue
+        if a.startswith("--pack="):
+            pack_args.append(a[len("--pack="):])
+            i += 1
+            continue
+        if a == "--output" or a == "-o":
+            if i + 1 >= len(args):
+                print("Error: --output requires an argument", file=sys.stderr)
+                return 2
+            output = args[i + 1]
+            i += 2
+            continue
+        if a.startswith("--output="):
+            output = a[len("--output="):]
+            i += 1
+            continue
+        if a.startswith("--"):
+            print(f"Error: unknown flag '{a}'", file=sys.stderr)
+            return 2
+        if source is None:
+            source = a
+            i += 1
+            continue
+        print(f"Error: unexpected argument '{a}'", file=sys.stderr)
+        return 2
+
+    if source is None:
+        print(
+            "Usage: liminate build <source.limn> [--pack <json>]... --output <name>",
+            file=sys.stderr,
+        )
+        return 2
+    if output is None:
+        # Default the output name to the source's stem.
+        output = Path(source).stem or "program"
+
+    return build(source, pack_args, output)
+
+
+def _run_inspect_subcommand(args: list[str]) -> int:
+    """`liminate inspect <binary> [--json]`.
+
+    Shells out to `<binary> --inspect [--json]`. The binary's argv
+    handler short-circuits before executing the embedded program."""
+    from .inspect_cmd import inspect_binary
+
+    binary: str | None = None
+    as_json = False
+    for a in args:
+        if a == "--json":
+            as_json = True
+        elif a.startswith("--"):
+            print(f"Error: unknown flag '{a}'", file=sys.stderr)
+            return 2
+        elif binary is None:
+            binary = a
+        else:
+            print(f"Error: unexpected argument '{a}'", file=sys.stderr)
+            return 2
+    if binary is None:
+        print("Usage: liminate inspect <binary> [--json]", file=sys.stderr)
+        return 2
+    return inspect_binary(binary, as_json=as_json)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+
+    # Branch G Phase C — `build` and `inspect` subcommands. Routed before
+    # the general flag loop so they don't collide with the existing run
+    # CLI's positional-argument semantics. `--version`/`--help` placed
+    # before a subcommand still wins (handled below by the legacy loop).
+    if args and args[0] == "build":
+        return _run_build_subcommand(args[1:])
+    if args and args[0] == "inspect":
+        return _run_inspect_subcommand(args[1:])
+
     auto = False
     quiet = False
     pack_paths: list[str] = []

@@ -110,6 +110,23 @@ liminate
 # (PyInstaller, output at dist/liminate). Requires the `build` extra.
 ./build/build_binary.sh
 
+# Branch G Phase C — compile a Liminate program to a standalone
+# executable. Validates the source (lex → reorder → parse) at build
+# time, embeds the original source + each --pack JSON + a precomputed
+# inspection manifest, and invokes PyInstaller. Reactive programs
+# without a pack still build; a one-line notice is printed to stderr.
+liminate build demo.limn --output demo
+liminate build reactive.limn --pack monitor.json --output reactive
+
+# Inspect a built binary. --inspect surfaces the four §12 sections
+# (source / understood-as / packs / vocabulary in use) in plain text;
+# --json emits the same data structured. Both paths short-circuit
+# before the embedded program executes.
+./demo --inspect
+./demo --inspect --json
+liminate inspect ./demo
+liminate inspect ./demo --json
+
 # Release a new version (pushes a v* tag, which triggers
 # .github/workflows/release.yml to build macOS / Linux / Windows
 # binaries and create a GitHub Release with all three attached).
@@ -152,6 +169,17 @@ git push origin v0.x.x
 - `packs/timer.py` — `TimerAdapter` + `TimerDomainPack` + `make_timer_pack(config)`
   (v3a §116 — first real domain pack; threaded periodic event source).
 - `result.py` — `LiminateResult` with nine statuses + metadata.
+- `build.py` — Branch G Phase C. `build()` validates a source file
+  (lex → reorder → parse, composition-name tracking across statements),
+  computes the inspection manifest (source + canonical + packs + vocab-
+  in-use + version), generates an embedded entry script, and invokes
+  PyInstaller. Emits the Q2 reactive-without-adapter notice to stderr
+  when applicable.
+- `inspect_cmd.py` — Phase C inspection surface. `format_manifest`
+  renders the four §12 sections (source / understood-as / packs /
+  vocabulary-in-use) as plain text or JSON; used both by the embedded
+  entry script's `--inspect` handler and by `liminate inspect <binary>`,
+  which shells out to `<binary> --inspect [--json]`.
 
 ## Code Style
 

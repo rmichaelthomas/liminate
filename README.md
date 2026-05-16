@@ -11,6 +11,7 @@ The interpreter is intentionally bounded: a deterministic text interpreter for s
 - [What it is](#what-it-is)
 - [Download](#download)
 - [Install and run](#install-and-run)
+- [Build a standalone binary](#build-a-standalone-binary)
 - [Try this first](#try-this-first)
 - [Why it exists](#why-it-exists)
 - [What makes it different](#what-makes-it-different)
@@ -133,6 +134,36 @@ liminate
 ```
 
 `python -m liminate` is an equivalent module-invocation form for any of the above (useful when the `liminate` script is not on `PATH`).
+
+---
+
+## Build a standalone binary
+
+Liminate programs compile to a single-file executable. The recipient runs it without installing Python or Liminate.
+
+```bash
+liminate build demo.limn --output demo
+./demo
+```
+
+Bundle domain packs the same way you'd register them at runtime — file path or inline JSON, repeatable:
+
+```bash
+liminate build reactive.limn --pack monitor.json --output reactive
+./reactive
+```
+
+Reactive programs that don't bundle a pack still build — they run an initial evaluation against current state and exit. `liminate build` prints a one-line notice in that case so the omission is visible.
+
+Every built binary embeds an inspection manifest:
+
+```bash
+./demo --inspect          # source, canonical rendering, packs, vocabulary in use
+./demo --inspect --json   # same data, structured for tooling
+liminate inspect ./demo   # inspect a binary without executing it
+```
+
+Builds require the `[build]` extra (PyInstaller). Install with `pip install "liminate[build]"`. The build is per-platform: a binary produced on macOS runs on macOS only; cross-platform releases are produced by the GitHub Actions workflow in `RELEASING.md`.
 
 ---
 
