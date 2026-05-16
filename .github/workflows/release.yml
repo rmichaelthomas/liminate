@@ -9,9 +9,9 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -77,7 +77,7 @@ jobs:
       - name: Rename binary
         run: mv dist/liminate dist/liminate-macos-arm64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: liminate-macos-arm64
           path: dist/liminate-macos-arm64
@@ -85,9 +85,9 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -100,7 +100,7 @@ jobs:
       - name: Rename binary
         run: mv dist/liminate dist/liminate-linux-x64
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: liminate-linux-x64
           path: dist/liminate-linux-x64
@@ -108,9 +108,9 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -124,7 +124,7 @@ jobs:
         shell: pwsh
         run: Move-Item dist/liminate.exe dist/liminate-windows-x64.exe
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: liminate-windows-x64
           path: dist/liminate-windows-x64.exe
@@ -135,7 +135,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           path: artifacts
 
@@ -147,7 +147,7 @@ jobs:
           cp artifacts/liminate-windows-x64/liminate-windows-x64.exe release/
           chmod +x release/liminate-macos-arm64 release/liminate-linux-x64
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           files: |
             release/liminate-macos-arm64
