@@ -17,12 +17,12 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # v3a §124: 10 verbs (was 9 in v2d §104; `finish` added in v3a §112
-    # for immediate listener-mode shutdown).
-    assert len(VERBS) == 10
+    # Liminate `add` v1 §9: 11 verbs (was 10 in v3a §124; `add` appends
+    # an item to an existing list).
+    assert len(VERBS) == 11
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
-        "gather", "combine", "each", "choose", "finish",
+        "gather", "combine", "each", "choose", "finish", "add",
     }
 
 
@@ -66,13 +66,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_34():
-    # v3a §124: 34 reserved words total (was 33 in v2d §104).
-    # Delta: +1 `finish` verb. `when`/`unless` shifted from V2_RESERVED
-    # into CONNECTIVES (net zero) — they were already counted in the 33.
-    # 10 verbs + 14 connectives + 4 operators + 1 multi-word + 3 articles
-    # + 2 v2-deferred verbs = 34.
-    assert len(ALL_RESERVED) == 34
+def test_total_reserved_count_is_35():
+    # Liminate `add` v1 §9: 35 reserved words total (was 34 in v3a §124).
+    # Delta: +1 `add` verb. 11 verbs + 14 connectives + 4 operators
+    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 35.
+    assert len(ALL_RESERVED) == 35
 
 
 def test_reserved_sets_are_disjoint():
@@ -124,6 +122,14 @@ def test_verb_signature_slot_shapes():
     ]
     # v3a §112: finish is slot-less — exits listener mode immediately.
     assert VERB_SIGNATURES["finish"] == []
+    # Liminate `add` v1 §2: append an item to an existing list.
+    assert VERB_SIGNATURES["add"] == ["item", "target"]
+
+
+def test_add_is_classified_as_verb():
+    # Liminate `add` v1 §9: `add` is a base verb.
+    assert reserved_category("add") == "verb"
+    assert "add" in VERBS
 
 
 def test_finish_is_classified_as_verb():

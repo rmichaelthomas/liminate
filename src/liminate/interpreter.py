@@ -51,6 +51,7 @@ _live_value_names_ctx: ContextVar[set[str] | None] = ContextVar(
     "liminate_live_value_names", default=None,
 )
 from .parser import (
+    AddNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -506,6 +507,8 @@ def _exec_op(
         return _exec_composition_call(node, symtab)
     if isinstance(node, PackVerbNode):
         return _exec_pack_verb(node, symtab)
+    if isinstance(node, AddNode):
+        return _exec_add(node, symtab, current_item)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -733,6 +736,32 @@ def _exec_gather(node: GatherNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     _store(symtab, node.name, items)
     # v1b §40: gather both stores AND auto-shows.
     return _display_lines(items)
+
+
+def _exec_add(
+    node: AddNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Liminate `add` v1 §4 / §10 — in-place append with deep-copy.
+
+    Iterator-first resolution for BareWord items (v1c §49): inside
+    `each <list-of-records> add <field> to <other-list>`, a bare name
+    that is a field on the current record resolves to that field's
+    value, matching the analyzer's iterator-aware type inference.
+    """
+    entry = symtab[node.target.name]
+    item_node = node.item
+    if (
+        isinstance(item_node, BareWord)
+        and isinstance(current_item, dict)
+        and item_node.word in current_item
+    ):
+        item_value: Any = current_item[item_node.word]
+    else:
+        item_value = _evaluate_expression(item_node, symtab, current_item)
+    entry.value.append(copy.deepcopy(item_value))
+    return []
 
 
 def _exec_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> list[str]:

@@ -292,6 +292,18 @@ class PackVerbNode(ASTNode):
 
 
 @dataclass
+class AddNode(ASTNode):
+    """Liminate `add` v1 §10 — append an item to an existing list.
+
+    `item` is the value being appended (NumberLiteral, BareWord, NameRef,
+    QuotedString, or FieldAccessNode — same value types accepted by
+    `remember ... with`). `target` is the list receiving the item.
+    """
+    item: ASTNode
+    target: NameRef
+
+
+@dataclass
 class FinishNode(ASTNode):
     """v3a §112 — exit listener mode immediately and totally.
 
@@ -648,6 +660,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
                 "differently, use 'keep' to separate them by condition."
             )
         return _parse_choose(stream, comp)
+    if verb.value == "add":
+        return _parse_add(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1124,6 +1138,30 @@ def _parse_combine(stream: TokenStream) -> CombineNode:
     _consume_optional_article(stream)
     target = _consume_target(stream, verb="combine")
     return CombineNode(target=target)
+
+
+# ---------------------------------------------------------------------------
+# add (Liminate `add` v1 §10)
+# ---------------------------------------------------------------------------
+
+
+def _parse_add(stream: TokenStream) -> AddNode:
+    """`add [article]? <item-value> to [article]? <list-name>`."""
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'add' needs an item and a target list — try: "
+            "add <item> to <list-name>."
+        )
+    item = _parse_value(stream)
+    to_tok = stream.consume()
+    if not (to_tok and to_tok.type is TokenType.CONNECTIVE and to_tok.value == "to"):
+        raise _ParseError(
+            "'add' needs a target list — try: add <item> to <list-name>."
+        )
+    _consume_optional_article(stream)
+    target = _consume_target(stream, verb="add")
+    return AddNode(item=item, target=target)
 
 
 # ---------------------------------------------------------------------------

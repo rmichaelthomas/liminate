@@ -23,6 +23,7 @@ required to round-trip through the parser.
 from __future__ import annotations
 
 from .parser import (
+    AddNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -168,6 +169,9 @@ def render(node: ASTNode) -> str:
     if isinstance(node, FinishNode):
         # v3a §112: `finish` is the verb leaf — no slots, no decoration.
         return "finish"
+    if isinstance(node, AddNode):
+        # Liminate `add` v1 §10 — canonical form: `add <item> to <list>`.
+        return f"add {render(node.item)} to {node.target.name}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137: pack verbs render as `<word> [<conn> <value>]...` in

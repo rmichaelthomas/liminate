@@ -50,7 +50,7 @@ class Token:
 VERBS: frozenset[str] = frozenset({
     "remember", "show", "filter", "keep",
     "count", "gather", "combine", "each",
-    "choose", "finish",
+    "choose", "finish", "add",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -92,9 +92,8 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 34 reserved words (v3a §124: was 33 in v2d §104; +1 for `finish`,
-# +0 net for `when`/`unless` which shifted from V2_RESERVED into
-# CONNECTIVES).
+# All 35 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
+# `add` verb addendum v1 §9: +1 for `add` (appends an item to a list).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -237,4 +236,6 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     # v3a §112: `finish` is a slot-less verb — it takes no target,
     # condition, or value. It exits listener mode immediately and totally.
     "finish":   [],
+    # Liminate `add` v1 §2: append an item to an existing list.
+    "add":      ["item", "target"],
 }

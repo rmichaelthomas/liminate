@@ -47,6 +47,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from .parser import (
+    AddNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -285,6 +286,11 @@ def _check(
         # their semantic validation here; the interpreter dispatches by
         # execution type.
         _check_pack_verb(node, symtab)
+    elif isinstance(node, AddNode):
+        _check_add(
+            node, symtab, iterator,
+            live_value_names=live_value_names,
+        )
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -433,6 +439,9 @@ def _side_effect_verb(
         # v3a §112 — `finish` is side-effect-only (and total-stop).
         # A composition whose last op is `finish` returns no value.
         return "finish"
+    if isinstance(node, AddNode):
+        # Liminate `add` v1 §5 — silent mutation; returns no value.
+        return "add"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -1136,6 +1145,112 @@ def _check_finish(
         raise _SemanticError(
             "'finish' can only be used inside an event handler."
         )
+
+
+# ---------------------------------------------------------------------------
+# add (Liminate `add` v1 §10)
+# ---------------------------------------------------------------------------
+
+
+_LIST_ITEM_CATEGORY = {
+    "list_of_numbers": "number",
+    "list_of_strings": "string",
+    "list_of_records": "record",
+}
+
+
+def _check_add(
+    node: AddNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+    *,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """v1 §10 — five validation checks:
+      1. Live-value restriction (§7).
+      2. Target exists and is a list.
+      3. Item resolves to a value (NameRef must exist; field access checked).
+      4. Item type matches the list's element category (§3).
+      5. Self-mutation guard inside `each` (§6).
+    """
+    name = node.target.name
+    names = live_value_names or set()
+    if name in names:
+        raise _SemanticError(
+            f"'{name}' is a live value provided by the domain pack. "
+            f"'add' modifies the list and can't be used on it — the "
+            f"domain pack controls this value."
+        )
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type not in _LIST_ITEM_CATEGORY:
+        raise _SemanticError(
+            f"I can only add to a list. '{name}' is {_singular(entry.type)}."
+        )
+
+    if iterator is not None and iterator.collection_name == name:
+        raise _SemanticError(
+            f"'{name}' is the list being iterated — you can't add to "
+            f"it while iterating. Try adding to a different list."
+        )
+
+    item_type, item_label = _infer_add_item_type(node.item, symtab, iterator)
+    expected = _LIST_ITEM_CATEGORY[entry.type]
+    # v1 §7 placeholder pattern (`remember a list called X with none`): a
+    # list whose only content is the sentinel string "none" is treated as
+    # type-polymorphic so the user can seed accumulators before knowing
+    # the eventual element type.
+    if (
+        entry.type == "list_of_strings"
+        and all(v == "none" for v in entry.value)
+    ):
+        return
+    if item_type != expected:
+        raise _SemanticError(
+            f"'{name}' is {_singular(entry.type)}. "
+            f"'{item_label}' is {_singular(item_type)} and can't be added to it."
+        )
+
+
+def _infer_add_item_type(
+    item: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+) -> tuple[str, str]:
+    """Resolve an `add` item to (type, label). Iterator-first per v1c §49:
+    inside `each <list-of-records>`, a BareWord matching a field on every
+    iterated record resolves to that field's type."""
+    if isinstance(item, NumberLiteral):
+        return "number", _fmt_number(item.value)
+    if isinstance(item, QuotedString):
+        return "string", item.content
+    if isinstance(item, FieldAccessNode):
+        _check_field_access(item, symtab)
+        entry = symtab[item.record_name]
+        return entry.schema[item.field], f"{item.field} of {item.record_name}"
+    if isinstance(item, BareWord):
+        word = item.word
+        if (
+            iterator is not None
+            and iterator.record_schemas is not None
+            and all(word in s for s in iterator.record_schemas)
+        ):
+            types = {s[word] for s in iterator.record_schemas}
+            return (next(iter(types)) if len(types) == 1 else "mixed"), word
+        if word in symtab:
+            return symtab[word].type, word
+        return "string", word
+    if isinstance(item, NameRef):
+        if item.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{item.name}'. "
+                f"You might need to 'remember' it first."
+            )
+        return symtab[item.name].type, item.name
+    raise _SemanticError(f"Unexpected item for 'add': {type(item).__name__}.")
 
 
 def _resolve_choose_operand(
