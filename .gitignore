@@ -5,6 +5,14 @@ __pycache__/
 venv/
 .venv/
 
+# PyInstaller build artifacts (binaries built locally or in CI).
+# The committed build/ dir holds entry.py + build_binary.sh; PyInstaller's
+# intermediate `build/<name>/` work-dir is ignored alongside dist/.
+build/__pycache__/
+/build/liminate/
+dist/
+*.spec
+
 # macOS Finder metadata
 .DS_Store
 

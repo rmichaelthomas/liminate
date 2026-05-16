@@ -9,6 +9,7 @@ The interpreter is intentionally bounded: a deterministic text interpreter for s
 ## Table of contents
 
 - [What it is](#what-it-is)
+- [Download](#download)
 - [Install and run](#install-and-run)
 - [Try this first](#try-this-first)
 - [Why it exists](#why-it-exists)
@@ -38,6 +39,30 @@ Liminate is an experimental prose-as-syntax programming language whose interpret
 A `.limn` source file is plain text — one statement per line. A bounded vocabulary of 34 base reserved words combines into sentences that lex, parse, type-check, and execute through a normal compiler pipeline. There is no separate code the prose generates; the sentence IS the program. The long-term thesis is general-purpose computation without leaving readable prose. The current build delivers that foundation across sequential execution, reactive listener mode, and a pack verb contract that lets domains extend the language without touching the base vocabulary.
 
 This is not a natural-language layer over Python, not a code-generating AI, and not a domain-specific query language. Liminate has five core processing stages — lexer, reorderer, parser, semantic analyzer, and interpreter — with canonical rendering and structured-result handling around them. v3a adds a Phase 2 reactive runtime that drives registered `when` handlers from an external event source. v4a adds a general-purpose pack verb contract: packs declare verbs (with slot signatures, type constraints, and execution dispatch) in JSON, and the pipeline's existing parser/analyzer/interpreter dispatch tables extend to handle them. No `print` calls outside the CLI wrapper.
+
+---
+
+## Download
+
+Standalone binaries are available on the [GitHub Releases page](https://github.com/rmichaelthomas/liminate/releases). No Python installation required — download the binary for your platform and run it directly.
+
+| Platform | Binary |
+| --- | --- |
+| macOS (Apple Silicon) | `liminate-macos-arm64` |
+| Linux (x64)           | `liminate-linux-x64` |
+| Windows (x64)         | `liminate-windows-x64.exe` |
+
+**macOS first-run note.** If Gatekeeper blocks the binary, right-click → Open to bypass. The macOS binary is signed and notarized.
+
+**Windows first-run note.** SmartScreen may show "Windows protected your PC" — click "More info" → "Run anyway". The Windows binary is not yet code-signed.
+
+After downloading, mark the file executable (macOS/Linux) and run it:
+
+```bash
+chmod +x liminate-macos-arm64
+./liminate-macos-arm64 --version
+./liminate-macos-arm64 program.limn
+```
 
 ---
 
