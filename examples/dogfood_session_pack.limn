@@ -1,0 +1,33 @@
+# dogfood_session_pack.limn
+#
+# Demonstrates the session domain pack: cite and verify.
+#
+# Run with:
+#   liminate examples/dogfood_session_pack.limn --pack examples/pack_session.json
+#
+# cite <quoted-text> from <source>
+#   Checks that the quoted text appears literally in the source value.
+#   Errors if the text is not found.
+#
+# verify <claim> from <source>
+#   Compares the claim record against the source record field by field.
+#   Writes "match" or "mismatch" to verification-status.
+#   On mismatch, writes the divergent field names to verification-divergences.
+#   Does not error on mismatch — flags it for inspection.
+#
+
+# --- cite: substring verification against a string source ---
+
+remember a source called release-notes with "Liminate v0.1.0. Ships with 11 verbs and 35 reserved words. Entry point: liminate.cli:main."
+
+cite "11 verbs" from release-notes
+cite "35 reserved words" from release-notes
+cite "liminate.cli:main" from release-notes
+
+# --- verify: structural comparison between two records ---
+
+remember a claim called observed-counts with verbs as "11" and reserved-words as "35"
+remember a source called expected-counts with verbs as "11" and reserved-words as "35"
+
+verify observed-counts from expected-counts
+show verification-status
