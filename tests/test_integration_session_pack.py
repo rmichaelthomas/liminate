@@ -160,8 +160,8 @@ def test_verify_match_status_is_showable():
     """verification-status can be shown after a match."""
     _, results = run_v3a(
         """
-        remember a claim called claim-a with count as "3"
-        remember a source called source-a with count as "3"
+        remember a claim called claim-a with total as "3"
+        remember a source called source-a with total as "3"
         verify claim-a from source-a
         show verification-status
         """,

@@ -165,7 +165,7 @@ def test_sentence_136_add_inside_choose_branch():
         "show alerts",
     ])
     assert results[2].status is ResultStatus.SUCCESS, results[2].message
-    assert results[3].output == ["none, 75"]
+    assert results[3].output == ["75"]
 
 
 # ---------------------------------------------------------------------------

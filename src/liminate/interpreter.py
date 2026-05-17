@@ -958,6 +958,17 @@ def _exec_add(
         item_value: Any = current_item[item_node.word]
     else:
         item_value = _evaluate_expression(item_node, symtab, current_item)
+    # On first add to an empty list or a `none`-seeded list, re-infer the
+    # element type from the first real value. Mirrors _exec_pack_append_to_list.
+    if not entry.value or (
+        entry.type == "list_of_strings"
+        and len(entry.value) == 1
+        and entry.value == ["none"]
+    ):
+        entry.value.clear()
+        new_type, new_schema = _infer_type_and_schema([item_value])
+        entry.type = new_type
+        entry.schema = new_schema
     entry.value.append(copy.deepcopy(item_value))
     return []
 

@@ -140,6 +140,7 @@ def test_adapter_detects_file_creation(tmp_path: Path):
     adapter.attach_queue(q)
     adapter.start()
 
+    time.sleep(0.05)  # let the initial snapshot complete before creating
     new_file = tmp_path / "fresh.txt"
     new_file.write_text("hi")
 

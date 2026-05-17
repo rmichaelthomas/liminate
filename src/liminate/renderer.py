@@ -97,9 +97,11 @@ def render(node: ASTNode) -> str:
             return f"remember {art} {desc} called {node.name} with {render(node.value)}"
         return f"remember {art} {desc} called {node.name} from {render(node.value)}"
     if isinstance(node, RememberListNode):
-        items = " and ".join(render(i) for i in node.items)
         desc = node.descriptor or "list"
         art = _article_for(desc)
+        if not node.items:
+            return f"remember {art} {desc} called {node.name}"
+        items = " and ".join(render(i) for i in node.items)
         return f"remember {art} {desc} called {node.name} with {items}"
     if isinstance(node, RememberRecordNode):
         fields = " and ".join(f"{n} as {render(v)}" for n, v in node.fields)

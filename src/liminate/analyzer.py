@@ -509,7 +509,7 @@ def _check_remember_list(
 ) -> None:
     _check_live_value_remember(node.name, in_action_block, live_value_names)
     if not node.items:
-        raise _SemanticError("A list needs at least one item.")
+        return  # empty list is valid — type will be inferred on first add
     types: list[str] = []
     examples: list[str] = []
     for item in node.items:
@@ -1383,8 +1383,11 @@ def _check_list_append(
     item_type, item_label = _infer_add_item_type(item_node, symtab, iterator)
     expected = _LIST_ITEM_CATEGORY[entry.type]
     if (
-        entry.type == "list_of_strings"
-        and all(v == "none" for v in entry.value)
+        not entry.value
+        or (
+            entry.type == "list_of_strings"
+            and all(v == "none" for v in entry.value)
+        )
     ):
         return
     if item_type != expected:
