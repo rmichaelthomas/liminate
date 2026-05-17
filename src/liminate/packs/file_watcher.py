@@ -121,6 +121,7 @@ class FileWatcherAdapter(Adapter):
         self.max_events = max_events
         self._stop_event = threading.Event()
         self._thread: threading.Thread | None = None
+        self._initial_snapshot: dict[str, float] | None = None
 
     def start(self) -> None:
         if self.queue is None:
@@ -131,6 +132,10 @@ class FileWatcherAdapter(Adapter):
             return
         self.started = True
         self._stop_event.clear()
+        # Snapshot synchronously here so the caller can mutate the
+        # directory immediately after start() returns without racing
+        # the background thread's first scan.
+        self._initial_snapshot = _snapshot(self._path)
         self._thread = threading.Thread(
             target=self._run,
             name=f"{self.name}-thread",
@@ -170,7 +175,7 @@ class FileWatcherAdapter(Adapter):
     def _run(self) -> None:
         interval_s = self.poll_interval_ms / 1000.0
         self._events_emitted = 0
-        previous = _snapshot(self._path)
+        previous = self._initial_snapshot if self._initial_snapshot is not None else _snapshot(self._path)
 
         while not self._stop_event.is_set():
             if self._stop_event.wait(timeout=interval_s):
