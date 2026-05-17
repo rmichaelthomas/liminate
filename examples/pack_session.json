@@ -1,0 +1,41 @@
+{
+  "name": "session",
+  "version": "0.2.0",
+  "vocabulary": [
+    { "word": "claim", "category": "noun" },
+    { "word": "source", "category": "noun" },
+    { "word": "decision", "category": "noun" }
+  ],
+  "verbs": [
+    {
+      "word": "cite",
+      "slots": [
+        { "name": "text", "connective": null, "required": true, "value_type": "value" },
+        { "name": "source", "connective": "from", "required": true, "value_type": "name", "type_constraint": "source" }
+      ],
+      "execution": {
+        "type": "substring_check",
+        "check_slot": "text",
+        "against_slot": "source"
+      }
+    },
+    {
+      "word": "verify",
+      "slots": [
+        { "name": "claim", "connective": null, "required": true, "value_type": "name", "type_constraint": "claim" },
+        { "name": "source", "connective": "from", "required": true, "value_type": "name", "type_constraint": "source" }
+      ],
+      "execution": {
+        "type": "compare_values",
+        "left_slot": "claim",
+        "right_slot": "source",
+        "comparison": "structural",
+        "on_mismatch": "flag",
+        "status_target": "verification-status",
+        "details_target": "verification-divergences"
+      }
+    }
+  ],
+  "declarations": [],
+  "script": []
+}
