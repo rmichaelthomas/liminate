@@ -3,7 +3,7 @@ show "=== Run with: liminate examples/session_contract_2026_05_16.limn --pack ex
 
 -- verified sources: direct repo scans this session
 
-remember a source called liminate-repo with "pyproject.toml: name=liminate, version=0.1.0, entry-point=liminate.cli:main. vocabulary.py sha 6bae0cb: 11 verbs, 35 reserved words, add verb confirmed, 4 adapters: test timer stdin file-watcher. Phases A-B-C complete. tests/ has 22 test modules."
+remember a source called liminate-repo with "pyproject.toml: name=liminate, version=0.2.0, entry-point=liminate.cli:main. vocabulary.py sha 6bae0cb: 11 verbs, 35 reserved words, add verb confirmed, 4 adapters: test timer stdin file-watcher. Phases A-B-C complete. 835 tests pass."
 remember a source called interpreter-verified with "interpreter.py sha 137708c: _exec_pack_verb dispatches all 5 execution types: set_value, substring_check, append_to_list, set_field, compare_values. v2 pack verb contract extension confirmed built and dispatched."
 remember a source called session-pack-verified with "session-contracts/references/session_pack.json sha 3be6651: name=session, version=0.2.0, 3 nouns (claim source decision), 2 verbs (cite with substring_check, verify with compare_values structural flag)."
 remember a source called heap-pager-verified with "prosecode-heap-pager README sha 1b7cf04 and pager.py sha ce90b3f: stdlib-only, LIMN_VOCAB 35-word gate, R=alpha*similarity+beta*recency, retain/page/evict. HP-Q3: paged-block retrieval unbuilt."
@@ -14,13 +14,13 @@ remember a source called handoff-packet-verified with "prosecode-handoff-packet 
 remember a string called source-state with "verified"
 remember a string called claim-basis with "verified"
 
--- tracking lists
+-- tracking lists (empty list syntax — addendum v4)
 
-remember a list called tracked-decisions with "none"
-remember a list called open-questions with "none"
-remember a list called session-corrections with "none"
-remember a list called work-completed with "none"
-remember a list called work-remaining with "none"
+remember a list called tracked-decisions
+remember a list called open-questions
+remember a list called session-corrections
+remember a list called work-completed
+remember a list called work-remaining
 
 -- compositions
 
@@ -30,9 +30,6 @@ remember how to disclose from status: show status
 
 when claim-basis is equal to "inference" unless source-state is equal to "verified"
   show "WARNING: claims are inferred — verify before acting"
-
-when session-corrections is not equal to "none"
-  show "ACTIVE CORRECTIONS — consult before every response"
 
 -- cite key verified facts
 
@@ -60,12 +57,13 @@ show verification-status
 -- locked decisions
 
 add "repo-scan-before-document-chain-permanent" to tracked-decisions
-add "liminate-v0.1.0-11-verbs-35-words-4-adapters-confirmed" to tracked-decisions
+add "liminate-v0.2.0-11-verbs-35-words-4-adapters-835-tests" to tracked-decisions
 add "phases-A-B-C-complete-D-E-F-not-started" to tracked-decisions
 add "session-pack-v0.2.0-cite-verify-already-built-and-runnable" to tracked-decisions
 add "session-pack-integrated-into-liminate-examples-3-files-pushed" to tracked-decisions
 add "prosecode-system-is-four-components" to tracked-decisions
 add "handoff-packet-skill-installed-project-skills-dir" to tracked-decisions
+add "empty-list-construction-and-sentinel-fix-shipped" to tracked-decisions
 
 -- open questions
 
@@ -89,6 +87,9 @@ add "pushed-dogfood_session_pack.limn-to-liminate-examples" to work-completed
 add "pushed-test_integration_session_pack.py-to-liminate-tests" to work-completed
 add "checkpoint-prosecode-handoff-packet-inception-v1" to work-completed
 add "installed-handoff-packet-skill-project-skills-dir" to work-completed
+add "addendum-liminate-v4-empty-list-construction" to work-completed
+add "build-835-tests-pass-pushed" to work-completed
+add "v0.2.0-released-to-pypi-and-github" to work-completed
 
 -- work remaining (ordered by lift)
 
@@ -105,8 +106,6 @@ show source-state
 show claim-basis
 count tracked-decisions
 count open-questions
-show "--- active corrections ---"
-show session-corrections
 show "--- work completed ---"
 show work-completed
 show "--- work remaining ---"
