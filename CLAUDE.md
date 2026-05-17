@@ -185,7 +185,7 @@ git push origin v0.x.x
   checking (`_check_pack_verb`) against the entry's `descriptor`
   regardless of underlying type (descriptor-propagation fix removed
   the prior `entry.type == "record"` gate so `type_constraint` works
-  on string and list variables too — enables session-contracts
+  on string and list variables too — enables liminate-session-contracts
   SC-Q1's `cite from <source>` on string-typed sources).
   liminate-v2: `_check_pack_verb` extends to `isinstance`-dispatch
   the execution-specific validators `_check_pack_substring` (against
