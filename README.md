@@ -151,10 +151,6 @@ liminate/
 
 The locked test sentences are simultaneously test cases and grammar artifacts — the sentences ARE the discovered grammar. Design questions surface while writing them, get resolved in the specification, and only then does Python get written.
 
-### Specification
-
-The build specification grows by addendum. Earlier documents are never overwritten; additions extend the section numbering. The full set lives in `docs/spec/`. Start with `liminate_inception_checkpoint_v1.md` and read forward.
-
 ### Design principles
 
 - **The prose IS the program.** No inference, no guessing. If the prose doesn't say it, it doesn't happen.

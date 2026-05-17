@@ -1,4 +1,4 @@
-# CLAUDE.md — Liminate Programming Language
+# AGENTS.md — Liminate Programming Language
 
 ## Project Overview
 

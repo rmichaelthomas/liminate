@@ -2,7 +2,7 @@
 ## The Thirty Sentences — Test Specification
 
 **Date:** May 11, 2026
-**Purpose:** Pre-code deliverable per `inscript_addendum_v1a_pre_build.md` §35. Every sentence uses only v1 vocabulary (§11). Each sentence is a test case for the lexer, parser, semantic analyzer, and interpreter. Design questions surfaced by the sentences are collected at the end — these require architect decisions before the build begins.
+**Purpose:** Pre-code test specification. Every sentence uses only v1 vocabulary. Each sentence is a test case for the lexer, parser, semantic analyzer, and interpreter.
 
 **Vocabulary constraint:** 7 verbs (`remember`, `show`, `filter`, `count`, `gather`, `combine`, `each`), 9 connectives (`where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`), 5 operators (`is`, `above`, `below`, `equal to`, `not`), 2 articles (`the`, `a`/`an`), 1 delimiter (`:`).
 
