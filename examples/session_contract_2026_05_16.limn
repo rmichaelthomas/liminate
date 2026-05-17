@@ -1,5 +1,7 @@
 show "=== Session contract: Liminate / Prosecode system verification — May 16, 2026 ==="
-show "=== Run with: liminate session_contract_2026_05_16.limn --pack examples/pack_session.json ==="
+show "=== Run with: liminate examples/session_contract_2026_05_16.limn --pack examples/pack_session.json ==="
+
+-- verified sources: direct repo scans this session
 
 remember a source called liminate-repo with "pyproject.toml: name=liminate, version=0.1.0, entry-point=liminate.cli:main. vocabulary.py sha 6bae0cb: 11 verbs, 35 reserved words, add verb confirmed, 4 adapters: test timer stdin file-watcher. Phases A-B-C complete. tests/ has 22 test modules."
 remember a source called interpreter-verified with "interpreter.py sha 137708c: _exec_pack_verb dispatches all 5 execution types: set_value, substring_check, append_to_list, set_field, compare_values. v2 pack verb contract extension confirmed built and dispatched."
@@ -7,8 +9,12 @@ remember a source called session-pack-verified with "session-contracts/reference
 remember a source called heap-pager-verified with "prosecode-heap-pager README sha 1b7cf04 and pager.py sha ce90b3f: stdlib-only, LIMN_VOCAB 35-word gate, R=alpha*similarity+beta*recency, retain/page/evict. HP-Q3: paged-block retrieval unbuilt."
 remember a source called handoff-packet-verified with "prosecode-handoff-packet SKILL.md sha 98953c7: 14-section format, 8 honesty constraints, graceful stack degradation. schema sha f504b0c. Installed at /mnt/skills/user/prosecode-handoff-packet/SKILL.md."
 
+-- session state
+
 remember a string called source-state with "verified"
 remember a string called claim-basis with "verified"
+
+-- tracking lists
 
 remember a list called tracked-decisions with "none"
 remember a list called open-questions with "none"
@@ -16,13 +22,19 @@ remember a list called session-corrections with "none"
 remember a list called work-completed with "none"
 remember a list called work-remaining with "none"
 
+-- compositions
+
 remember how to disclose from status: show status
+
+-- reactive guards
 
 when claim-basis is equal to "inference" unless source-state is equal to "verified"
   show "WARNING: claims are inferred — verify before acting"
 
 when session-corrections is not equal to "none"
   show "ACTIVE CORRECTIONS — consult before every response"
+
+-- cite key verified facts
 
 show "--- verifying key facts against scanned sources ---"
 
@@ -35,6 +47,8 @@ cite "3be6651" from session-pack-verified
 cite "14-section format" from handoff-packet-verified
 cite "LIMN_VOCAB" from heap-pager-verified
 
+-- verify liminate architectural state structurally
+
 show "--- verifying liminate architectural state ---"
 
 remember a claim called liminate-state with verbs as "11" and reserved-words as "35" and entry-point as "liminate.cli:main"
@@ -42,6 +56,8 @@ remember a source called liminate-facts with verbs as "11" and reserved-words as
 
 verify liminate-state from liminate-facts
 show verification-status
+
+-- locked decisions
 
 add "repo-scan-before-document-chain-permanent" to tracked-decisions
 add "liminate-v0.1.0-11-verbs-35-words-4-adapters-confirmed" to tracked-decisions
@@ -51,13 +67,19 @@ add "session-pack-integrated-into-liminate-examples-3-files-pushed" to tracked-d
 add "prosecode-system-is-four-components" to tracked-decisions
 add "handoff-packet-skill-installed-project-skills-dir" to tracked-decisions
 
+-- open questions
+
 add "HP-Q3-paged-block-retrieval-unbuilt-most-consequential-gap" to open-questions
 add "HP2-Q2-session-pack-delta-in-handoff-packet-most-actionable" to open-questions
 add "CS-Q2-execution-host-unresolved-blocks-phase-E" to open-questions
 add "PR-Q4-intent-compiler-extensible-verb-set" to open-questions
 add "phase-D-pack-discovery-no-design-work-started" to open-questions
 
+-- session corrections
+
 add "push-files-to-github-directly-not-as-downloads-for-Rob" to session-corrections
+
+-- work completed
 
 add "checkpoint-liminate-prosecode-system-verification-v1" to work-completed
 add "checkpoint-prosecode-heap-pager-inception-v1" to work-completed
@@ -68,11 +90,15 @@ add "pushed-test_integration_session_pack.py-to-liminate-tests" to work-complete
 add "checkpoint-prosecode-handoff-packet-inception-v1" to work-completed
 add "installed-handoff-packet-skill-project-skills-dir" to work-completed
 
+-- work remaining (ordered by lift)
+
 add "3-first-encounter-packaging-audit-medium" to work-remaining
 add "4-phase-D-pack-discovery-and-registry-high" to work-remaining
 add "5-composition-parameters-debt-medium-high" to work-remaining
 add "6-phase-E-studio-high-plus-blocked-on-CS-Q2" to work-remaining
 add "7-phase-F-reproducibility-high-low-urgency" to work-remaining
+
+-- snapshot
 
 show "--- session state ---"
 show source-state
