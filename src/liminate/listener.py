@@ -670,7 +670,11 @@ def _snapshot_value(entry: SymbolEntry | None) -> Any:
 def _apply_op(op: str, a: Any, b: Any) -> bool:
     """Operator dispatch shared with the sequential interpreter. Keeping
     a copy here avoids the circular import between interpreter and
-    listener modules."""
+    listener modules.
+
+    NOTE: this function is duplicated in interpreter.py. Both copies
+    must stay in sync when adding new operators.
+    """
     if op == "is":
         return a == b
     if op == "above":
@@ -685,4 +689,12 @@ def _apply_op(op: str, a: Any, b: Any) -> bool:
         return not (a < b)
     if op == "not_equal_to":
         return a != b
+    if op == "includes":
+        if isinstance(a, list):
+            return b in a
+        return False
+    if op == "not_includes":
+        if isinstance(a, list):
+            return b not in a
+        return True
     raise ValueError(f"Unknown comparison operator '{op}'.")

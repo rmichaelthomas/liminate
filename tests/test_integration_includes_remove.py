@@ -193,3 +193,78 @@ def test_not_includes_renders_canonically():
     rendered = render(ast)
     assert "tags not includes" in rendered
     parse(tokenize(rendered))
+
+
+# ---------------------------------------------------------------------------
+# Listener path — `when ... includes` fires during initial evaluation.
+#
+# Regression guard for the `_apply_op` duplication between interpreter.py
+# and listener.py: when new operators are added to one copy they must
+# also be added to the other, otherwise a `when` handler that parses and
+# registers fine will raise "Unknown comparison operator" at firing time.
+# ---------------------------------------------------------------------------
+
+
+def _drain(iterable):
+    return list(iterable)
+
+
+def test_when_includes_fires_on_initial_evaluation():
+    from liminate.adapter import LiveValueRegistry
+    from liminate.analyzer import SymbolEntry
+    from liminate.interpreter import HandlerTable, execute as _execute
+    from liminate.lexer import tokenize
+    from liminate.listener import listen
+    from liminate.parser import parse_when_block
+    from liminate.reorderer import reorder
+
+    symtab: dict[str, SymbolEntry] = {}
+    symtab["decisions"] = SymbolEntry(
+        name="decisions",
+        value=["use-fastapi"],
+        type="list_of_strings",
+    )
+    ht = HandlerTable()
+    reg = LiveValueRegistry()
+
+    htoks = reorder(tokenize('when decisions includes "use-fastapi"'))
+    atoks = [reorder(tokenize('show "Constraint active"'))]
+    ast = parse_when_block(htoks, atoks)
+    reg_result = _execute(ast, symtab, handler_table=ht, live_value_registry=reg)
+    assert reg_result.status is ResultStatus.SUCCESS, reg_result.message
+
+    results = _drain(listen(symtab, ht, reg, adapters=[]))
+    fires = [r for r in results if r.status is ResultStatus.HANDLER_FIRE]
+    assert len(fires) == 1
+    assert fires[0].output == ["Constraint active"]
+    assert fires[0].metadata["trigger"]["source"] == "initial"
+
+
+def test_when_not_includes_fires_on_initial_evaluation():
+    from liminate.adapter import LiveValueRegistry
+    from liminate.analyzer import SymbolEntry
+    from liminate.interpreter import HandlerTable, execute as _execute
+    from liminate.lexer import tokenize
+    from liminate.listener import listen
+    from liminate.parser import parse_when_block
+    from liminate.reorderer import reorder
+
+    symtab: dict[str, SymbolEntry] = {}
+    symtab["decisions"] = SymbolEntry(
+        name="decisions",
+        value=["use-fastapi"],
+        type="list_of_strings",
+    )
+    ht = HandlerTable()
+    reg = LiveValueRegistry()
+
+    htoks = reorder(tokenize('when decisions not includes "use-flask"'))
+    atoks = [reorder(tokenize('show "flask not active"'))]
+    ast = parse_when_block(htoks, atoks)
+    reg_result = _execute(ast, symtab, handler_table=ht, live_value_registry=reg)
+    assert reg_result.status is ResultStatus.SUCCESS, reg_result.message
+
+    results = _drain(listen(symtab, ht, reg, adapters=[]))
+    fires = [r for r in results if r.status is ResultStatus.HANDLER_FIRE]
+    assert len(fires) == 1
+    assert fires[0].output == ["flask not active"]
