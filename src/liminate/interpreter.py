@@ -79,6 +79,7 @@ from .parser import (
     NumberLiteral,
     PackVerbNode,
     QuotedString,
+    RemoveNode,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -516,6 +517,8 @@ def _exec_op(
         return _exec_pack_verb(node, symtab)
     if isinstance(node, AddNode):
         return _exec_add(node, symtab, current_item)
+    if isinstance(node, RemoveNode):
+        return _exec_remove(node, symtab, current_item)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -973,6 +976,37 @@ def _exec_add(
     return []
 
 
+def _exec_remove(
+    node: RemoveNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Retract an item from an existing list — first-occurrence removal.
+
+    Iterator-first resolution for BareWord items (mirrors `_exec_add`):
+    inside an `each` over records, a bare name that is a field on the
+    current record resolves to that field's value. Errors if the item
+    is not in the list — `remove` is explicit, not silent.
+    """
+    entry = symtab[node.target.name]
+    item_node = node.item
+    if (
+        isinstance(item_node, BareWord)
+        and isinstance(current_item, dict)
+        and item_node.word in current_item
+    ):
+        item_value: Any = current_item[item_node.word]
+    else:
+        item_value = _evaluate_expression(item_node, symtab, current_item)
+    if item_value not in entry.value:
+        raise _RuntimeError(
+            f"I can't find '{_format_scalar(item_value)}' in "
+            f"'{node.target.name}'."
+        )
+    entry.value.remove(item_value)
+    return []
+
+
 def _exec_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     entry = symtab[node.target.name]
     total = sum(entry.value)
@@ -1319,6 +1353,14 @@ def _apply_op(op: str, a: Any, b: Any) -> bool:
         return not (a < b)   # ≥
     if op == "not_equal_to":
         return a != b
+    if op == "includes":
+        if isinstance(a, list):
+            return b in a
+        return False
+    if op == "not_includes":
+        if isinstance(a, list):
+            return b not in a
+        return True
     raise _RuntimeError(f"Unknown comparison operator '{op}'.")
 
 

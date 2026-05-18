@@ -17,24 +17,24 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # Liminate `add` v1 §9: 11 verbs (was 10 in v3a §124; `add` appends
-    # an item to an existing list).
-    assert len(VERBS) == 11
+    # 12 verbs: 11 (Liminate `add` v1 §9) + 1 (`remove` — retract an
+    # item from a list).
+    assert len(VERBS) == 12
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
-        "gather", "combine", "each", "choose", "finish", "add",
+        "gather", "combine", "each", "choose", "finish", "add", "remove",
     }
 
 
 def test_connective_count():
-    # v3a §124: 14 connectives (was 12 in v2d §104; `when` and `unless`
-    # promoted from V2_RESERVED in v3a §108/§109 for the listener model).
-    assert len(CONNECTIVES) == 14
+    # 15 connectives: v3a §124 had 14; `includes` adds the list-membership
+    # connective used in `when`/`where`/`choose if` conditions.
+    assert len(CONNECTIVES) == 15
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
-        "when", "unless",
+        "when", "unless", "includes",
     }
 
 
@@ -66,11 +66,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_35():
-    # Liminate `add` v1 §9: 35 reserved words total (was 34 in v3a §124).
-    # Delta: +1 `add` verb. 11 verbs + 14 connectives + 4 operators
-    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 35.
-    assert len(ALL_RESERVED) == 35
+def test_total_reserved_count_is_37():
+    # 37 reserved words total. Delta from 35 (Liminate `add` v1 §9):
+    # +1 `remove` verb, +1 `includes` connective. 12 verbs + 15 connectives
+    # + 4 operators + 1 multi-word + 3 articles + 2 v2-deferred verbs = 37.
+    assert len(ALL_RESERVED) == 37
 
 
 def test_reserved_sets_are_disjoint():
@@ -124,6 +124,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["finish"] == []
     # Liminate `add` v1 §2: append an item to an existing list.
     assert VERB_SIGNATURES["add"] == ["item", "target"]
+    # `remove` — retract an item from an existing list (same slot shape).
+    assert VERB_SIGNATURES["remove"] == ["item", "target"]
 
 
 def test_add_is_classified_as_verb():

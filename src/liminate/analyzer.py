@@ -67,6 +67,7 @@ from .parser import (
     NameRef,
     NumberLiteral,
     PackVerbNode,
+    RemoveNode,
     QuotedString,
     RememberCompositionNode,
     RememberListNode,
@@ -300,6 +301,11 @@ def _check(
             node, symtab, iterator,
             live_value_names=live_value_names,
         )
+    elif isinstance(node, RemoveNode):
+        _check_remove(
+            node, symtab, iterator,
+            live_value_names=live_value_names,
+        )
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -451,6 +457,9 @@ def _side_effect_verb(
     if isinstance(node, AddNode):
         # Liminate `add` v1 §5 — silent mutation; returns no value.
         return "add"
+    if isinstance(node, RemoveNode):
+        # `remove` — silent mutation; returns no value.
+        return "remove"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -743,6 +752,8 @@ def _check_condition(
         return
     if cond.op == "equal_to":
         return  # any same-type comparison; analyzer doesn't enforce
+    if cond.op in ("includes", "not_includes"):
+        return  # list-membership — analyzer accepts any operand types
     if cond.op.startswith("not_"):
         inner = cond.op[len("not_"):]
         if inner in ("above", "below"):
@@ -1057,6 +1068,8 @@ def _check_choose_condition(
         _require_numeric(field_type, field_label, cond.op)
         _require_numeric(value_type, value_label, cond.op)
         return
+    if cond.op in ("includes", "not_includes"):
+        return
     if cond.op.startswith("not_"):
         inner = cond.op[len("not_"):]
         if inner in ("above", "below"):
@@ -1339,6 +1352,28 @@ def _check_add(
     )
 
 
+def _check_remove(
+    node: RemoveNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+    *,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """`remove` verb validation — same shape as `_check_add`.
+
+    Reuses `_check_list_append`: live-value restriction, target exists
+    and is a list, item resolves to a value, self-mutation guard inside
+    `each`. The element-category match is also enforced — removing a
+    number from a list of strings is a static error regardless of
+    runtime contents.
+    """
+    _check_list_append(
+        node.target.name, node.item, symtab, iterator,
+        live_value_names=live_value_names,
+        verb="remove",
+    )
+
+
 def _check_list_append(
     target_name: str,
     item_node: ASTNode,
@@ -1348,13 +1383,15 @@ def _check_list_append(
     live_value_names: set[str] | None,
     verb: str,
 ) -> None:
-    """v2 — shared list-append validation. Five checks:
+    """v2 — shared list-append/retract validation. Five checks:
       1. Live-value restriction (§7).
       2. Target exists and is a list.
       3. Item resolves to a value (NameRef must exist; field access checked).
       4. Item type matches the list's element category (§3).
       5. Self-mutation guard inside `each` (§6).
     """
+    # `add` reads naturally with "to"; `remove` reads with "from".
+    prep = "from" if verb == "remove" else "to"
     names = live_value_names or set()
     if target_name in names:
         raise _SemanticError(
@@ -1370,14 +1407,15 @@ def _check_list_append(
     entry = symtab[target_name]
     if entry.type not in _LIST_ITEM_CATEGORY:
         raise _SemanticError(
-            f"I can only {verb} to a list. "
+            f"I can only {verb} {prep} a list. "
             f"'{target_name}' is {_singular(entry.type)}."
         )
 
     if iterator is not None and iterator.collection_name == target_name:
         raise _SemanticError(
             f"'{target_name}' is the list being iterated — you can't "
-            f"{verb} to it while iterating. Try {verb}ing to a different list."
+            f"{verb} {prep} it while iterating. "
+            f"Try {verb}ing {prep} a different list."
         )
 
     item_type, item_label = _infer_add_item_type(item_node, symtab, iterator)
@@ -1391,9 +1429,10 @@ def _check_list_append(
     ):
         return
     if item_type != expected:
+        action = "removed from" if verb == "remove" else "added to"
         raise _SemanticError(
             f"'{target_name}' is {_singular(entry.type)}. "
-            f"'{item_label}' is {_singular(item_type)} and can't be added to it."
+            f"'{item_label}' is {_singular(item_type)} and can't be {action} it."
         )
 
 

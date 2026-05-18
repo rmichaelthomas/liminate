@@ -17,6 +17,8 @@ Sources:
   slot signatures via JSON; pack words add to the active vocabulary on
   activation and are removed on deactivation; the base vocabulary stays
   permanently at 34 reserved words.)
+- `includes` connective + `remove` verb addendum (12 verbs, 15 connectives,
+  37 reserved words total).
 """
 
 from dataclasses import dataclass
@@ -50,7 +52,7 @@ class Token:
 VERBS: frozenset[str] = frozenset({
     "remember", "show", "filter", "keep",
     "count", "gather", "combine", "each",
-    "choose", "finish", "add",
+    "choose", "finish", "add", "remove",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -60,7 +62,7 @@ VERBS: frozenset[str] = frozenset({
 # V2_RESERVED to active connectives.
 CONNECTIVES: frozenset[str] = frozenset({
     "where", "and", "or", "from", "with", "called", "to", "how", "as", "of",
-    "if", "otherwise", "when", "unless",
+    "if", "otherwise", "when", "unless", "includes",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -92,8 +94,10 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 35 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
+# All 37 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
 # `add` verb addendum v1 §9: +1 for `add` (appends an item to a list).
+# `includes` connective + `remove` verb addendum: +2 (list membership
+# test in conditions, retract item from a list).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -109,7 +113,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary stays permanently at
-    34 words.
+    37 words.
     """
     if word in VERBS:
         return "verb"
@@ -279,4 +283,6 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "finish":   [],
     # Liminate `add` v1 §2: append an item to an existing list.
     "add":      ["item", "target"],
+    # `remove` — retract an item from an existing list.
+    "remove":   ["item", "target"],
 }
