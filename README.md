@@ -2,7 +2,7 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 35 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 38 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.2.0**: 11 verbs, 14 connectives, 35 base reserved words, **835 tests passing** across 127 locked test sentences.
+The current build is **v0.2.0**: 12 verbs, 16 connectives, 38 base reserved words, **861 tests passing** across 127 locked test sentences.
 
 ### The pipeline
 
@@ -154,7 +154,7 @@ The locked test sentences are simultaneously test cases and grammar artifacts â€
 ### Design principles
 
 - **The prose IS the program.** No inference, no guessing. If the prose doesn't say it, it doesn't happen.
-- **The vocabulary is the boundary.** 35 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
+- **The vocabulary is the boundary.** 38 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
 - **The reorderer does not guess.** Ambiguous arrangements produce an amber clarification prompt rather than a silent pick.
 - **Authorize, don't author.** The on-ramp is modification of a working program, not authorship from a blank file.
 - **The AST is the source of truth.** The parser reconstructs a canonical English sentence so you see what was understood before it runs.
