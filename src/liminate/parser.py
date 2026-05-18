@@ -304,6 +304,18 @@ class AddNode(ASTNode):
 
 
 @dataclass
+class RemoveNode(ASTNode):
+    """Retract an item from an existing list.
+
+    Same slot shape as `AddNode`: `item` is the value being removed and
+    `target` is the list to remove from. Runtime error if `item` is not
+    in the list — `remove` is explicit, not silent.
+    """
+    item: ASTNode
+    target: NameRef
+
+
+@dataclass
 class FinishNode(ASTNode):
     """v3a §112 — exit listener mode immediately and totally.
 
@@ -662,6 +674,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_choose(stream, comp)
     if verb.value == "add":
         return _parse_add(stream)
+    if verb.value == "remove":
+        return _parse_remove(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1212,6 +1226,34 @@ def _parse_add(stream: TokenStream) -> AddNode:
 
 
 # ---------------------------------------------------------------------------
+# remove — retract an item from an existing list
+# ---------------------------------------------------------------------------
+
+
+def _parse_remove(stream: TokenStream) -> RemoveNode:
+    """`remove [article]? <item-value> from [article]? <list-name>`."""
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'remove' needs an item and a target list — try: "
+            "remove <item> from <list-name>."
+        )
+    item = _parse_value(stream)
+    from_tok = stream.consume()
+    if not (
+        from_tok and from_tok.type is TokenType.CONNECTIVE
+        and from_tok.value == "from"
+    ):
+        raise _ParseError(
+            "'remove' needs a source list — try: "
+            "remove <item> from <list-name>."
+        )
+    _consume_optional_article(stream)
+    target = _consume_target(stream, verb="remove")
+    return RemoveNode(item=item, target=target)
+
+
+# ---------------------------------------------------------------------------
 # gather
 # ---------------------------------------------------------------------------
 
@@ -1477,6 +1519,26 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
                 f"it's used as a {cat} and can't be used as a field name."
             )
         raise _ParseError(f"I didn't expect '{head.value}' as a field name.")
+
+    # `includes` is a list-membership connective; it replaces the entire
+    # `is <op>` pattern: `<list> includes <value>` or
+    # `<list> not includes <value>`.
+    nxt = stream.peek()
+    if nxt and nxt.type is TokenType.CONNECTIVE and nxt.value == "includes":
+        stream.consume()
+        value = _parse_value(stream)
+        return ConditionNode(field=field_node, op="includes", value=value)
+    if nxt and nxt.type is TokenType.OPERATOR and nxt.value == "not":
+        after = stream.peek(1)
+        if (
+            after is not None
+            and after.type is TokenType.CONNECTIVE
+            and after.value == "includes"
+        ):
+            stream.consume()  # not
+            stream.consume()  # includes
+            value = _parse_value(stream)
+            return ConditionNode(field=field_node, op="not_includes", value=value)
 
     is_tok = stream.consume()
     if not (is_tok and is_tok.type is TokenType.OPERATOR and is_tok.value == "is"):

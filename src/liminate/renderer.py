@@ -44,6 +44,7 @@ from .parser import (
     NumberLiteral,
     PackVerbNode,
     QuotedString,
+    RemoveNode,
     RememberCompositionNode,
     RememberListNode,
     RememberRecordNode,
@@ -174,6 +175,9 @@ def render(node: ASTNode) -> str:
     if isinstance(node, AddNode):
         # Liminate `add` v1 §10 — canonical form: `add <item> to <list>`.
         return f"add {render(node.item)} to {node.target.name}"
+    if isinstance(node, RemoveNode):
+        # Canonical form: `remove <item> from <list>`.
+        return f"remove {render(node.item)} from {node.target.name}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
@@ -332,6 +336,10 @@ def _render_condition(node: ConditionNode) -> str:
         return f"{field} is {_OP_WORDS[node.op]} {value}"
     if node.op in _NEGATED_OPS:
         return f"{field} is {_NEGATED_OPS[node.op]} {value}"
+    if node.op == "includes":
+        return f"{field} includes {value}"
+    if node.op == "not_includes":
+        return f"{field} not includes {value}"
     raise ValueError(f"unknown condition operator '{node.op}'")
 
 
