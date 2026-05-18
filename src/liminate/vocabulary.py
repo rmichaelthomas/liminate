@@ -19,6 +19,9 @@ Sources:
   permanently at 34 reserved words.)
 - `includes` connective + `remove` verb addendum (12 verbs, 15 connectives,
   37 reserved words total).
+- `within` connective addendum (12 verbs, 16 connectives, 38 reserved
+  words total) — used by the session pack's `measure` verb for numeric
+  tolerance.
 """
 
 from dataclasses import dataclass
@@ -62,7 +65,7 @@ VERBS: frozenset[str] = frozenset({
 # V2_RESERVED to active connectives.
 CONNECTIVES: frozenset[str] = frozenset({
     "where", "and", "or", "from", "with", "called", "to", "how", "as", "of",
-    "if", "otherwise", "when", "unless", "includes",
+    "if", "otherwise", "when", "unless", "includes", "within",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -94,10 +97,11 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 37 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
+# All 38 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
 # `add` verb addendum v1 §9: +1 for `add` (appends an item to a list).
 # `includes` connective + `remove` verb addendum: +2 (list membership
-# test in conditions, retract item from a list).
+# test in conditions, retract item from a list). `within` connective: +1
+# (numeric tolerance for the session pack's `measure` verb).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -113,7 +117,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary stays permanently at
-    37 words.
+    38 words.
     """
     if word in VERBS:
         return "verb"
@@ -198,12 +202,24 @@ class CompareValuesExecution:
     details_target: str | None  # required for "structural"
 
 
+@dataclass(frozen=True)
+class NumericExtractCompareExecution:
+    check_slot: str          # slot name containing the claimed number
+    against_slot: str        # slot name containing the source text (string)
+    tolerance_slot: str      # slot name containing the tolerance number
+    on_mismatch: str         # "error" | "flag"
+    status_target: str       # symbol name for "within_tolerance" / "outside_tolerance"
+    matched_target: str      # symbol name for the closest number found in source
+    delta_target: str        # symbol name for the absolute difference
+
+
 PackVerbExecution = (
     SetValueExecution
     | SubstringCheckExecution
     | AppendToListExecution
     | SetFieldExecution
     | CompareValuesExecution
+    | NumericExtractCompareExecution
 )
 
 

@@ -30,6 +30,7 @@ from typing import Any
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    NumericExtractCompareExecution,
     PackVerbExecution,
     PackVerbSignature,
     PackVerbSlot,
@@ -239,10 +240,20 @@ def _parse_execution(exec_def: dict) -> PackVerbExecution:
             status_target=exec_def["status_target"],
             details_target=exec_def.get("details_target"),
         )
+    if exec_type == "numeric_extract_compare":
+        return NumericExtractCompareExecution(
+            check_slot=exec_def["check_slot"],
+            against_slot=exec_def["against_slot"],
+            tolerance_slot=exec_def["tolerance_slot"],
+            on_mismatch=exec_def.get("on_mismatch", "flag"),
+            status_target=exec_def["status_target"],
+            matched_target=exec_def["matched_target"],
+            delta_target=exec_def["delta_target"],
+        )
     raise ValueError(
         f"Unknown execution type '{exec_type}'. "
         f"Supported: set_value, substring_check, append_to_list, "
-        f"set_field, compare_values."
+        f"set_field, compare_values, numeric_extract_compare."
     )
 
 
@@ -339,6 +350,21 @@ def _validate_pack_verb_signature(sig: PackVerbSignature) -> None:
                 f"Pack verb '{word}': structural comparison requires a "
                 f"'details_target' field."
             )
+
+    # numeric_extract_compare: extra validation.
+    if isinstance(execution, NumericExtractCompareExecution):
+        if execution.on_mismatch not in ("error", "flag"):
+            raise ValueError(
+                f"Pack verb '{word}' uses unknown on_mismatch "
+                f"'{execution.on_mismatch}'. Use 'error' or 'flag'."
+            )
+        for field_name in ("status_target", "matched_target", "delta_target"):
+            v = getattr(execution, field_name)
+            if not isinstance(v, str) or not v:
+                raise ValueError(
+                    f"Pack verb '{word}': '{field_name}' must be a "
+                    f"non-empty string."
+                )
 
 
 def parse_pack_verb_signature(definition: dict) -> PackVerbSignature:

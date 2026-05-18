@@ -27,14 +27,15 @@ def test_verb_count():
 
 
 def test_connective_count():
-    # 15 connectives: v3a §124 had 14; `includes` adds the list-membership
-    # connective used in `when`/`where`/`choose if` conditions.
-    assert len(CONNECTIVES) == 15
+    # 16 connectives: v3a §124 had 14; `includes` adds list-membership for
+    # conditions; `within` introduces the tolerance value in the session
+    # pack's `measure` verb.
+    assert len(CONNECTIVES) == 16
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
-        "when", "unless", "includes",
+        "when", "unless", "includes", "within",
     }
 
 
@@ -66,11 +67,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_37():
-    # 37 reserved words total. Delta from 35 (Liminate `add` v1 §9):
-    # +1 `remove` verb, +1 `includes` connective. 12 verbs + 15 connectives
-    # + 4 operators + 1 multi-word + 3 articles + 2 v2-deferred verbs = 37.
-    assert len(ALL_RESERVED) == 37
+def test_total_reserved_count_is_38():
+    # 38 reserved words total. Delta from 37: +1 `within` connective for
+    # the session pack's `measure` verb. 12 verbs + 16 connectives
+    # + 4 operators + 1 multi-word + 3 articles + 2 v2-deferred verbs = 38.
+    assert len(ALL_RESERVED) == 38
 
 
 def test_reserved_sets_are_disjoint():

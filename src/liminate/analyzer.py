@@ -81,6 +81,7 @@ from .result import LiminateResult, ResultStatus
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    NumericExtractCompareExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -1171,6 +1172,8 @@ def _check_pack_verb(
         _check_pack_set_field(node, execution, symtab)
     elif isinstance(execution, CompareValuesExecution):
         _check_pack_compare(node, execution, symtab)
+    elif isinstance(execution, NumericExtractCompareExecution):
+        _check_pack_numeric_extract(node, execution, symtab)
     # SetValueExecution: nothing further beyond type_constraint loop.
 
 
@@ -1307,6 +1310,31 @@ def _check_pack_compare(
                 f"I can't find '{value_node.name}'. "
                 f"You might need to 'remember' it first."
             )
+
+
+def _check_pack_numeric_extract(
+    node: PackVerbNode,
+    execution: NumericExtractCompareExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """Analyzer validation for numeric_extract_compare."""
+    against_node = node.slot_values.get(execution.against_slot)
+    if not isinstance(against_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the source text."
+        )
+    name = against_node.name
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type != "string":
+        raise _SemanticError(
+            f"'{node.word} from' expects text, but '{name}' is "
+            f"{_singular(entry.type)}."
+        )
 
 
 def _check_finish(
