@@ -295,3 +295,163 @@ def test_pack_verbs_reserved_when_pack_active():
         errors = [r for r in results if r.status is ResultStatus.ERROR_PARSE]
         assert errors, f"expected error for reserved verb '{verb}'"
         assert "verb" in errors[0].message
+
+
+# ---------------------------------------------------------------------------
+# measure — happy path: within tolerance
+# ---------------------------------------------------------------------------
+
+
+def test_measure_within_tolerance():
+    """measure passes when closest number is within tolerance."""
+    session, results = run_v3a(
+        """
+        remember a source called report with "The cohort held 76 percent of weeks employed."
+        measure 76.3 from report within 1
+        """,
+        pack=_load_session_pack(),
+    )
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert not errors, errors
+    assert session.symtab["measure-status"].value == "within_tolerance"
+    assert session.symtab["measure-matched"].value == 76
+    assert session.symtab["measure-delta"].value < 1
+
+
+def test_measure_exact_match():
+    """measure passes with delta 0 when the number matches exactly."""
+    session, results = run_v3a(
+        """
+        remember a source called report with "They held an average of 9.0 jobs."
+        measure 9.0 from report within 0.1
+        """,
+        pack=_load_session_pack(),
+    )
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert not errors, errors
+    assert session.symtab["measure-status"].value == "within_tolerance"
+
+
+def test_measure_closest_of_multiple_numbers():
+    """measure finds the closest number when source has many."""
+    session, results = run_v3a(
+        """
+        remember a source called report with "78 percent of White workers. 75 percent Hispanic. 68 percent Black."
+        measure 78.3 from report within 1
+        """,
+        pack=_load_session_pack(),
+    )
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert not errors, errors
+    assert session.symtab["measure-matched"].value == 78
+    assert session.symtab["measure-status"].value == "within_tolerance"
+
+
+# ---------------------------------------------------------------------------
+# measure — outside tolerance (flag mode)
+# ---------------------------------------------------------------------------
+
+
+def test_measure_outside_tolerance_flags():
+    """measure flags outside_tolerance without halting."""
+    session, results = run_v3a(
+        """
+        remember a source called report with "23 percent of dropouts were limited."
+        measure 26.0 from report within 1
+        show measure-status
+        """,
+        pack=_load_session_pack(),
+    )
+    assert outputs(results) == ["outside_tolerance"]
+    assert session.symtab["measure-matched"].value == 23
+    assert session.symtab["measure-delta"].value == 3
+
+
+def test_measure_outside_tolerance_continues_execution():
+    """Execution continues after a flagged outside_tolerance."""
+    _, results = run_v3a(
+        """
+        remember a source called report with "The value is 50."
+        measure 99 from report within 1
+        show measure-status
+        show measure-matched
+        show measure-delta
+        """,
+        pack=_load_session_pack(),
+    )
+    out = outputs(results)
+    assert out[0] == "outside_tolerance"
+    assert out[1] == "50"
+    assert out[2] == "49"
+
+
+# ---------------------------------------------------------------------------
+# measure — no numbers in source
+# ---------------------------------------------------------------------------
+
+
+def test_measure_no_numbers_in_source():
+    """measure handles sources with no numeric content."""
+    session, results = run_v3a(
+        """
+        remember a source called report with "No numbers here at all."
+        measure 76 from report within 1
+        """,
+        pack=_load_session_pack(),
+    )
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert not errors, errors
+    assert session.symtab["measure-status"].value == "no_numbers_found"
+
+
+# ---------------------------------------------------------------------------
+# measure — type constraint errors
+# ---------------------------------------------------------------------------
+
+
+def test_measure_from_non_source_typed_symbol_is_error():
+    """measure requires the from-arg to have descriptor 'source'."""
+    _, results = run_v3a(
+        """
+        remember a value called plain-text with "Some text with 42."
+        measure 42 from plain-text within 1
+        """,
+        pack=_load_session_pack(),
+    )
+    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert errors, results
+    assert "plain-text" in errors[0].message
+
+
+# ---------------------------------------------------------------------------
+# measure — combined with cite
+# ---------------------------------------------------------------------------
+
+
+def test_cite_fails_but_measure_passes():
+    """The NLSY97 proof point: cite rejects imprecise text, measure
+    confirms numeric proximity."""
+    _, results = run_v3a(
+        """
+        remember a source called bls with "76 percent of weeks employed"
+        cite "76.3 percent" from bls
+        measure 76.3 from bls within 1
+        """,
+        pack=_load_session_pack(),
+    )
+    cite_errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    assert len(cite_errors) == 1
+    assert "76.3 percent" in cite_errors[0].message
+
+
+def test_measure_after_cite_in_separate_blocks():
+    """When cite and measure are independent checks, both produce results."""
+    _, results = run_v3a(
+        """
+        remember a source called bls with "76 percent of weeks employed"
+        measure 76.3 from bls within 1
+        show measure-status
+        """,
+        pack=_load_session_pack(),
+    )
+    assert outputs(results) == ["within_tolerance"]

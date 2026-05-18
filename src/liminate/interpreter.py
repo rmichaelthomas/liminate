@@ -31,6 +31,7 @@ semantics (v1d §56).
 from __future__ import annotations
 
 import copy
+import re
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Any
@@ -40,6 +41,7 @@ from .analyzer import SymbolEntry, analyze
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    NumericExtractCompareExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -631,6 +633,8 @@ def _exec_pack_verb(
         return _exec_pack_set_field(node, execution, symtab)
     if isinstance(execution, CompareValuesExecution):
         return _exec_pack_compare_values(node, execution, symtab)
+    if isinstance(execution, NumericExtractCompareExecution):
+        return _exec_pack_numeric_extract_compare(node, execution, symtab)
     raise _RuntimeError(
         f"Pack verb '{node.word}' has an unrecognized execution type."
     )
@@ -838,6 +842,72 @@ def _exec_pack_compare_values(
             )
         raise _RuntimeError(
             f"'{left_name}' does not match '{right_name}'."
+        )
+    return []
+
+
+def _exec_pack_numeric_extract_compare(
+    node: PackVerbNode,
+    execution: NumericExtractCompareExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """Sixth execution type: extract all numbers from a source string,
+    find the closest to the claimed value, check tolerance."""
+    check_node = node.slot_values.get(execution.check_slot)
+    against_node = node.slot_values.get(execution.against_slot)
+    tolerance_node = node.slot_values.get(execution.tolerance_slot)
+
+    claimed = _evaluate_expression(check_node, symtab, None)
+    source_text = _evaluate_expression(against_node, symtab, None)
+    tolerance = _evaluate_expression(tolerance_node, symtab, None)
+
+    if not isinstance(claimed, (int, float)):
+        claimed = float(_format_scalar(claimed))
+    if not isinstance(tolerance, (int, float)):
+        tolerance = float(_format_scalar(tolerance))
+    if not isinstance(source_text, str):
+        source_text = _format_scalar(source_text)
+
+    numbers = [float(m) for m in re.findall(r'-?\d+\.?\d*', source_text)]
+
+    if not numbers:
+        against_name = (
+            against_node.name if isinstance(against_node, NameRef)
+            else execution.against_slot
+        )
+        if execution.on_mismatch == "error":
+            raise _RuntimeError(
+                f"No numbers found in '{against_name}'."
+            )
+        _store(symtab, execution.status_target, "no_numbers_found")
+        _store(symtab, execution.matched_target, "none")
+        _store(symtab, execution.delta_target, "none")
+        return []
+
+    closest = min(numbers, key=lambda n: abs(n - claimed))
+    delta = abs(claimed - closest)
+
+    if closest == int(closest):
+        closest = int(closest)
+    if delta == int(delta):
+        delta = int(delta)
+
+    within = delta <= tolerance
+    status = "within_tolerance" if within else "outside_tolerance"
+    _store(symtab, execution.status_target, status)
+    _store(symtab, execution.matched_target, closest)
+    _store(symtab, execution.delta_target, delta)
+
+    if not within and execution.on_mismatch == "error":
+        against_name = (
+            against_node.name if isinstance(against_node, NameRef)
+            else execution.against_slot
+        )
+        raise _RuntimeError(
+            f"Claimed {_format_scalar(claimed)} but closest value in "
+            f"'{against_name}' is {_format_scalar(closest)} "
+            f"(delta: {_format_scalar(delta)}, tolerance: "
+            f"{_format_scalar(tolerance)})."
         )
     return []
 
