@@ -34,6 +34,24 @@
         "status_target": "verification-status",
         "details_target": "verification-divergences"
       }
+    },
+    {
+      "word": "measure",
+      "slots": [
+        { "name": "value", "connective": null, "required": true, "value_type": "value" },
+        { "name": "source", "connective": "from", "required": true, "value_type": "name", "type_constraint": "source" },
+        { "name": "tolerance", "connective": "within", "required": true, "value_type": "value" }
+      ],
+      "execution": {
+        "type": "numeric_extract_compare",
+        "check_slot": "value",
+        "against_slot": "source",
+        "tolerance_slot": "tolerance",
+        "on_mismatch": "flag",
+        "status_target": "measure-status",
+        "matched_target": "measure-matched",
+        "delta_target": "measure-delta"
+      }
     }
   ],
   "declarations": [],
