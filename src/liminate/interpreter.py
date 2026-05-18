@@ -1339,6 +1339,9 @@ def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
 
 
 def _apply_op(op: str, a: Any, b: Any) -> bool:
+    # NOTE: this function is duplicated in listener.py to avoid a circular
+    # import between interpreter and listener. Both copies must stay in
+    # sync when adding new operators.
     if op == "is":
         return a == b
     if op == "above":
