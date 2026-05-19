@@ -36,10 +36,10 @@ If a feature is shipped, it has a locked specification, a working implementation
 - **Single-threaded event queue (Phase 2).** Adapters push `(name, value)` updates into a shared FIFO. The interpreter drains one update to completion (write → re-eval → fire-eligible → cascade) before the next dequeue. (v3a §119)
 - **Edge-triggered evaluation (Phase 2).** Handlers fire on false→true transitions of their compound eligibility. Unchanged adapter updates are silently absorbed. Modifications inside an action block are coalesced by name and cascade depth-first. (v3a §113/§114)
 
-### Vocabulary (40 reserved words)
+### Vocabulary (44 reserved words)
 
-- **13 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`.
-- **17 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`.
+- **16 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`.
+- **18 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`.
 - **4 single-word operators:** `is`, `above`, `below`, `not`. Plus `equal` as a multi-word component (combines with `to` per inception §22).
 - **3 articles:** `the`, `a`, `an`.
 - **1 delimiter:** `:`.
