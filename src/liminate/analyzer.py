@@ -73,6 +73,7 @@ from .parser import (
     RememberListNode,
     RememberRecordNode,
     RememberValueNode,
+    RequireNode,
     SequenceNode,
     ShowNode,
     WeakensNode,
@@ -310,6 +311,11 @@ def _check(
         )
     elif isinstance(node, WeakensNode):
         _check_weakens(node, symtab, live_value_names=live_value_names)
+    elif isinstance(node, RequireNode):
+        # Normative Era batch 2 — the condition follows the same
+        # validation path as `choose if`: no iterator, names resolve
+        # against the symbol table directly, field access uses `of`.
+        _check_choose_condition(node.condition, symtab)
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -467,6 +473,10 @@ def _side_effect_verb(
     if isinstance(node, WeakensNode):
         # `weakens` — attaches decay metadata; returns no value.
         return "weakens"
+    if isinstance(node, RequireNode):
+        # Normative Era batch 2 — `require` either passes silently or
+        # halts with REQUIREMENT_NOT_MET. Never produces a value.
+        return "require"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):

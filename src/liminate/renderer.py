@@ -49,6 +49,7 @@ from .parser import (
     RememberListNode,
     RememberRecordNode,
     RememberValueNode,
+    RequireNode,
     SequenceNode,
     ShowNode,
     WeakensNode,
@@ -157,7 +158,7 @@ def render(node: ASTNode) -> str:
     if isinstance(node, ChooseNode):
         return _render_choose(node)
     if isinstance(node, SequenceNode):
-        return " and ".join(render(op) for op in node.operations)
+        return _render_sequence(node, render)
 
     if isinstance(node, WhenNode):
         # v3a §108–§110 canonical form:
@@ -185,6 +186,9 @@ def render(node: ASTNode) -> str:
             f"weakens {node.subject.name} "
             f"over {_fmt_number(node.period.value)}"
         )
+    if isinstance(node, RequireNode):
+        # Normative Era batch 2 — `require <condition>`.
+        return f"require {render(node.condition)}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
@@ -240,7 +244,9 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
     if isinstance(node, EachNode):
         return f"each the {render(node.collection)} {render_with_explicit_precedence(node.action)}"
     if isinstance(node, SequenceNode):
-        return " and ".join(render_with_explicit_precedence(op) for op in node.operations)
+        return _render_sequence(node, render_with_explicit_precedence)
+    if isinstance(node, RequireNode):
+        return f"require {render_with_explicit_precedence(node.condition)}"
     if isinstance(node, RememberCompositionNode):
         if node.param is not None:
             return (
@@ -308,6 +314,27 @@ def _render_choose(node: ChooseNode) -> str:
         else:
             parts.append(f"otherwise {render(br.action)}")
     return " ".join(parts)
+
+
+def _render_sequence(node: SequenceNode, render_fn) -> str:
+    """Render a SequenceNode honoring its `connectors` metadata.
+
+    Normative Era batch 2: joins use `and` or `then` per the original
+    source. An empty `connectors` list (legacy callers that built a
+    SequenceNode without specifying joins) falls back to `and`.
+    """
+    if not node.operations:
+        return ""
+    parts: list[str] = [render_fn(node.operations[0])]
+    for i, op in enumerate(node.operations[1:]):
+        conn = (
+            node.connectors[i]
+            if i < len(node.connectors)
+            else "and"
+        )
+        parts.append(f" {conn} ")
+        parts.append(render_fn(op))
+    return "".join(parts)
 
 
 def _render_when(node: WhenNode, render_fn) -> str:

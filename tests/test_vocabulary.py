@@ -17,24 +17,24 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 13 verbs: 12 + 1 (`weakens` — autonomous linear decay).
-    assert len(VERBS) == 13
+    # 14 verbs: 13 + 1 (`require` — Normative Era batch 2 enforcement).
+    assert len(VERBS) == 14
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
-        "add", "remove", "weakens",
+        "add", "remove", "weakens", "require",
     }
 
 
 def test_connective_count():
-    # 17 connectives: 16 + 1 (`over` — introduces the decay period in
-    # the `weakens` verb).
-    assert len(CONNECTIVES) == 17
+    # 18 connectives: 17 + 1 (`then` — Normative Era batch 2 declared
+    # sequencing).
+    assert len(CONNECTIVES) == 18
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
-        "when", "unless", "includes", "within", "over",
+        "when", "unless", "includes", "within", "over", "then",
     }
 
 
@@ -66,10 +66,10 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_40():
-    # 40 reserved words total. 13 verbs + 17 connectives + 4 operators
-    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 40.
-    assert len(ALL_RESERVED) == 40
+def test_total_reserved_count_is_42():
+    # 42 reserved words total. 14 verbs + 18 connectives + 4 operators
+    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 42.
+    assert len(ALL_RESERVED) == 42
 
 
 def test_reserved_sets_are_disjoint():
@@ -127,6 +127,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["remove"] == ["item", "target"]
     # Metabolic Era batch 1: `weakens <subject> over <period>`.
     assert VERB_SIGNATURES["weakens"] == ["subject", "schedule"]
+    # Normative Era batch 2: `require <condition>`.
+    assert VERB_SIGNATURES["require"] == ["condition"]
 
 
 def test_add_is_classified_as_verb():

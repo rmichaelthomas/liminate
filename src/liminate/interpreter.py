@@ -87,6 +87,7 @@ from .parser import (
     RememberListNode,
     RememberRecordNode,
     RememberValueNode,
+    RequireNode,
     SequenceNode,
     ShowNode,
     WeakensNode,
@@ -337,6 +338,17 @@ class _FinishRequested(Exception):
     knows which handler was firing."""
 
 
+class _RequirementNotMet(Exception):
+    """Normative Era batch 2 — raised when a `require` condition
+    evaluates false. Surfaced to callers as REQUIREMENT_NOT_MET. The
+    exception unwinds through nested sequences, compositions, and
+    `choose` branches so prior committed operations stay committed
+    under stepwise semantics (v1d §56)."""
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+
 def _execute_single(
     node: ASTNode,
     symtab: dict[str, SymbolEntry],
@@ -362,6 +374,13 @@ def _execute_single(
     except _RuntimeError as e:
         return LiminateResult(
             status=ResultStatus.ERROR_SEMANTIC,
+            canonical=render(node),
+            message=e.message,
+            executed=False,
+        )
+    except _RequirementNotMet as e:
+        return LiminateResult(
+            status=ResultStatus.REQUIREMENT_NOT_MET,
             canonical=render(node),
             message=e.message,
             executed=False,
@@ -398,6 +417,17 @@ def _execute_sequence(
                 op,
                 LiminateResult(
                     status=ResultStatus.ERROR_SEMANTIC,
+                    message=e.message,
+                ),
+                completed_canonicals,
+                outputs,
+                seq,
+            )
+        except _RequirementNotMet as e:
+            return _stepwise_error(
+                op,
+                LiminateResult(
+                    status=ResultStatus.REQUIREMENT_NOT_MET,
                     message=e.message,
                 ),
                 completed_canonicals,
@@ -462,7 +492,7 @@ def _stepwise_error(
     else:
         msg = failure.message
     return LiminateResult(
-        status=ResultStatus.ERROR_SEMANTIC,
+        status=failure.status,
         canonical=render(seq),
         output=outputs if outputs else None,
         message=msg,
@@ -525,6 +555,8 @@ def _exec_op(
         return _exec_remove(node, symtab, current_item)
     if isinstance(node, WeakensNode):
         return _exec_weakens(node, symtab)
+    if isinstance(node, RequireNode):
+        return _exec_require(node, symtab, current_item)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -1110,6 +1142,54 @@ def _exec_weakens(
     )
     # Type stays "number" — a DecayingValue IS a number with metadata.
     return []
+
+
+def _exec_require(
+    node: RequireNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Normative Era batch 2 — evaluate the condition. Silent on pass;
+    raises _RequirementNotMet on fail. The error message echoes the
+    condition in canonical form and reports the actual value(s) that
+    violated the rule for the first failing sub-condition (helpful for
+    diagnosis when conditions are compound).
+    """
+    if _eval_condition(node.condition, current_item, symtab):
+        return []
+    condition_text = render(node.condition)
+    actual = _requirement_actual_values(node.condition, current_item, symtab)
+    msg = f"Requirement not met: {condition_text}."
+    if actual:
+        msg += f" {actual}"
+    raise _RequirementNotMet(msg)
+
+
+def _requirement_actual_values(
+    cond: ASTNode,
+    current_item: Any,
+    symtab: dict[str, SymbolEntry],
+) -> str:
+    """Format the actual values of the first failing sub-condition for
+    the require error message. For compound `and` conditions, report
+    the first failing branch; for `or`, report the left branch (both
+    failed, so either is informative)."""
+    if isinstance(cond, CompoundConditionNode):
+        left_failed = not _eval_condition(cond.left, current_item, symtab)
+        if cond.connector == "and":
+            if left_failed:
+                return _requirement_actual_values(cond.left, current_item, symtab)
+            return _requirement_actual_values(cond.right, current_item, symtab)
+        # "or" — both must have failed for us to reach here; report left.
+        return _requirement_actual_values(cond.left, current_item, symtab)
+    if isinstance(cond, ConditionNode):
+        try:
+            field_val = _eval_field(cond.field, current_item, symtab)
+        except _RuntimeError:
+            return ""
+        field_text = render(cond.field)
+        return f"{field_text} is {_format_scalar(field_val)}."
+    return ""
 
 
 def decay_tick(symtab: dict[str, SymbolEntry]) -> list[str]:
