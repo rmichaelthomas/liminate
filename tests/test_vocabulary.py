@@ -17,25 +17,24 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 12 verbs: 11 (Liminate `add` v1 §9) + 1 (`remove` — retract an
-    # item from a list).
-    assert len(VERBS) == 12
+    # 13 verbs: 12 + 1 (`weakens` — autonomous linear decay).
+    assert len(VERBS) == 13
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
-        "gather", "combine", "each", "choose", "finish", "add", "remove",
+        "gather", "combine", "each", "choose", "finish",
+        "add", "remove", "weakens",
     }
 
 
 def test_connective_count():
-    # 16 connectives: v3a §124 had 14; `includes` adds list-membership for
-    # conditions; `within` introduces the tolerance value in the session
-    # pack's `measure` verb.
-    assert len(CONNECTIVES) == 16
+    # 17 connectives: 16 + 1 (`over` — introduces the decay period in
+    # the `weakens` verb).
+    assert len(CONNECTIVES) == 17
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
-        "when", "unless", "includes", "within",
+        "when", "unless", "includes", "within", "over",
     }
 
 
@@ -67,11 +66,10 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_38():
-    # 38 reserved words total. Delta from 37: +1 `within` connective for
-    # the session pack's `measure` verb. 12 verbs + 16 connectives
-    # + 4 operators + 1 multi-word + 3 articles + 2 v2-deferred verbs = 38.
-    assert len(ALL_RESERVED) == 38
+def test_total_reserved_count_is_40():
+    # 40 reserved words total. 13 verbs + 17 connectives + 4 operators
+    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 40.
+    assert len(ALL_RESERVED) == 40
 
 
 def test_reserved_sets_are_disjoint():
@@ -127,6 +125,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["add"] == ["item", "target"]
     # `remove` — retract an item from an existing list (same slot shape).
     assert VERB_SIGNATURES["remove"] == ["item", "target"]
+    # Metabolic Era batch 1: `weakens <subject> over <period>`.
+    assert VERB_SIGNATURES["weakens"] == ["subject", "schedule"]
 
 
 def test_add_is_classified_as_verb():

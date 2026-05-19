@@ -45,7 +45,9 @@ from .interpreter import (
     _RuntimeError,
     _in_action_block,
     _live_value_names_ctx,
+    decay_tick,
 )
+from .vocabulary import DecayingValue
 from .parser import (
     ASTNode,
     CompoundConditionNode,
@@ -172,6 +174,34 @@ class _Runner:
         for adapter in self.adapters:
             adapter.stop()
         yield self._shutdown_adapter_complete()
+
+    # -------------------------------------------------------------------
+    # Metabolic Era batch 1 — decay tick driver
+    # -------------------------------------------------------------------
+
+    def tick_decay(self) -> Iterator[LiminateResult]:
+        """Advance every DecayingValue entry by one tick, then fire any
+        handlers whose compound eligibility transitioned false → true.
+
+        Treats every decaying name as `modified` for the cascade so that
+        handlers watching those names are re-evaluated on edge.
+        """
+        decaying = [
+            name for name, e in self.symtab.items()
+            if isinstance(e.value, DecayingValue)
+        ]
+        if not decaying:
+            return
+        decay_tick(self.symtab)
+        new_values = {
+            n: self.symtab[n].value.current_value for n in decaying
+        }
+        yield from self._fire_eligible(
+            modified_names=decaying,
+            new_values=new_values,
+            source="decay_tick",
+            cascade_chain=frozenset(),
+        )
 
     # -------------------------------------------------------------------
     # Initial evaluation (§121)
@@ -482,7 +512,10 @@ class _Runner:
                 return node.word  # bare word literal fallback
             if self.live_value_registry.is_unset(node.word):
                 return _UNSET
-            return entry.value
+            val = entry.value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return val
         if isinstance(node, NameRef):
             entry = self.symtab.get(node.name)
             if entry is None:
@@ -491,7 +524,10 @@ class _Runner:
                 return _UNSET
             if self.live_value_registry.is_unset(node.name):
                 return _UNSET
-            return entry.value
+            val = entry.value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return val
         if isinstance(node, FieldAccessNode):
             entry = self.symtab.get(node.record_name)
             if entry is None:
