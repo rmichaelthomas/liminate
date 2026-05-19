@@ -41,6 +41,7 @@ from .analyzer import SymbolEntry, analyze
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    DecayingValue,
     NumericExtractCompareExecution,
     SetFieldExecution,
     SetValueExecution,
@@ -88,6 +89,7 @@ from .parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    WeakensNode,
     WhenNode,
 )
 from .renderer import render
@@ -521,6 +523,8 @@ def _exec_op(
         return _exec_add(node, symtab, current_item)
     if isinstance(node, RemoveNode):
         return _exec_remove(node, symtab, current_item)
+    if isinstance(node, WeakensNode):
+        return _exec_weakens(node, symtab)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -1077,6 +1081,54 @@ def _exec_remove(
     return []
 
 
+def _exec_weakens(
+    node: WeakensNode,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """Metabolic Era batch 1 — attach decay metadata to a numeric variable.
+
+    If the variable is already a DecayingValue, reapplication is
+    last-wins: new period, ticks reset, initial value taken from the
+    current decayed value at the moment of reapplication.
+    """
+    entry = symtab[node.subject.name]
+    current = entry.value
+    period = node.period.value
+
+    if isinstance(current, DecayingValue):
+        current = current.current_value
+
+    if not isinstance(current, (int, float)):
+        raise _RuntimeError(
+            f"'weakens' only works on numbers — "
+            f"'{node.subject.name}' is a {type(current).__name__}."
+        )
+
+    entry.value = DecayingValue(
+        initial_value=float(current),
+        period=period,
+    )
+    # Type stays "number" — a DecayingValue IS a number with metadata.
+    return []
+
+
+def decay_tick(symtab: dict[str, SymbolEntry]) -> list[str]:
+    """Advance every DecayingValue entry by one tick.
+
+    Adapters (or the listener) call this when a tick event occurs.
+    Returns the names of variables that crossed from a positive value
+    to zero this tick — useful as a strong handler-firing trigger.
+    """
+    reached_zero: list[str] = []
+    for name, entry in symtab.items():
+        if isinstance(entry.value, DecayingValue):
+            was_positive = entry.value.current_value > 0.0
+            entry.value.tick()
+            if was_positive and entry.value.current_value == 0.0:
+                reached_zero.append(name)
+    return reached_zero
+
+
 def _exec_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     entry = symtab[node.target.name]
     total = sum(entry.value)
@@ -1226,7 +1278,10 @@ def _evaluate_expression(
         # If the word matches a symbol, copy its value (§24 line 486).
         # Otherwise treat the word as a string literal.
         if expr.word in symtab:
-            return copy.deepcopy(symtab[expr.word].value)
+            val = symtab[expr.word].value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return copy.deepcopy(val)
         return expr.word
     if isinstance(expr, QuotedString):
         # v2c §86/§87 — quoted content is always a literal string. No
@@ -1234,7 +1289,10 @@ def _evaluate_expression(
         return expr.content
     if isinstance(expr, NameRef):
         if expr.name in symtab:
-            return copy.deepcopy(symtab[expr.name].value)
+            val = symtab[expr.name].value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return copy.deepcopy(val)
         raise _RuntimeError(
             f"I can't find '{expr.name}'. You might need to 'remember' it first."
         )
@@ -1375,7 +1433,10 @@ def _eval_field(field_node: ASTNode, current_item: Any, symtab) -> Any:
         if isinstance(current_item, dict) and field_node.name in current_item:
             return current_item[field_node.name]
         if field_node.name in symtab:
-            return symtab[field_node.name].value
+            val = symtab[field_node.name].value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return val
         raise _RuntimeError(
             f"I can't find '{field_node.name}' in this item."
         )
@@ -1393,7 +1454,10 @@ def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
         return value_node.value
     if isinstance(value_node, BareWord):
         if value_node.word in symtab:
-            return symtab[value_node.word].value
+            val = symtab[value_node.word].value
+            if isinstance(val, DecayingValue):
+                return val.current_value
+            return val
         return value_node.word
     if isinstance(value_node, QuotedString):
         # v2c §86/§87 — quoted value is always a literal string.
@@ -1461,7 +1525,22 @@ def _store(
     (e.g. `source` in `remember a source called readme`). Only the
     `remember` exec paths pass this; interpreter-internal stores
     (gather, pack verb writes, add) leave it None.
+
+    Metabolic Era batch 1: if the existing entry's value is a
+    DecayingValue and the new value is numeric, this is a
+    reinforcement — reset ticks_elapsed and replace initial_value
+    while preserving the period. A non-numeric overwrite discards
+    the decay wrapper entirely.
     """
+    existing = symtab.get(name)
+    if (
+        existing is not None
+        and isinstance(existing.value, DecayingValue)
+        and isinstance(value, (int, float))
+        and not isinstance(value, bool)
+    ):
+        existing.value.reinforce(float(value))
+        return
     value = copy.deepcopy(value)
     type_, schema = _infer_type_and_schema(value)
     symtab[name] = SymbolEntry(
@@ -1471,6 +1550,8 @@ def _store(
 
 
 def _infer_type_and_schema(v: Any) -> tuple[str, dict[str, str] | None]:
+    if isinstance(v, DecayingValue):
+        return "number", None
     if isinstance(v, bool):
         return "number", None  # v1 has no bools; defensive
     if isinstance(v, (int, float)):
@@ -1513,6 +1594,8 @@ def _scalar_type(v: Any) -> str:
 
 def _display_lines(v: Any) -> list[str]:
     """Format a value as output lines per v1b §42."""
+    if isinstance(v, DecayingValue):
+        return [_format_scalar(v.current_value)]
     if isinstance(v, list) and v and isinstance(v[0], dict):
         # List of records: one record per line.
         return [_format_record(r) for r in v]

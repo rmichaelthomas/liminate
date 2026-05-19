@@ -316,6 +316,17 @@ class RemoveNode(ASTNode):
 
 
 @dataclass
+class WeakensNode(ASTNode):
+    """Metabolic Era batch 1 — autonomous linear decay verb.
+
+    `subject` is a NameRef to an existing numeric variable. `period` is
+    a NumberLiteral — the decay period in abstract ticks.
+    """
+    subject: NameRef
+    period: NumberLiteral
+
+
+@dataclass
 class FinishNode(ASTNode):
     """v3a §112 — exit listener mode immediately and totally.
 
@@ -676,6 +687,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_add(stream)
     if verb.value == "remove":
         return _parse_remove(stream)
+    if verb.value == "weakens":
+        return _parse_weakens(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1251,6 +1264,42 @@ def _parse_remove(stream: TokenStream) -> RemoveNode:
     _consume_optional_article(stream)
     target = _consume_target(stream, verb="remove")
     return RemoveNode(item=item, target=target)
+
+
+# ---------------------------------------------------------------------------
+# weakens (Metabolic Era batch 1)
+# ---------------------------------------------------------------------------
+
+
+def _parse_weakens(stream: TokenStream) -> WeakensNode:
+    """`weakens [article]? <subject-name> over <number>`."""
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'weakens' needs a target and a decay period — try: "
+            "weakens <name> over <number>."
+        )
+    subject = _consume_target(stream, verb="weakens")
+
+    over_tok = stream.consume()
+    if not (
+        over_tok
+        and over_tok.type is TokenType.CONNECTIVE
+        and over_tok.value == "over"
+    ):
+        raise _ParseError(
+            "'weakens' needs a decay period — try: "
+            "weakens <name> over <number>."
+        )
+
+    period_tok = stream.consume()
+    if not (period_tok and period_tok.type is TokenType.NUMBER):
+        raise _ParseError(
+            "I expected a number after 'over' — the decay period. "
+            "Try: weakens <name> over 30."
+        )
+    period = NumberLiteral(value=_parse_number(period_tok.value))
+    return WeakensNode(subject=subject, period=period)
 
 
 # ---------------------------------------------------------------------------

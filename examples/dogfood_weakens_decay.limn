@@ -1,0 +1,9 @@
+remember a value called urgency with 1.0
+remember a status called task-status with "active"
+
+weakens urgency over 10
+
+show urgency
+
+when urgency is below 0.3
+  show "Review urgency has faded — reassignment needed."

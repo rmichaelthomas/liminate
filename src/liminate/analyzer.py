@@ -75,6 +75,7 @@ from .parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    WeakensNode,
     WhenNode,
 )
 from .result import LiminateResult, ResultStatus
@@ -307,6 +308,8 @@ def _check(
             node, symtab, iterator,
             live_value_names=live_value_names,
         )
+    elif isinstance(node, WeakensNode):
+        _check_weakens(node, symtab, live_value_names=live_value_names)
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -461,6 +464,9 @@ def _side_effect_verb(
     if isinstance(node, RemoveNode):
         # `remove` — silent mutation; returns no value.
         return "remove"
+    if isinstance(node, WeakensNode):
+        # `weakens` — attaches decay metadata; returns no value.
+        return "weakens"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -698,6 +704,44 @@ def _check_show(
 # ---------------------------------------------------------------------------
 # filter
 # ---------------------------------------------------------------------------
+
+
+def _check_weakens(
+    node: WeakensNode,
+    symtab: dict[str, SymbolEntry],
+    *,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """Metabolic Era batch 1 — validate the `weakens` verb.
+
+    1. Subject must not be a live value (adapter-owned).
+    2. Subject must exist in the symbol table.
+    3. Subject must be numeric (or `unknown` — defer to runtime).
+    4. Period must be a positive number.
+    """
+    name = node.subject.name
+    names = live_value_names or set()
+    if name in names:
+        raise _SemanticError(
+            f"'{name}' is a live value provided by the domain pack — "
+            f"you can't apply decay to it directly."
+        )
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type not in ("number", "unknown"):
+        raise _SemanticError(
+            f"'weakens' only works on numbers — "
+            f"'{name}' is {_singular(entry.type)}."
+        )
+    if node.period.value <= 0:
+        raise _SemanticError(
+            f"The decay period must be a positive number, "
+            f"not {_fmt_number(node.period.value)}."
+        )
 
 
 def _check_filter(
