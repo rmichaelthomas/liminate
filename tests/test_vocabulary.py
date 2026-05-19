@@ -17,12 +17,14 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 14 verbs: 13 + 1 (`require` — Normative Era batch 2 enforcement).
-    assert len(VERBS) == 14
+    # 16 verbs: 14 + 2 (`assign` — Delegated Era batch 3 delegation;
+    # `expect` — Epistemic Era batch 3 tracked anticipation).
+    assert len(VERBS) == 16
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
         "add", "remove", "weakens", "require",
+        "assign", "expect",
     }
 
 
@@ -66,10 +68,10 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal"}
 
 
-def test_total_reserved_count_is_42():
-    # 42 reserved words total. 14 verbs + 18 connectives + 4 operators
-    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 42.
-    assert len(ALL_RESERVED) == 42
+def test_total_reserved_count_is_44():
+    # 44 reserved words total. 16 verbs + 18 connectives + 4 operators
+    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 44.
+    assert len(ALL_RESERVED) == 44
 
 
 def test_reserved_sets_are_disjoint():
@@ -129,6 +131,10 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["weakens"] == ["subject", "schedule"]
     # Normative Era batch 2: `require <condition>`.
     assert VERB_SIGNATURES["require"] == ["condition"]
+    # Delegated Era batch 3: `assign <item> to <recipient>`.
+    assert VERB_SIGNATURES["assign"] == ["item", "recipient"]
+    # Epistemic Era batch 3: `expect <condition>`.
+    assert VERB_SIGNATURES["expect"] == ["condition"]
 
 
 def test_add_is_classified_as_verb():

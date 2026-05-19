@@ -1,0 +1,9 @@
+remember a value called revenue with 750000
+remember a value called margin with 0.15
+remember a value called status with "pending"
+
+expect revenue is above 1000000
+expect margin is above 0.1
+expect status is "approved"
+
+show "Expectation check complete."
