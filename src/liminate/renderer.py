@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from .parser import (
     AddNode,
+    AssignNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -35,6 +36,7 @@ from .parser import (
     CountNode,
     EachNode,
     EachPronoun,
+    ExpectNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -189,6 +191,12 @@ def render(node: ASTNode) -> str:
     if isinstance(node, RequireNode):
         # Normative Era batch 2 — `require <condition>`.
         return f"require {render(node.condition)}"
+    if isinstance(node, ExpectNode):
+        # Epistemic Era batch 3 — `expect <condition>`.
+        return f"expect {render(node.condition)}"
+    if isinstance(node, AssignNode):
+        # Delegated Era batch 3 — `assign <item> to <recipient>`.
+        return f"assign {node.item.name} to {render(node.recipient)}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
@@ -247,6 +255,13 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
         return _render_sequence(node, render_with_explicit_precedence)
     if isinstance(node, RequireNode):
         return f"require {render_with_explicit_precedence(node.condition)}"
+    if isinstance(node, ExpectNode):
+        return f"expect {render_with_explicit_precedence(node.condition)}"
+    if isinstance(node, AssignNode):
+        return (
+            f"assign {node.item.name} to "
+            f"{render_with_explicit_precedence(node.recipient)}"
+        )
     if isinstance(node, RememberCompositionNode):
         if node.param is not None:
             return (
