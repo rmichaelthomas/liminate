@@ -60,6 +60,9 @@ VERBS: frozenset[str] = frozenset({
     # decay metadata to an existing numeric variable; the value falls
     # linearly to zero over a stated period (in abstract ticks).
     "weakens",
+    # Normative Era batch 2: `require` evaluates a condition and halts
+    # with REQUIREMENT_NOT_MET if false; silent on success.
+    "require",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -72,6 +75,11 @@ CONNECTIVES: frozenset[str] = frozenset({
     "if", "otherwise", "when", "unless", "includes", "within",
     # Metabolic Era batch 1: introduces the decay period in `weakens`.
     "over",
+    # Normative Era batch 2: `then` sequences operations with declared
+    # ordering intent. Parsed at the same level as `and` in operation
+    # sequences; both produce SequenceNode, distinguished by the
+    # `connectors` metadata field.
+    "then",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -103,14 +111,15 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 40 reserved words. 13 verbs, 17 connectives. v3a §124 was 34
+# All 42 reserved words. 14 verbs, 18 connectives. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
 # list). `within` connective: +1 (numeric tolerance for the session
 # pack's `measure` verb). Metabolic Era batch 1: +2 — `weakens` verb
 # (autonomous linear decay) and `over` connective (introduces the decay
-# period).
+# period). Normative Era batch 2: +2 — `require` verb (enforcement)
+# and `then` connective (declared sequencing).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -312,6 +321,9 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "remove":   ["item", "target"],
     # Metabolic Era batch 1: `weakens <subject> over <period>`.
     "weakens":  ["subject", "schedule"],
+    # Normative Era batch 2: `require <condition>`. Same condition
+    # grammar as `choose if` / `where`.
+    "require":  ["condition"],
 }
 
 

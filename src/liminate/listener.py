@@ -42,6 +42,7 @@ from .interpreter import (
     HandlerTable,
     _exec_op,
     _FinishRequested,
+    _RequirementNotMet,
     _RuntimeError,
     _in_action_block,
     _live_value_names_ctx,
@@ -420,6 +421,21 @@ class _Runner:
                 yield self._wrap_with_trigger(
                     LiminateResult(
                         status=ResultStatus.ERROR_SEMANTIC,
+                        canonical=render(stmt),
+                        message=e.message,
+                        executed=False,
+                    ),
+                    source, handler, values_changed, new_values,
+                )
+                continue
+            except _RequirementNotMet as e:
+                # Normative Era batch 2 — a `require` inside an action
+                # block failed. Report the failure on this statement and
+                # continue with the rest of the block (handlers shouldn't
+                # bring down the whole listener over one failed rule).
+                yield self._wrap_with_trigger(
+                    LiminateResult(
+                        status=ResultStatus.REQUIREMENT_NOT_MET,
                         canonical=render(stmt),
                         message=e.message,
                         executed=False,
