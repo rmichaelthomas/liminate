@@ -213,7 +213,17 @@ class CompositionCallNode(ASTNode):
 
 @dataclass
 class SequenceNode(ASTNode):
+    """A sequence of operations joined by `and` or `then`.
+
+    Normative Era batch 2 added `then` as a sequencing connective with
+    declared ordering intent. `connectors[i]` is the join word ("and"
+    or "then") between `operations[i]` and `operations[i+1]`, so the
+    list has length `len(operations) - 1`. An empty `connectors` list
+    falls back to "and" for backward compatibility with callers that
+    construct sequences without specifying joins.
+    """
     operations: list[ASTNode]
+    connectors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -335,6 +345,18 @@ class FinishNode(ASTNode):
     block). `finish` during Phase 1 is a semantic error.
     """
     pass
+
+
+@dataclass
+class RequireNode(ASTNode):
+    """Normative Era batch 2 — enforcement verb.
+
+    Evaluates `condition`; if true, execution continues silently. If
+    false, execution halts with REQUIREMENT_NOT_MET. The condition uses
+    the same AST shapes as `choose if` / `where` conditions: ConditionNode
+    leaves and CompoundConditionNode `and`/`or` combinators.
+    """
+    condition: ASTNode
 
 
 # Set of operator words that may follow `is` as a comparison introducer.
@@ -597,18 +619,39 @@ def parse_when_block(
 def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
     first = _parse_one_operation(stream, comp)
     operations: list[ASTNode] = [first]
+    connectors: list[str] = []
     while not stream.at_end():
         peek = stream.peek()
-        if not (peek and peek.type is TokenType.CONNECTIVE and peek.value == "and"):
+        if peek is None or peek.type is not TokenType.CONNECTIVE:
             break
-        nxt = stream.peek(1)
-        if not (nxt and nxt.type is TokenType.VERB):
+        if peek.value == "and":
+            nxt = stream.peek(1)
+            if not (nxt and nxt.type is TokenType.VERB):
+                # `and` followed by a non-verb means we're not sequencing
+                # operations (could be a condition continuation handled
+                # elsewhere). Stop the loop and let the caller decide.
+                break
+            stream.consume()  # eat `and`
+            connectors.append("and")
+            operations.append(_parse_one_operation(stream, comp))
+        elif peek.value == "then":
+            # Normative Era batch 2: `then` always sequences operations;
+            # the next token must be a verb. Unlike `and`, `then` has no
+            # other meaning, so a non-verb follower is a hard parse error.
+            nxt = stream.peek(1)
+            if not (nxt and nxt.type is TokenType.VERB):
+                raise _ParseError(
+                    "I expected a verb after 'then'. "
+                    "Try: <action> then <next-action>."
+                )
+            stream.consume()  # eat `then`
+            connectors.append("then")
+            operations.append(_parse_one_operation(stream, comp))
+        else:
             break
-        stream.consume()  # eat `and`
-        operations.append(_parse_one_operation(stream, comp))
     if len(operations) == 1:
         return operations[0]
-    return SequenceNode(operations=operations)
+    return SequenceNode(operations=operations, connectors=connectors)
 
 
 def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
@@ -689,6 +732,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_remove(stream)
     if verb.value == "weakens":
         return _parse_weakens(stream)
+    if verb.value == "require":
+        return _parse_require(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1303,6 +1348,34 @@ def _parse_weakens(stream: TokenStream) -> WeakensNode:
 
 
 # ---------------------------------------------------------------------------
+# require (Normative Era batch 2)
+# ---------------------------------------------------------------------------
+
+
+def _parse_require(stream: TokenStream) -> RequireNode:
+    """`require <condition>` — enforcement verb.
+
+    The condition uses the same parser path as `choose if` /
+    `where` — `_parse_or_condition`, which supports compound
+    `and`/`or`, `not`, `includes`, field access via `of`, and the
+    full set of comparison operators. The clause-context stack is
+    pushed so condition sub-parsers can see they're inside a
+    `require` clause if they ever need to.
+    """
+    if stream.at_end():
+        raise _ParseError(
+            "'require' needs a condition — try: "
+            "require <field> is <operator> <value>."
+        )
+    stream.push_clause("require")
+    try:
+        condition = _parse_or_condition(stream)
+    finally:
+        stream.pop_clause()
+    return RequireNode(condition=condition)
+
+
+# ---------------------------------------------------------------------------
 # gather
 # ---------------------------------------------------------------------------
 
@@ -1833,6 +1906,10 @@ def _consume_name(stream: TokenStream, *, after: str) -> str:
 def _contains_mixed_precedence(node: ASTNode) -> bool:
     """Return True if any condition tree in `node` mixes `and` with `or`."""
     if isinstance(node, (FilterNode, KeepNode)):
+        return _condition_is_mixed(node.condition)
+    if isinstance(node, RequireNode):
+        # Normative Era batch 2: `require` conditions follow the same
+        # mixed-precedence rule as `where` / `choose if` clauses (v1a §30).
         return _condition_is_mixed(node.condition)
     if isinstance(node, SequenceNode):
         return any(_contains_mixed_precedence(op) for op in node.operations)

@@ -1,0 +1,9 @@
+remember a value called amount with 75000
+remember a value called role with "manager"
+remember a list called allergy-list with "penicillin" and "sulfa"
+
+require amount is above 50000
+require role is "manager"
+require allergy-list not includes "aspirin"
+
+show "All requirements met — proceeding."

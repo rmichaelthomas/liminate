@@ -28,6 +28,10 @@ class ResultStatus(Enum):
     HANDLER_FIRE = "handler_fire"
     SHUTDOWN = "shutdown"
     ERROR_RUNTIME = "error_runtime"
+    # Normative Era batch 2: a `require` condition evaluated false at
+    # runtime. Distinct from ERROR_SEMANTIC ("the program has a bug")
+    # — REQUIREMENT_NOT_MET means "the data violates a rule."
+    REQUIREMENT_NOT_MET = "requirement_not_met"
 
 
 @dataclass
