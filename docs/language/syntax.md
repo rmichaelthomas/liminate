@@ -1,7 +1,7 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 40 reserved words plus user-provided names and literal
+prose language: 44 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
@@ -43,7 +43,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 40 reserved words.
+- Cannot be one of the 44 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -310,6 +310,102 @@ filter the numbers where each is above 5
 and `filter` are list operations; per-record decisions live in the
 where-clause of a list operation, not in an `each` body. The error
 suggests the list-level alternative.
+
+### `add`
+
+Appends an item to an existing list.
+
+```
+add "new-task" to tasks
+add 42 to scores
+```
+
+The item is any value (number, string, bare word, or `<field> of
+<record>`). The target must be a list. The list's type is inferred on
+first add into an empty list; subsequent adds must match.
+
+### `remove`
+
+Retracts an item from an existing list. Mirror of `add`.
+
+```
+remove "old-task" from tasks
+```
+
+If the item is not in the list it is a runtime error — `remove` is
+explicit, not silent.
+
+### `weakens`
+
+Attaches autonomous linear decay to a numeric value. The value falls
+linearly to zero over the stated period (in abstract ticks). Reading
+the value at any point computes the current decayed amount.
+
+```
+remember a value called urgency with 1.0
+weakens urgency over 10
+```
+
+Re-assigning a number to a decaying value reinforces it — period
+preserved, decay restarted from the new initial value.
+
+### `require`
+
+Evaluates a condition. If it holds, execution continues silently. If
+it fails, the program halts with `REQUIREMENT_NOT_MET` and the error
+message echoes the condition and the actual value of the first
+failing sub-condition.
+
+```
+require amount is above 50000
+require allergy-list not includes "penicillin"
+```
+
+The condition grammar matches `where` and `choose if` — comparison
+operators, `includes`, `not`, compound `and` / `or`, field access
+via `of`. Mixed `and` / `or` in one clause triggers the amber prompt.
+
+### `assign`
+
+Stores an item-to-recipient mapping. The item becomes the variable
+name; the recipient becomes its value.
+
+```
+assign review-task to "compliance-team"
+assign case-47 to supervisor
+```
+
+`assign` overwrites any existing entry with that name. Combine with
+`when` for reactive delegation: change the trigger, and the handler
+re-assigns the recipient.
+
+### `expect`
+
+Evaluates a condition like `require`, but does not halt on failure.
+A met expectation is silent; a diverged expectation emits one output
+line — `Expectation not met: <condition>. <actual>.` — and execution
+continues with `SUCCESS`.
+
+```
+expect revenue is above 1000000
+expect margin is above 0.1
+```
+
+`require` is enforcement (halt on fail); `expect` is informational
+tracking (report on fail, keep going). Both share the same condition
+grammar.
+
+### Sequencing with `then`
+
+Two operations joined with `then` form a declared sequence — same
+parser shape as `and`, but with stated ordering intent.
+
+```
+add "received" to audit-log then require amount is above 50000
+```
+
+Stepwise commit applies: earlier operations remain even if a later
+one fails.
 
 ## Lists
 
@@ -650,7 +746,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 40 reserved words) cannot be used **unquoted**
+Vocabulary words (the 44 reserved words) cannot be used **unquoted**
 as values:
 
 ```

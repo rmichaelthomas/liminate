@@ -22,6 +22,15 @@ Sources:
 - `within` connective addendum (12 verbs, 16 connectives, 38 reserved
   words total) — used by the session pack's `measure` verb for numeric
   tolerance.
+- Metabolic Era batch 1 (13 verbs, 17 connectives, 40 reserved words
+  total) — `weakens` verb (autonomous linear decay) and `over`
+  connective (decay period).
+- Normative Era batch 2 (14 verbs, 18 connectives, 42 reserved words
+  total) — `require` verb (enforcement) and `then` connective
+  (declared sequencing).
+- Delegated/Epistemic Era batch 3 (16 verbs, 18 connectives, 44
+  reserved words total) — `assign` verb (item-to-recipient mapping)
+  and `expect` verb (non-halting tracked anticipation).
 """
 
 from dataclasses import dataclass
@@ -142,8 +151,8 @@ def reserved_category(word: str) -> str | None:
 
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
-    declared them is loaded — the base vocabulary stays permanently at
-    38 words.
+    declared them is loaded — the base vocabulary is the canonical
+    surface (currently 44 reserved words; see module docstring).
     """
     if word in VERBS:
         return "verb"

@@ -4,7 +4,7 @@ A prose-as-syntax programming language designed from the human end.
 
 > *"Every programming language in history was designed by programmers. This one wasn't. That's why the design is different."*
 
-**Status (May 19, 2026):** v1 interpreter + v2a (`keep`, `of`, multi-field `each show`, descriptor preservation) + UX polish (`--quiet`, named-offender errors, auto-show truncation) + v2.1-patches + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings) + v2d (composition parameters with `from`, `choose` verb with `if`/`otherwise`) + v3a event-driven execution (`when`/`unless`/`finish`, two-phase listener model, single-threaded event queue, cascading triggers with cycle detection, domain-pack adapter contract) + v3b (quoted-string case preservation) + v4a pack verb contract (general-purpose JSON-defined pack verbs with slot signatures, type constraints, and execution dispatch; UI domain pack with 10 nouns + `navigate to <screen-name>`) + `add` verb addendum + `includes` connective / `remove` verb addendum + `within` connective with the session pack's `measure` verb + **Metabolic Era batch 1** (`weakens`/`over` — autonomous linear decay over a stated period of ticks). **888 tests passing.** The sequential feature set (v1 → v2d), the reactive feature set (v3a/v3b), the pack-verb extension contract, and the Metabolic Era's autonomous-time primitives together form a structurally complete programming language; pack verbs let domains add vocabulary without touching the base 40 reserved words.
+**Status (May 19, 2026):** v1 interpreter + v2a (`keep`, `of`, multi-field `each show`, descriptor preservation) + UX polish (`--quiet`, named-offender errors, auto-show truncation) + v2.1-patches + v2b (composition return values, generalized `of`) + v2c (quoting mechanism for multi-word strings) + v2d (composition parameters with `from`, `choose` verb with `if`/`otherwise`) + v3a event-driven execution (`when`/`unless`/`finish`, two-phase listener model, single-threaded event queue, cascading triggers with cycle detection, domain-pack adapter contract) + v3b (quoted-string case preservation) + v4a pack verb contract (general-purpose JSON-defined pack verbs with slot signatures, type constraints, and execution dispatch; UI domain pack with 10 nouns + `navigate to <screen-name>`) + `add` verb addendum + `includes` connective / `remove` verb addendum + `within` connective with the session pack's `measure` verb + **Metabolic Era batch 1** (`weakens`/`over` — autonomous linear decay over a stated period of ticks) + **Normative Era batch 2** (`require`/`then` — enforcement and declared sequencing) + **Delegated/Epistemic Era batch 3** (`assign`/`expect` — item-to-recipient delegation and non-halting tracked anticipation). **972 tests passing.** The sequential feature set (v1 → v2d), the reactive feature set (v3a/v3b), the pack-verb extension contract, the Metabolic Era's autonomous-time primitives, the Normative Era's enforcement-and-sequencing primitives, and the Delegated/Epistemic Era's delegation-and-anticipation primitives together form a structurally complete programming language; pack verbs let domains add vocabulary without touching the base 44 reserved words.
 
 ---
 
@@ -34,7 +34,7 @@ A prose-as-syntax programming language designed from the human end.
 
 `filter the orders where total is above 50` is not a prompt to an AI. It is the program.
 
-Liminate is a general-purpose programming language whose source code is readable English prose. A bounded vocabulary of 34 words combines into sentences that execute directly. There is no separate code the prose generates — the sentence IS the program.
+Liminate is a general-purpose programming language whose source code is readable English prose. A bounded vocabulary of 44 words combines into sentences that execute directly. There is no separate code the prose generates — the sentence IS the program.
 
 This is not a domain-specific language for queries or data, nor a natural-language layer over Python, nor a code-generating AI. It is a programming language with its own pipeline: lexer, reorderer, parser, semantic analyzer, interpreter. The prose-as-syntax constraint is structural, not cosmetic.
 
@@ -58,7 +58,7 @@ Five properties combine in Liminate that exist individually in other systems but
 
 1. **Prose-as-syntax where the prose IS the executable code.** Not prose that generates code (vibe coding). Not prose that describes a game world (Inform 7, which is domain-locked). General-purpose computation expressed as readable English sentences that execute directly.
 
-2. **Bounded vocabulary as design constraint.** 40 reserved words in the current build (13 verbs + 17 connectives + 4 single-word operators + `equal` as a multi-word component + 3 articles + 2 v2-deferred words). The vocabulary is the language boundary, not a starter set that grows. Expressiveness scales through domain packs, composition over expansion, and named-composition chunking — not through adding more keywords. 
+2. **Bounded vocabulary as design constraint.** 44 reserved words in the current build (16 verbs + 18 connectives + 4 single-word operators + `equal` as a multi-word component + 3 articles + 2 v2-deferred words). The vocabulary is the language boundary, not a starter set that grows. Expressiveness scales through domain packs, composition over expansion, and named-composition chunking — not through adding more keywords. 
 
 3. **Graduation from tiles to text within one language.** The same AST underlies a tile-composition surface (for first-encounter authoring), a prose surface (for fluent authoring), and an optional symbolic surface (for velocity). Three views, one structure. Scratch-to-Python is two languages; Liminate is one language with three surfaces. The v1 interpreter implements the prose surface; the tile surface is a separate downstream concern.
 
@@ -171,9 +171,9 @@ Every statement is echoed first in canonical prose form (the parser's interpreta
 
 ## The vocabulary
 
-The current base vocabulary is 40 reserved words across five categories. The complete list is the entire language surface — no other words are part of Liminate, only user-provided names and literal values. Domain packs may add their own verbs and nouns at runtime via the pack verb contract; pack-contributed words are reserved only while the pack is loaded, and the base 40 are permanent.
+The current base vocabulary is 44 reserved words across five categories. The complete list is the entire language surface — no other words are part of Liminate, only user-provided names and literal values. Domain packs may add their own verbs and nouns at runtime via the pack verb contract; pack-contributed words are reserved only while the pack is loaded, and the base 44 are permanent.
 
-### Verbs (13)
+### Verbs (16)
 
 | Verb | Purpose |
 |---|---|
@@ -190,8 +190,11 @@ The current base vocabulary is 40 reserved words across five categories. The com
 | `add` | Append an item to a list |
 | `remove` | Retract an item from a list |
 | `weakens` | Attach autonomous linear decay to a numeric value — falls to zero over a stated period of ticks |
+| `require` | Evaluate a condition; halt with `REQUIREMENT_NOT_MET` on failure (silent on pass) |
+| `assign` | Store an item-to-recipient mapping (`assign review-task to "compliance-team"`) |
+| `expect` | Evaluate a condition; emit a divergence output line on failure but continue with `SUCCESS` (informational, non-halting) |
 
-### Connectives (17)
+### Connectives (18)
 
 | Connective | Purpose |
 |---|---|
@@ -201,7 +204,7 @@ The current base vocabulary is 40 reserved words across five categories. The com
 | `from` | Range start; result capture; simple reference; composition parameter declaration and passing |
 | `with` | Introduces values, list items, or record fields |
 | `called` | Introduces a name |
-| `to` | Range endpoint, or component of `equal to` |
+| `to` | Range endpoint, or component of `equal to`, or recipient in `assign` |
 | `how` | Signals a named-composition definition (with `to`) |
 | `as` | Field assignment in records |
 | `of` | Single-record field access — `<field> of <record>` in any value position |
@@ -212,6 +215,7 @@ The current base vocabulary is 40 reserved words across five categories. The com
 | `includes` | List membership test in a condition (`where items includes "foo"`) |
 | `within` | Numeric tolerance band for the session pack's `measure` verb |
 | `over` | Introduces the decay period in `weakens` (`weakens energy over 10`) |
+| `then` | Declared sequencing between operations (`add ... then require ...`) — same level as `and` but with stated ordering intent |
 
 ### Operators (5)
 
@@ -482,9 +486,9 @@ Line 3 then shows `4, 5` — the filter's commit persists. Multi-operation seque
 
 ## Current scope and deferrals
 
-The shipped build covers v1 (48 locked test sentences) + v2a (11 more) + UX polish + v2.1-patches + v2b (9 more) + v2c (12 more) + v2d (15 more) + v3a (18 more) + v3b (4 more) + v4a (10 more). **713 tests passing.** Larger scope is intentionally deferred — but the sequential feature set (v1 → v2d), the reactive feature set (v3a/v3b), and the pack-verb extension contract together form a structurally complete programming language.
+The shipped build covers v1 (48 locked test sentences) + v2a (11 more) + UX polish + v2.1-patches + v2b (9 more) + v2c (12 more) + v2d (15 more) + v3a (18 more) + v3b (4 more) + v4a (10 more) plus the Metabolic / Normative / Delegated / Epistemic era batches (`weakens`/`over`, `require`/`then`, `assign`/`expect`). **972 tests passing.** Larger scope is intentionally deferred — but the sequential feature set (v1 → v2d), the reactive feature set (v3a/v3b), the pack-verb extension contract, and the era batches together form a structurally complete programming language.
 
-**Currently shipped.** Two-phase execution (Phase 1 sequential, Phase 2 reactive). 13 base verbs. 17 connectives. 40 base reserved words. Numbers (integers + decimals). Strings (single-token bare words + multi-word quoted strings via v2c, with verbatim case preservation per). Lists (homogeneous — all numbers, all strings, or all records). Records (named fields, with descriptor preserved on the symbol for pack-verb type checks). Named compositions with optional parameters. Conditional branching via `choose if/otherwise`. In-place `filter`, non-destructive `keep`, non-destructive `combine`, copy semantics, iterator context for `each`, multi-field display in `each ... show`, single-record field access via `show <field> of <record>` and `<field> of <record>` in any value position. Descriptor preservation, named-offender error wording, stepwise sequences. Composition return values via `remember the X from <comp>`. Event-driven `when`/`unless`/`finish` with indented action blocks, single-threaded event queue, edge-triggered evaluation with deep value equality, depth-first cascading with conservative cycle detection, domain-pack adapter contract registered externally via `--pack <path>` JSON or `Session(domain_packs=...)`. v4a general-purpose pack verb contract — packs declare verbs with slot signatures + type constraints + execution dispatch in JSON; the parser dispatches pack verbs after base verbs, the analyzer enforces descriptor-based type constraints, and `set_value` is the first execution type. The UI domain pack ships 10 component nouns and the `navigate to <screen-name>` verb. CLI flags `--quiet`, `--test`, `--pack` (any position).
+**Currently shipped.** Two-phase execution (Phase 1 sequential, Phase 2 reactive). 16 base verbs. 18 connectives. 44 base reserved words. Numbers (integers + decimals). Strings (single-token bare words + multi-word quoted strings via v2c, with verbatim case preservation per). Lists (homogeneous — all numbers, all strings, or all records). Records (named fields, with descriptor preserved on the symbol for pack-verb type checks). Named compositions with optional parameters. Conditional branching via `choose if/otherwise`. In-place `filter`, non-destructive `keep`, non-destructive `combine`, copy semantics, iterator context for `each`, multi-field display in `each ... show`, single-record field access via `show <field> of <record>` and `<field> of <record>` in any value position. Descriptor preservation, named-offender error wording, stepwise sequences. Composition return values via `remember the X from <comp>`. Event-driven `when`/`unless`/`finish` with indented action blocks, single-threaded event queue, edge-triggered evaluation with deep value equality, depth-first cascading with conservative cycle detection, domain-pack adapter contract registered externally via `--pack <path>` JSON or `Session(domain_packs=...)`. v4a general-purpose pack verb contract — packs declare verbs with slot signatures + type constraints + execution dispatch in JSON; the parser dispatches pack verbs after base verbs, the analyzer enforces descriptor-based type constraints, and `set_value` is the first execution type. The UI domain pack ships 10 component nouns and the `navigate to <screen-name>` verb. CLI flags `--quiet`, `--test`, `--pack` (any position).
 
 **Not built (deliberately).** Tile-composition interface. Proposal engine and authorize-don't-author authoring flow. Real-world domain packs (healthcare, smart home, game) — the language ships a test adapter only, packs are product work. Domain pack activation syntax (an Liminate-level `use`/`load` verb). The verbs `transform`, `compare` — reserved-word slots protected, no grammar yet. Symbolic syntax surface. External data sources beyond domain-pack adapters. Negative numbers. Scope isolation beyond the iterator context and composition parameters. Mixed-type lists. Descending ranges. Ranges over 10,000 items. Nested records (and therefore chained `of`). `choose` inside `each`. Sophisticated cycle detection beyond same-handler-twice. Adapter timeout or preemption. Tile interface, proposal engine, domain packs as product surfaces.
 
@@ -498,7 +502,7 @@ These are the load-bearing decisions that shape every implementation choice. Eac
 
 **The prose IS the program.** The interpreter operates exclusively on what the user stated. It does not infer, assume, guess, or fill in unstated information. If the prose doesn't say it, it doesn't happen.
 
-**The vocabulary is the boundary.** 40 reserved words in the current build. v2c added a quoting mechanism for multi-word string values, but only in value positions — names and field names still come from the unquoted name-space. Vocabulary words cannot appear unquoted as user-provided names or as string values. This is structurally why slot-filling parser logic works: every word's category is known in advance. Each addition to the vocabulary (v2a's `keep`, v2a's `of`, v2d's `choose`/`if`/`otherwise`, v3a's `when`/`unless`/`finish`, the `add`/`remove`/`includes`/`within` addenda, Metabolic Era's `weakens`/`over`) is the smallest spec change consistent with a dogfooded gap.
+**The vocabulary is the boundary.** 44 reserved words in the current build. v2c added a quoting mechanism for multi-word string values, but only in value positions — names and field names still come from the unquoted name-space. Vocabulary words cannot appear unquoted as user-provided names or as string values. This is structurally why slot-filling parser logic works: every word's category is known in advance. Each addition to the vocabulary (v2a's `keep`, v2a's `of`, v2d's `choose`/`if`/`otherwise`, v3a's `when`/`unless`/`finish`, the `add`/`remove`/`includes`/`within` addenda, Metabolic Era's `weakens`/`over`, Normative Era's `require`/`then`, Delegated/Epistemic Era's `assign`/`expect`) is the smallest spec change consistent with a dogfooded gap.
 
 **The reorderer does not guess.** When an arrangement of words could fill slots in more than one valid way, the system produces an amber clarification prompt rather than picking one interpretation. Authorship over inference.
 
@@ -634,7 +638,7 @@ The build is a paired collaboration. The architect produces and approves every d
 
 ## Status and what's next
 
-**Currently shipped.** v1 → v2d (sequential) + v3a/v3b (event-driven listener mode + quoted-string case preservation) + v4a (pack verb contract + UI domain pack). 713 tests passing. The interpreter runs in a terminal as text-only, reads `.limn` source files, and offers an interactive REPL with `--quiet`, `--test`, and `--pack` flags. A separate TypeScript port (lexer/reorderer/parser/analyzer/renderer — no interpreter) lives in the Möbius monorepo at `packages/liminate-lang/` and validates the same 127 sentences against this implementation as its sync contract.
+**Currently shipped.** v1 → v2d (sequential) + v3a/v3b (event-driven listener mode + quoted-string case preservation) + v4a (pack verb contract + UI domain pack) + Metabolic / Normative / Delegated / Epistemic era batches (`weakens`/`over`, `require`/`then`, `assign`/`expect`). 972 tests passing. The interpreter runs in a terminal as text-only, reads `.limn` source files, and offers an interactive REPL with `--quiet`, `--test`, and `--pack` flags. A separate TypeScript port (lexer/reorderer/parser/analyzer/renderer — no interpreter) lives in the Möbius monorepo at `packages/liminate-lang/` and validates the same 127 sentences against this implementation as its sync contract.
 
 **The largest remaining work is not language additions.** It's everything around the language — Future surfaces and domain packs as product surfaces. Specifically:
 
