@@ -2,7 +2,7 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 40 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 44 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.2.0**: 13 verbs, 17 connectives, 40 base reserved words, **888 tests passing** across 127 locked test sentences.
+The current build is **v0.2.0**: 16 verbs, 18 connectives, 44 base reserved words, **972 tests passing** across 127 locked test sentences.
 
 ### The pipeline
 
@@ -78,11 +78,11 @@ Two phases of execution:
 - **Phase 1 — sequential.** Each statement runs in order. Stepwise commit: if a later op fails, earlier side effects remain and the error names what was completed.
 - **Phase 2 — reactive listener.** `when`/`unless` register handlers driven by an external event source (a domain pack adapter). Edge-triggered, depth-first cascading, conservative same-handler-twice cycle detection. `finish` exits immediately and totally.
 
-### The vocabulary (40 words)
+### The vocabulary (44 words)
 
-**Verbs (13):** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`.
+**Verbs (16):** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`.
 
-**Connectives (17):** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`.
+**Connectives (18):** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`.
 
 **Operators (5):** `is`, `above`, `below`, `equal to`, `not`.
 
@@ -96,7 +96,7 @@ Two phases of execution:
 
 ### Domain packs
 
-A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 40 words are permanent; pack-contributed words are reserved only when the pack is active.
+A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 44 words are permanent; pack-contributed words are reserved only when the pack is active.
 
 A pack verb declares a slot signature, a type constraint, and one of five execution dispatches:
 
@@ -141,7 +141,7 @@ liminate --pack examples/pack_ui.json --quiet \
 liminate/
 ├── src/liminate/        Pipeline (lexer, reorderer, parser, renderer,
 │                        analyzer, interpreter, listener, adapter, packs/)
-├── tests/               888 tests across the 127 locked sentences
+├── tests/               972 tests across the 127 locked sentences
 ├── examples/            Runnable .limn programs + reference packs
 ├── docs/spec/           Locked specification documents
 └── docs/                Quickstart, syntax tour, pipeline walkthrough
