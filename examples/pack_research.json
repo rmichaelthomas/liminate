@@ -1,0 +1,24 @@
+{
+  "name": "research",
+  "version": "0.1.0",
+  "vocabulary": [
+    { "word": "release", "category": "noun" },
+    { "word": "window", "category": "noun" }
+  ],
+  "verbs": [
+    {
+      "word": "check",
+      "slots": [
+        { "name": "text", "connective": null, "required": true, "value_type": "value" },
+        { "name": "target", "connective": "from", "required": true, "value_type": "name", "type_constraint": "release" }
+      ],
+      "execution": {
+        "type": "substring_check",
+        "check_slot": "text",
+        "against_slot": "target"
+      }
+    }
+  ],
+  "declarations": [],
+  "script": []
+}
