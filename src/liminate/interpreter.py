@@ -62,6 +62,7 @@ _live_value_names_ctx: ContextVar[set[str] | None] = ContextVar(
 )
 from .parser import (
     AddNode,
+    AssignNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -73,6 +74,7 @@ from .parser import (
     CountNode,
     EachNode,
     EachPronoun,
+    ExpectNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -557,6 +559,10 @@ def _exec_op(
         return _exec_weakens(node, symtab)
     if isinstance(node, RequireNode):
         return _exec_require(node, symtab, current_item)
+    if isinstance(node, ExpectNode):
+        return _exec_expect(node, symtab, current_item)
+    if isinstance(node, AssignNode):
+        return _exec_assign(node, symtab, current_item)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -1158,30 +1164,67 @@ def _exec_require(
     if _eval_condition(node.condition, current_item, symtab):
         return []
     condition_text = render(node.condition)
-    actual = _requirement_actual_values(node.condition, current_item, symtab)
+    actual = _condition_actual_values(node.condition, current_item, symtab)
     msg = f"Requirement not met: {condition_text}."
     if actual:
         msg += f" {actual}"
     raise _RequirementNotMet(msg)
 
 
-def _requirement_actual_values(
+def _exec_expect(
+    node: ExpectNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Epistemic Era batch 3 — evaluate the condition. Silent on pass;
+    on divergence, emit an output line reporting the condition and the
+    actual value(s) of the first failing sub-condition. Program
+    continues with SUCCESS — expectations are informational, not
+    blocking.
+    """
+    if _eval_condition(node.condition, current_item, symtab):
+        return []
+    condition_text = render(node.condition)
+    actual = _condition_actual_values(node.condition, current_item, symtab)
+    msg = f"Expectation not met: {condition_text}."
+    if actual:
+        msg += f" {actual}"
+    return [msg]
+
+
+def _exec_assign(
+    node: AssignNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Delegated Era batch 3 — store the item→recipient mapping in the
+    symbol table. The item name becomes the variable name; the evaluated
+    recipient becomes the value. Uses `_store` for all overwrite,
+    reinforcement, type-inference, and copy-on-store semantics.
+    """
+    recipient_value = _evaluate_expression(node.recipient, symtab, current_item)
+    _store(symtab, node.item.name, recipient_value)
+    return []
+
+
+def _condition_actual_values(
     cond: ASTNode,
     current_item: Any,
     symtab: dict[str, SymbolEntry],
 ) -> str:
-    """Format the actual values of the first failing sub-condition for
-    the require error message. For compound `and` conditions, report
-    the first failing branch; for `or`, report the left branch (both
-    failed, so either is informative)."""
+    """Format the actual values of the first failing sub-condition.
+    Used by both `_exec_require` (REQUIREMENT_NOT_MET error message)
+    and `_exec_expect` (divergence output line). For compound `and`
+    conditions, report the first failing branch; for `or`, report
+    the left branch (both failed, so either is informative)."""
     if isinstance(cond, CompoundConditionNode):
         left_failed = not _eval_condition(cond.left, current_item, symtab)
         if cond.connector == "and":
             if left_failed:
-                return _requirement_actual_values(cond.left, current_item, symtab)
-            return _requirement_actual_values(cond.right, current_item, symtab)
+                return _condition_actual_values(cond.left, current_item, symtab)
+            return _condition_actual_values(cond.right, current_item, symtab)
         # "or" — both must have failed for us to reach here; report left.
-        return _requirement_actual_values(cond.left, current_item, symtab)
+        return _condition_actual_values(cond.left, current_item, symtab)
     if isinstance(cond, ConditionNode):
         try:
             field_val = _eval_field(cond.field, current_item, symtab)

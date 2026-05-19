@@ -63,6 +63,12 @@ VERBS: frozenset[str] = frozenset({
     # Normative Era batch 2: `require` evaluates a condition and halts
     # with REQUIREMENT_NOT_MET if false; silent on success.
     "require",
+    # Delegated Era batch 3: `assign <item> to <recipient>` stores an
+    # item-to-recipient mapping in the symbol table.
+    "assign",
+    # Epistemic Era batch 3: `expect <condition>` evaluates a condition
+    # and emits a divergence output line on failure; never halts.
+    "expect",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -111,7 +117,7 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 42 reserved words. 14 verbs, 18 connectives. v3a §124 was 34
+# All 44 reserved words. 16 verbs, 18 connectives. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
@@ -119,7 +125,9 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 # pack's `measure` verb). Metabolic Era batch 1: +2 — `weakens` verb
 # (autonomous linear decay) and `over` connective (introduces the decay
 # period). Normative Era batch 2: +2 — `require` verb (enforcement)
-# and `then` connective (declared sequencing).
+# and `then` connective (declared sequencing). Delegated/Epistemic Era
+# batch 3: +2 — `assign` (item-to-recipient mapping) and `expect`
+# (tracked anticipation, non-halting divergence).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -324,6 +332,11 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     # Normative Era batch 2: `require <condition>`. Same condition
     # grammar as `choose if` / `where`.
     "require":  ["condition"],
+    # Delegated Era batch 3: `assign <item> to <recipient>`.
+    "assign":   ["item", "recipient"],
+    # Epistemic Era batch 3: `expect <condition>`. Same condition
+    # grammar as `require` / `choose if` / `where`.
+    "expect":   ["condition"],
 }
 
 

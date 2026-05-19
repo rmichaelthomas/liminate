@@ -48,6 +48,7 @@ from typing import Any
 
 from .parser import (
     AddNode,
+    AssignNode,
     ASTNode,
     BareWord,
     ChooseBranch,
@@ -59,6 +60,7 @@ from .parser import (
     CountNode,
     EachNode,
     EachPronoun,
+    ExpectNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -316,6 +318,17 @@ def _check(
         # validation path as `choose if`: no iterator, names resolve
         # against the symbol table directly, field access uses `of`.
         _check_choose_condition(node.condition, symtab)
+    elif isinstance(node, ExpectNode):
+        # Epistemic Era batch 3 — same condition validation as `require`.
+        # Behavior differs only at runtime (divergence emits output;
+        # never halts).
+        _check_choose_condition(node.condition, symtab)
+    elif isinstance(node, AssignNode):
+        _check_assign(
+            node, symtab, iterator,
+            in_action_block=in_action_block,
+            live_value_names=live_value_names,
+        )
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -477,6 +490,14 @@ def _side_effect_verb(
         # Normative Era batch 2 — `require` either passes silently or
         # halts with REQUIREMENT_NOT_MET. Never produces a value.
         return "require"
+    if isinstance(node, ExpectNode):
+        # Epistemic Era batch 3 — `expect` is silent on pass; emits
+        # divergence output on failure. Never produces a value.
+        return "expect"
+    if isinstance(node, AssignNode):
+        # Delegated Era batch 3 — `assign` stores into the symbol
+        # table; returns no value.
+        return "assign"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -752,6 +773,35 @@ def _check_weakens(
             f"The decay period must be a positive number, "
             f"not {_fmt_number(node.period.value)}."
         )
+
+
+def _check_assign(
+    node: AssignNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+    *,
+    in_action_block: bool = False,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """Delegated Era batch 3 — validate the `assign` verb.
+
+    1. Item must not be a live value (adapter-owned).
+    2. Recipient value must be resolvable (NameRef must exist in
+       symtab; BareWords, QuotedStrings, NumberLiterals are accepted
+       unconditionally — BareWords fall back to string literals at
+       runtime).
+    """
+    names = live_value_names or set()
+    if node.item.name in names:
+        raise _SemanticError(
+            f"'{node.item.name}' is a live value provided by the domain "
+            f"pack — you can't assign it directly."
+        )
+    _check_value_expr(
+        node.recipient, symtab, iterator,
+        in_action_block=in_action_block,
+        live_value_names=live_value_names,
+    )
 
 
 def _check_filter(
