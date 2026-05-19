@@ -1,7 +1,7 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 34 reserved words plus user-provided names and literal
+prose language: 40 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
@@ -43,7 +43,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 34 reserved words.
+- Cannot be one of the 40 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -650,7 +650,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 34 reserved words) cannot be used **unquoted**
+Vocabulary words (the 40 reserved words) cannot be used **unquoted**
 as values:
 
 ```
