@@ -227,11 +227,15 @@ def test_verify_compare_values_mismatch_structural():
     assert any("value" in line for line in out)
 
 
-def test_assign_set_value_slot_derived_target():
-    """`assign 42 to score` resolves target via target_slot."""
+def test_stash_set_value_slot_derived_target():
+    """`stash 42 to score` resolves target via target_slot.
+
+    (Pack verb renamed from `assign` after base vocabulary added
+    `assign` as a base verb — Delegated Era batch 3.)
+    """
     src = """
     remember a number called score with 0
-    assign 42 to score
+    stash 42 to score
     show score
     """
     _, results = run_v3a(src, pack=_test_pack())

@@ -55,7 +55,7 @@
       }
     },
     {
-      "word": "assign",
+      "word": "stash",
       "slots": [
         { "name": "value", "connective": null, "required": true, "value_type": "value" },
         { "name": "target", "connective": "to", "required": true, "value_type": "name" }

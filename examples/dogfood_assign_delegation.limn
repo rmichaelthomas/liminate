@@ -1,0 +1,11 @@
+remember a value called case-status with "open"
+remember a value called days-open with 3
+
+assign intake-assessment to "triage-nurse"
+assign initial-review to "case-worker"
+
+show intake-assessment
+show initial-review
+
+when days-open is above 14
+  assign initial-review to "supervisor"

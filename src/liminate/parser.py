@@ -359,6 +359,33 @@ class RequireNode(ASTNode):
     condition: ASTNode
 
 
+@dataclass
+class AssignNode(ASTNode):
+    """Delegated Era batch 3 — assignment/delegation verb.
+
+    `item` is a NameRef — the variable name for the assignment
+    (parsed via `_consume_target`). `recipient` is any value AST
+    node — the actor or entity receiving the assignment (parsed
+    via `_parse_value`).
+
+    Runtime: `_store(symtab, item.name, evaluated_recipient)`.
+    """
+    item: NameRef
+    recipient: ASTNode
+
+
+@dataclass
+class ExpectNode(ASTNode):
+    """Epistemic Era batch 3 — tracked anticipation verb.
+
+    Evaluates `condition`; if true, silent pass. If false, emits
+    an output line reporting the divergence. Program continues
+    with SUCCESS — expectations are informational, not blocking.
+    Same condition AST as `require` / `choose if` / `where`.
+    """
+    condition: ASTNode
+
+
 # Set of operator words that may follow `is` as a comparison introducer.
 _COMPARISON_OPERATORS = frozenset({"above", "below", "equal_to"})
 
@@ -734,6 +761,10 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_weakens(stream)
     if verb.value == "require":
         return _parse_require(stream)
+    if verb.value == "assign":
+        return _parse_assign(stream)
+    if verb.value == "expect":
+        return _parse_expect(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1376,6 +1407,63 @@ def _parse_require(stream: TokenStream) -> RequireNode:
 
 
 # ---------------------------------------------------------------------------
+# assign (Delegated Era batch 3)
+# ---------------------------------------------------------------------------
+
+
+def _parse_assign(stream: TokenStream) -> AssignNode:
+    """`assign [article]? <item-name> to <recipient-value>`."""
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'assign' needs an item and a recipient — try: "
+            "assign <item> to <recipient>."
+        )
+    item = _consume_target(stream, verb="assign")
+
+    to_tok = stream.consume()
+    if not (
+        to_tok and to_tok.type is TokenType.CONNECTIVE and to_tok.value == "to"
+    ):
+        raise _ParseError(
+            "'assign' needs a recipient — try: "
+            "assign <item> to <recipient>."
+        )
+    if stream.at_end():
+        raise _ParseError(
+            "I expected a recipient after 'to'. "
+            "Try: assign <item> to <recipient>."
+        )
+    recipient = _parse_value(stream)
+    return AssignNode(item=item, recipient=recipient)
+
+
+# ---------------------------------------------------------------------------
+# expect (Epistemic Era batch 3)
+# ---------------------------------------------------------------------------
+
+
+def _parse_expect(stream: TokenStream) -> ExpectNode:
+    """`expect <condition>` — tracked anticipation verb.
+
+    Same condition grammar as `require`. The difference is purely
+    in runtime behavior: `require` halts on failure, `expect` reports
+    and continues.
+    """
+    if stream.at_end():
+        raise _ParseError(
+            "'expect' needs a condition — try: "
+            "expect <field> is <operator> <value>."
+        )
+    stream.push_clause("expect")
+    try:
+        condition = _parse_or_condition(stream)
+    finally:
+        stream.pop_clause()
+    return ExpectNode(condition=condition)
+
+
+# ---------------------------------------------------------------------------
 # gather
 # ---------------------------------------------------------------------------
 
@@ -1910,6 +1998,10 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, RequireNode):
         # Normative Era batch 2: `require` conditions follow the same
         # mixed-precedence rule as `where` / `choose if` clauses (v1a §30).
+        return _condition_is_mixed(node.condition)
+    if isinstance(node, ExpectNode):
+        # Epistemic Era batch 3: `expect` conditions follow the same
+        # mixed-precedence rule as `require` / `where`.
         return _condition_is_mixed(node.condition)
     if isinstance(node, SequenceNode):
         return any(_contains_mixed_precedence(op) for op in node.operations)
