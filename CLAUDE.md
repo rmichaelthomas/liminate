@@ -101,3 +101,11 @@ liminate inspect ./demo --json
 - Dataclasses for structured data (Token, AST nodes, SymbolEntry, LiminateResult).
 - Enums for fixed categories (TokenType, ResultStatus).
 - Type hints on all function signatures.
+
+## Cross-Repo Documentation Propagation
+
+When asked to propagate documentation updates across the Liminate repo family (e.g., after a vocabulary addition, architectural change, or feature release), read `docs/skills/docs-propagation.md` first. That file contains the full protocol: repo family map, propagation order, archival exclusion rules, website handoff packet format, and known failure modes.
+
+Trigger phrases: "update all the docs," "propagate this across repos," "update READMEs," "sync the docs," "docs pass."
+
+The propagation order is: this repo (core) first → satellite repos → liminate-site last. Never modify archival documents (checkpoints, addenda, gap inventories).
