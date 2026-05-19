@@ -56,6 +56,10 @@ VERBS: frozenset[str] = frozenset({
     "remember", "show", "filter", "keep",
     "count", "gather", "combine", "each",
     "choose", "finish", "add", "remove",
+    # Metabolic Era batch 1: autonomous linear decay verb. Attaches
+    # decay metadata to an existing numeric variable; the value falls
+    # linearly to zero over a stated period (in abstract ticks).
+    "weakens",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -66,6 +70,8 @@ VERBS: frozenset[str] = frozenset({
 CONNECTIVES: frozenset[str] = frozenset({
     "where", "and", "or", "from", "with", "called", "to", "how", "as", "of",
     "if", "otherwise", "when", "unless", "includes", "within",
+    # Metabolic Era batch 1: introduces the decay period in `weakens`.
+    "over",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -97,11 +103,14 @@ V2_RESERVED: frozenset[str] = frozenset({
 # dependent on what word follows (v1a §29, v1c §47).
 MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 
-# All 38 reserved words. v3a §124 was 34 (+1 for `finish`). Liminate
-# `add` verb addendum v1 §9: +1 for `add` (appends an item to a list).
-# `includes` connective + `remove` verb addendum: +2 (list membership
-# test in conditions, retract item from a list). `within` connective: +1
-# (numeric tolerance for the session pack's `measure` verb).
+# All 40 reserved words. 13 verbs, 17 connectives. v3a §124 was 34
+# (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
+# (appends an item to a list). `includes` connective + `remove` verb
+# addendum: +2 (list membership test in conditions, retract item from a
+# list). `within` connective: +1 (numeric tolerance for the session
+# pack's `measure` verb). Metabolic Era batch 1: +2 — `weakens` verb
+# (autonomous linear decay) and `over` connective (introduces the decay
+# period).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -301,4 +310,48 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "add":      ["item", "target"],
     # `remove` — retract an item from an existing list.
     "remove":   ["item", "target"],
+    # Metabolic Era batch 1: `weakens <subject> over <period>`.
+    "weakens":  ["subject", "schedule"],
 }
+
+
+# ---------------------------------------------------------------------------
+# Metabolic Era — autonomous linear decay value
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DecayingValue:
+    """A numeric value with autonomous linear decay.
+
+    Created by the `weakens` verb. The current value is computed on
+    read as: max(0.0, initial_value - (initial_value / period) * ticks_elapsed).
+    Floor at 0.0 — value never goes negative.
+
+    `remember` (i.e. `_store`) on a DecayingValue with a new numeric
+    value resets: ticks_elapsed → 0, initial_value → new value, period
+    preserved. That is the reinforcement mechanic.
+    """
+    initial_value: float
+    period: int | float
+    ticks_elapsed: int = 0
+
+    @property
+    def current_value(self) -> float:
+        if self.period <= 0:
+            return 0.0
+        decayed = (
+            self.initial_value
+            - (self.initial_value / self.period) * self.ticks_elapsed
+        )
+        return max(0.0, decayed)
+
+    def tick(self) -> None:
+        """Advance one tick. No-op once the value has reached the floor."""
+        if self.current_value > 0.0:
+            self.ticks_elapsed += 1
+
+    def reinforce(self, new_value: float) -> None:
+        """Reset decay with a new initial value. Period preserved."""
+        self.initial_value = float(new_value)
+        self.ticks_elapsed = 0

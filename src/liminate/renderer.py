@@ -51,6 +51,7 @@ from .parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    WeakensNode,
     WhenNode,
 )
 from .vocabulary import ALL_RESERVED
@@ -178,6 +179,12 @@ def render(node: ASTNode) -> str:
     if isinstance(node, RemoveNode):
         # Canonical form: `remove <item> from <list>`.
         return f"remove {render(node.item)} from {node.target.name}"
+    if isinstance(node, WeakensNode):
+        # Metabolic Era batch 1 — `weakens <subject> over <period>`.
+        return (
+            f"weakens {node.subject.name} "
+            f"over {_fmt_number(node.period.value)}"
+        )
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
