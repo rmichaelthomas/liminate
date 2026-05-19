@@ -1,0 +1,7 @@
+remember a list called audit-log with "start"
+remember a value called status with "pending"
+remember a value called amount with 5000
+
+add "received" to audit-log then require amount is above 0 then add "validated" to audit-log
+
+show audit-log

@@ -4,15 +4,19 @@
 from liminate.result import LiminateResult, ResultStatus
 
 
-def test_all_nine_statuses_present():
+def test_all_ten_statuses_present():
     # v3a §122: the five-outcome taxonomy is extended by four
     # listener-mode statuses (LISTENING, HANDLER_FIRE, SHUTDOWN,
-    # ERROR_RUNTIME) for Phase 2 execution.
+    # ERROR_RUNTIME) for Phase 2 execution. Normative Era batch 2
+    # adds REQUIREMENT_NOT_MET — distinct from ERROR_SEMANTIC ("the
+    # program has a bug"); REQUIREMENT_NOT_MET means "the data
+    # violates a rule" enforced by a `require` statement.
     names = {s.name for s in ResultStatus}
     assert names == {
         "SUCCESS", "AMBER_PRECEDENCE", "AMBER_AMBIGUITY",
         "ERROR_PARSE", "ERROR_SEMANTIC",
         "LISTENING", "HANDLER_FIRE", "SHUTDOWN", "ERROR_RUNTIME",
+        "REQUIREMENT_NOT_MET",
     }
 
 
