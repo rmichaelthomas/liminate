@@ -2,7 +2,7 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 38 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 40 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.2.0**: 12 verbs, 16 connectives, 38 base reserved words, **861 tests passing** across 127 locked test sentences.
+The current build is **v0.2.0**: 13 verbs, 17 connectives, 40 base reserved words, **888 tests passing** across 127 locked test sentences.
 
 ### The pipeline
 
@@ -78,11 +78,11 @@ Two phases of execution:
 - **Phase 1 — sequential.** Each statement runs in order. Stepwise commit: if a later op fails, earlier side effects remain and the error names what was completed.
 - **Phase 2 — reactive listener.** `when`/`unless` register handlers driven by an external event source (a domain pack adapter). Edge-triggered, depth-first cascading, conservative same-handler-twice cycle detection. `finish` exits immediately and totally.
 
-### The vocabulary (35 words)
+### The vocabulary (40 words)
 
-**Verbs (11):** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`.
+**Verbs (13):** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`.
 
-**Connectives (14):** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`.
+**Connectives (17):** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`.
 
 **Operators (5):** `is`, `above`, `below`, `equal to`, `not`.
 
@@ -96,7 +96,7 @@ Two phases of execution:
 
 ### Domain packs
 
-A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 35 words are permanent; pack-contributed words are reserved only when the pack is active.
+A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 40 words are permanent; pack-contributed words are reserved only when the pack is active.
 
 A pack verb declares a slot signature, a type constraint, and one of five execution dispatches:
 
@@ -141,7 +141,7 @@ liminate --pack examples/pack_ui.json --quiet \
 liminate/
 ├── src/liminate/        Pipeline (lexer, reorderer, parser, renderer,
 │                        analyzer, interpreter, listener, adapter, packs/)
-├── tests/               835 tests across the 127 locked sentences
+├── tests/               888 tests across the 127 locked sentences
 ├── examples/            Runnable .limn programs + reference packs
 ├── docs/spec/           Locked specification documents
 └── docs/                Quickstart, syntax tour, pipeline walkthrough
@@ -154,7 +154,7 @@ The locked test sentences are simultaneously test cases and grammar artifacts �
 ### Design principles
 
 - **The prose IS the program.** No inference, no guessing. If the prose doesn't say it, it doesn't happen.
-- **The vocabulary is the boundary.** 38 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
+- **The vocabulary is the boundary.** 40 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
 - **The reorderer does not guess.** Ambiguous arrangements produce an amber clarification prompt rather than a silent pick.
 - **Authorize, don't author.** The on-ramp is modification of a working program, not authorship from a blank file.
 - **The AST is the source of truth.** The parser reconstructs a canonical English sentence so you see what was understood before it runs.
