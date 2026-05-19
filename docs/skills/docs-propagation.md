@@ -105,6 +105,10 @@ Categorize the change:
 
 For each affected repo, use `github_get_file` to read the documents that need updating. Search for the specific strings that will be stale — word counts, verb lists, feature descriptions. Do not assume you know what the documents say. Read them.
 
+**Search all known prior values, not just the most recent.** Documents drift across multiple changes. A file stuck at 34 words won't be caught by a grep for 38. When scanning for a numeric value like a word count, search for every known prior value of that number (e.g., `34`, `35`, `38`, `40`). When scanning for a list like verb names, search for both the presence of new entries and the absence of entries that should now appear.
+
+**Flag dated status lines as a decision point.** When a document contains a time-stamped status snapshot (e.g., "Status (May 13, 2026): 713 tests, 34 reserved words"), surface it to Rob as a question: should the line be rewritten with current values, or preserved as a historical marker with a new current-status line added above it? Do not make this decision autonomously — the answer depends on whether the document treats the line as living status or as a point-in-time record.
+
 ### Step 4: Produce the update plan
 
 List every file that needs changing, what specifically needs to change in each, and in what order. The order matters — core repo first, then satellite repos, then website last (because the website references the other repos' READMEs and docs).
@@ -216,9 +220,11 @@ In all modes, the website handoff packet is always produced separately — it's 
 | 3 | Stale word counts in satellite repos | Step 3 requires reading each file before proposing changes. Do not assume the current count. |
 | 4 | Website updated before repos | Propagation order is locked: core → satellites → website. |
 | 5 | Over-propagating — changing docs that don't reference the changed element | Step 3 scans for specific stale strings. If a doc doesn't mention the changed element, it doesn't get updated. |
+| 6 | Multi-version drift missed — grepping only for the most recent stale value | Step 3 requires searching all known prior values. A file stuck at 34 won't be caught by a grep for 38. |
+| 7 | Dated status line silently rewritten or silently preserved | Step 3 flags dated status lines as a decision point for Rob. The agent does not choose between rewrite and preserve autonomously. |
 
 ---
 
 ## Provenance
 
-*Pattern derived from direct observation of: the Liminate repo family structure (8 repos scanned May 18, 2026), vocabulary expansion from 34 to 45 words (in progress, May 2026), documentation surfaces across all repos verified via `github_list_files`. The propagation order (core → satellites → website) reflects the actual dependency chain: satellite READMEs reference core docs, and the website references both.*
+*Pattern derived from direct observation of: the Liminate repo family structure (8 repos scanned May 18, 2026), vocabulary expansion from 34 to 45 words (in progress, May 2026), documentation surfaces across all repos verified via `github_list_files`. The propagation order (core → satellites → website) reflects the actual dependency chain: satellite READMEs reference core docs, and the website references both. Failure modes 6 and 7 added May 19, 2026 after first live test (weakens/over propagation, 34→40 drift catch) confirmed both gaps.*
