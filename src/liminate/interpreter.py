@@ -69,6 +69,7 @@ from .parser import (
     ChooseBranch,
     ChooseNode,
     CombineNode,
+    CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
     ConditionNode,
@@ -567,6 +568,8 @@ def _exec_op(
         return _exec_assign(node, symtab, current_item)
     if isinstance(node, SortNode):
         return _exec_sort(node, symtab)
+    if isinstance(node, CompareNode):
+        return _exec_compare(node, symtab, current_item)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -997,7 +1000,14 @@ def _exec_show(
     # has the field) already ran in the analyzer.
     if node.record_name is not None:
         record = symtab[node.record_name].value
-        return [_format_scalar(record[name])]
+        # A field may itself be a list (e.g. the `divergences` field of a
+        # `comparison` record). Use the list display format rather than
+        # Python's repr so it reads as `status, total`, not `['status',
+        # 'total']`.
+        field_value = record[name]
+        if isinstance(field_value, list):
+            return _display_lines(field_value)
+        return [_format_scalar(field_value)]
     # v2a §69 (D1): multi-field display inside `each ... show`.
     if node.extra_fields and isinstance(current_item, dict):
         fields = [name, *node.extra_fields]
@@ -1057,6 +1067,67 @@ def _exec_sort(node: SortNode, symtab: dict[str, SymbolEntry]) -> list[str]:
             f"I can't sort '{node.target.name}' by '{node.field}' — "
             f"the values are a mix of types that can't be compared."
         )
+    return []
+
+
+def _exec_compare(
+    node: CompareNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """V2 promotion — compare two domain values and store a structured
+    `comparison` record. Comparison mode is inferred from operand types:
+
+    - record vs record  → structural; divergences = sorted diverging keys
+    - list vs list       → structural; divergences = diverging indices
+      (length_mismatch when lengths differ)
+    - record/list vs the other shape, or a container vs a scalar
+                         → type_mismatch
+    - scalar vs scalar   → equality; divergences = []
+
+    `_evaluate_expression` resolves DecayingValue operands to their
+    current decayed value, so decay-wrapped numbers compare on their
+    effective value. Silent — no output; result stored only.
+    """
+    left_val = _evaluate_expression(node.left, symtab, current_item)
+    right_val = _evaluate_expression(node.right, symtab, current_item)
+
+    left_is_dict = isinstance(left_val, dict)
+    right_is_dict = isinstance(right_val, dict)
+    left_is_list = isinstance(left_val, list)
+    right_is_list = isinstance(right_val, list)
+
+    divergences: list[Any]
+    if left_is_dict and right_is_dict:
+        all_keys = set(left_val) | set(right_val)
+        diverging = [
+            k for k in sorted(all_keys)
+            if k not in left_val or k not in right_val
+            or left_val[k] != right_val[k]
+        ]
+        status = "match" if not diverging else "mismatch"
+        divergences = diverging
+    elif left_is_list and right_is_list:
+        if len(left_val) != len(right_val):
+            status = "length_mismatch"
+            divergences = []
+        else:
+            diverging_idx = [
+                i for i, (l, r) in enumerate(zip(left_val, right_val))
+                if l != r
+            ]
+            status = "match" if not diverging_idx else "mismatch"
+            divergences = diverging_idx
+    elif left_is_dict != right_is_dict or left_is_list != right_is_list:
+        # One operand is a record/list and the other is a different
+        # shape (or a scalar).
+        status = "type_mismatch"
+        divergences = []
+    else:
+        status = "match" if left_val == right_val else "mismatch"
+        divergences = []
+
+    _store(symtab, "comparison", {"status": status, "divergences": divergences})
     return []
 
 

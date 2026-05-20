@@ -402,6 +402,19 @@ class SortNode(ASTNode):
 
 
 @dataclass
+class CompareNode(ASTNode):
+    """V2 promotion — structured comparison of two domain values.
+
+    `left` and `right` are NameRefs to values in the symbol table. The
+    interpreter infers comparison mode from operand types and stores a
+    record named `comparison` with fields `status` (string) and
+    `divergences` (list) in the symbol table.
+    """
+    left: NameRef
+    right: NameRef
+
+
+@dataclass
 class ExpectNode(ASTNode):
     """Epistemic Era batch 3 — tracked anticipation verb.
 
@@ -794,6 +807,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_expect(stream)
     if verb.value == "sort":
         return _parse_sort(stream)
+    if verb.value == "compare":
+        return _parse_compare(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1573,6 +1588,38 @@ def _parse_sort(stream: TokenStream) -> SortNode:
         descending = True
 
     return SortNode(target=target, field=field_name, descending=descending)
+
+
+# ---------------------------------------------------------------------------
+# compare (V2 promotion)
+# ---------------------------------------------------------------------------
+
+
+def _parse_compare(stream: TokenStream) -> CompareNode:
+    """`compare [article]? <left> to [article]? <right>`."""
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'compare' needs two values — try: "
+            "compare <name> to <name>."
+        )
+    left = _consume_target(stream, verb="compare")
+
+    to_tok = stream.consume()
+    if not (
+        to_tok
+        and to_tok.type is TokenType.CONNECTIVE
+        and to_tok.value == "to"
+    ):
+        raise _ParseError(
+            "'compare' needs a second value — try: "
+            "compare <name> to <name>."
+        )
+
+    _consume_optional_article(stream)
+    right = _consume_target(stream, verb="compare")
+
+    return CompareNode(left=left, right=right)
 
 
 # ---------------------------------------------------------------------------

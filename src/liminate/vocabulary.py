@@ -38,6 +38,9 @@ Sources:
 - Infrastructure Era batch 2 (17 verbs, 19 connectives, 51 reserved
   words total) — `sort` verb (in-place list reordering by field) and
   `reverse` operator (descending sort modifier).
+- V2 promotion: `compare` (18 verbs, 51 reserved words total) —
+  structured comparison of two domain values, producing a record
+  named `comparison` with `status` and `divergences` fields.
 """
 
 from dataclasses import dataclass
@@ -88,6 +91,10 @@ VERBS: frozenset[str] = frozenset({
     # Infrastructure Era batch 2: `sort` reorders a list in place by a
     # field value. Default ascending; `reverse` modifier for descending.
     "sort",
+    # V2 promotion: `compare <left> to <right>` produces a structured
+    # result record named `comparison` with `status` and `divergences`
+    # fields. Comparison mode inferred from operand types.
+    "compare",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -138,10 +145,11 @@ DELIMITERS: frozenset[str] = frozenset({":"})
 # v2 deferred words — designed but not executable in v1. Reserved so
 # user programs that use them as names will not silently break when v2
 # ships (v1a §29). v2d §99 promoted `choose` to an active verb. v3a §108
-# promoted `when` and `unless` to active connectives. `transform` and
-# `compare` continue to be deferred per v2d §103 / v3a §124.
+# promoted `when` and `unless` to active connectives. The V2 promotion
+# build moved `compare` to an active verb (structured comparison with a
+# `comparison` result record); `transform` continues to be deferred.
 V2_RESERVED: frozenset[str] = frozenset({
-    "transform", "compare",
+    "transform",
 })
 
 # `equal` is the multi-word lookahead trigger for `equal to`. Reserved
@@ -155,8 +163,8 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
     "multiplied", "divided",
 })
 
-# All 51 reserved words. 17 verbs, 19 connectives, 7 operators, 3
-# articles, 2 V2-reserved, 3 multi-word reserved. v3a §124 was 34
+# All 51 reserved words. 18 verbs, 19 connectives, 7 operators, 3
+# articles, 1 V2-reserved, 3 multi-word reserved. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
@@ -170,7 +178,9 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # +5 — `by` connective, `plus`/`minus` operators, `multiplied` and
 # `divided` multi-word lookahead triggers. Infrastructure Era batch 2:
 # +2 — `sort` verb (in-place list reordering by a field) and `reverse`
-# operator (descending sort modifier).
+# operator (descending sort modifier). V2 promotion: +0 net — `compare`
+# moved from V2_RESERVED to VERBS, so the verb count rose to 18 and the
+# V2-reserved count fell to 1; the total stays 51.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -382,6 +392,8 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "expect":   ["condition"],
     # Infrastructure Era batch 2: `sort <target> by <field> [reverse]`.
     "sort":     ["target", "field"],
+    # V2 promotion: `compare <left> to <right>`.
+    "compare":  ["left", "right"],
 }
 
 

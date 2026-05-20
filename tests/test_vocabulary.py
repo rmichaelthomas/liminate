@@ -17,14 +17,14 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 17 verbs: 16 + 1 (`sort` — Infrastructure Era batch 2 in-place
-    # list reordering by field).
-    assert len(VERBS) == 17
+    # 18 verbs: 17 + 1 (`compare` — V2 promotion; structured comparison
+    # of two domain values into a `comparison` result record).
+    assert len(VERBS) == 18
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
         "add", "remove", "weakens", "require",
-        "assign", "expect", "sort",
+        "assign", "expect", "sort", "compare",
     }
 
 
@@ -64,11 +64,11 @@ def test_delimiter_count():
 
 
 def test_v2_reserved():
-    # v3a §124: 2 deferred verbs remaining. `when` and `unless` moved
-    # to CONNECTIVES in v3a §108/§109; `transform` and `compare`
-    # continue to be deferred per v2d §103 / v3a §124.
-    assert len(V2_RESERVED) == 2
-    assert V2_RESERVED == {"transform", "compare"}
+    # 1 deferred verb remaining. `when`/`unless` moved to CONNECTIVES in
+    # v3a §108/§109; the V2 promotion build moved `compare` to VERBS.
+    # `transform` continues to be deferred.
+    assert len(V2_RESERVED) == 1
+    assert V2_RESERVED == {"transform"}
 
 
 def test_multi_word_reserved():
@@ -78,9 +78,10 @@ def test_multi_word_reserved():
 
 
 def test_total_reserved_count_is_51():
-    # 51 reserved words total (Infrastructure Era batch 2). 17 verbs +
+    # 51 reserved words total (unchanged by the V2 promotion — `compare`
+    # moved category, not in/out of the reserved set). 18 verbs +
     # 19 connectives + 7 operators + 3 multi-word + 3 articles +
-    # 2 v2-deferred verbs = 51.
+    # 1 v2-deferred verb = 51.
     assert len(ALL_RESERVED) == 51
 
 
@@ -147,6 +148,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["expect"] == ["condition"]
     # Infrastructure Era batch 2: `sort <target> by <field>`.
     assert VERB_SIGNATURES["sort"] == ["target", "field"]
+    # V2 promotion: `compare <left> to <right>`.
+    assert VERB_SIGNATURES["compare"] == ["left", "right"]
 
 
 def test_add_is_classified_as_verb():
