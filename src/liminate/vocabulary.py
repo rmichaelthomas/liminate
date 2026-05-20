@@ -41,6 +41,10 @@ Sources:
 - V2 promotion: `compare` (18 verbs, 51 reserved words total) —
   structured comparison of two domain values, producing a record
   named `comparison` with `status` and `divergences` fields.
+- Final V2 promotion: `transform` (19 verbs, 0 V2-reserved, 51
+  reserved words total) — per-element list mutation via arithmetic
+  expressions. V2_RESERVED is now empty; all originally deferred
+  words have been promoted.
 """
 
 from dataclasses import dataclass
@@ -95,6 +99,11 @@ VERBS: frozenset[str] = frozenset({
     # result record named `comparison` with `status` and `divergences`
     # fields. Comparison mode inferred from operand types.
     "compare",
+    # Final V2 promotion: `transform` modifies elements of a list
+    # in place. Two modes: record-field (`transform <field> of <list>
+    # by <expr>`) and scalar (`transform <list> by <expr>`). Expression
+    # evaluated per element with iterator context.
+    "transform",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -143,14 +152,13 @@ ARTICLES: frozenset[str] = frozenset({
 DELIMITERS: frozenset[str] = frozenset({":"})
 
 # v2 deferred words — designed but not executable in v1. Reserved so
-# user programs that use them as names will not silently break when v2
-# ships (v1a §29). v2d §99 promoted `choose` to an active verb. v3a §108
-# promoted `when` and `unless` to active connectives. The V2 promotion
-# build moved `compare` to an active verb (structured comparison with a
-# `comparison` result record); `transform` continues to be deferred.
-V2_RESERVED: frozenset[str] = frozenset({
-    "transform",
-})
+# user programs that use them as names would not silently break when v2
+# ships (v1a §29). All original V2-deferred words have now been promoted
+# to active verbs/connectives: `choose` (v2d §99), `when`/`unless`
+# (v3a §108/§109), `compare` (V2 promotion), `transform` (final V2
+# promotion). The frozenset is retained empty as a structural
+# placeholder — future deferrals would go here.
+V2_RESERVED: frozenset[str] = frozenset()
 
 # `equal` is the multi-word lookahead trigger for `equal to`. Reserved
 # independently — allowing it as a name would make the lexer's behavior
@@ -163,8 +171,8 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
     "multiplied", "divided",
 })
 
-# All 51 reserved words. 18 verbs, 19 connectives, 7 operators, 3
-# articles, 1 V2-reserved, 3 multi-word reserved. v3a §124 was 34
+# All 51 reserved words. 19 verbs, 19 connectives, 7 operators, 3
+# articles, 0 V2-reserved, 3 multi-word reserved. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
@@ -180,7 +188,9 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # +2 — `sort` verb (in-place list reordering by a field) and `reverse`
 # operator (descending sort modifier). V2 promotion: +0 net — `compare`
 # moved from V2_RESERVED to VERBS, so the verb count rose to 18 and the
-# V2-reserved count fell to 1; the total stays 51.
+# V2-reserved count fell to 1; the total stays 51. Final V2 promotion:
+# +0 net — `transform` moved from V2_RESERVED to VERBS (verbs 18→19,
+# V2-reserved 1→0); the total stays 51 and V2_RESERVED is now empty.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -196,7 +206,8 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 51 reserved words; see module docstring).
+    surface (currently 51 reserved words — 19 verbs, 0 V2-reserved;
+    see module docstring).
     """
     if word in VERBS:
         return "verb"
@@ -394,6 +405,9 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "sort":     ["target", "field"],
     # V2 promotion: `compare <left> to <right>`.
     "compare":  ["left", "right"],
+    # Final V2 promotion: `transform <field> of <target> by <expression>`
+    # or `transform <target> by <expression>`.
+    "transform": ["target", "expression"],
 }
 
 
