@@ -17,14 +17,14 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 16 verbs: 14 + 2 (`assign` — Delegated Era batch 3 delegation;
-    # `expect` — Epistemic Era batch 3 tracked anticipation).
-    assert len(VERBS) == 16
+    # 17 verbs: 16 + 1 (`sort` — Infrastructure Era batch 2 in-place
+    # list reordering by field).
+    assert len(VERBS) == 17
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
         "add", "remove", "weakens", "require",
-        "assign", "expect",
+        "assign", "expect", "sort",
     }
 
 
@@ -43,11 +43,14 @@ def test_connective_count():
 
 
 def test_operator_count():
-    # 6 single-word operators (was 4); Infrastructure Era added `plus`
-    # and `minus`. `equal to` / `multiplied by` / `divided by` are
-    # multi-word lexer tokens combined from MULTI_WORD_RESERVED triggers.
-    assert len(OPERATORS) == 6
-    assert OPERATORS == {"is", "above", "below", "not", "plus", "minus"}
+    # 7 single-word operators (was 6); Infrastructure Era batch 2 added
+    # `reverse` as the descending-sort modifier. `equal to` /
+    # `multiplied by` / `divided by` are multi-word lexer tokens
+    # combined from MULTI_WORD_RESERVED triggers.
+    assert len(OPERATORS) == 7
+    assert OPERATORS == {
+        "is", "above", "below", "not", "plus", "minus", "reverse",
+    }
 
 
 def test_article_count():
@@ -74,11 +77,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal", "multiplied", "divided"}
 
 
-def test_total_reserved_count_is_49():
-    # 49 reserved words total (Infrastructure Era). 16 verbs +
-    # 19 connectives + 6 operators + 3 multi-word + 3 articles +
-    # 2 v2-deferred verbs = 49.
-    assert len(ALL_RESERVED) == 49
+def test_total_reserved_count_is_51():
+    # 51 reserved words total (Infrastructure Era batch 2). 17 verbs +
+    # 19 connectives + 7 operators + 3 multi-word + 3 articles +
+    # 2 v2-deferred verbs = 51.
+    assert len(ALL_RESERVED) == 51
 
 
 def test_reserved_sets_are_disjoint():
@@ -142,6 +145,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["assign"] == ["item", "recipient"]
     # Epistemic Era batch 3: `expect <condition>`.
     assert VERB_SIGNATURES["expect"] == ["condition"]
+    # Infrastructure Era batch 2: `sort <target> by <field>`.
+    assert VERB_SIGNATURES["sort"] == ["target", "field"]
 
 
 def test_add_is_classified_as_verb():
