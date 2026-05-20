@@ -31,6 +31,7 @@ from .parser import (
     ChooseBranch,
     ChooseNode,
     CombineNode,
+    CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
     ConditionNode,
@@ -211,6 +212,9 @@ def render(node: ASTNode) -> str:
         if node.descending:
             return f"{base} in reverse"
         return base
+    if isinstance(node, CompareNode):
+        # V2 promotion — `compare <left> to <right>`.
+        return f"compare {render(node.left)} to {render(node.right)}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
