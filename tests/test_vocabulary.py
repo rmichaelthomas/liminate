@@ -29,21 +29,25 @@ def test_verb_count():
 
 
 def test_connective_count():
-    # 18 connectives: 17 + 1 (`then` — Normative Era batch 2 declared
-    # sequencing).
-    assert len(CONNECTIVES) == 18
+    # 19 connectives: 18 + 1 (`by` — Infrastructure Era; introduces the
+    # second operand of `multiplied by` / `divided by` and is reserved
+    # standalone for future use by `transform`).
+    assert len(CONNECTIVES) == 19
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
         "when", "unless", "includes", "within", "over", "then",
+        "by",
     }
 
 
 def test_operator_count():
-    # 4 single-word operators; `equal to` is a multi-word lexer token.
-    assert len(OPERATORS) == 4
-    assert OPERATORS == {"is", "above", "below", "not"}
+    # 6 single-word operators (was 4); Infrastructure Era added `plus`
+    # and `minus`. `equal to` / `multiplied by` / `divided by` are
+    # multi-word lexer tokens combined from MULTI_WORD_RESERVED triggers.
+    assert len(OPERATORS) == 6
+    assert OPERATORS == {"is", "above", "below", "not", "plus", "minus"}
 
 
 def test_article_count():
@@ -65,13 +69,16 @@ def test_v2_reserved():
 
 
 def test_multi_word_reserved():
-    assert MULTI_WORD_RESERVED == {"equal"}
+    # Infrastructure Era: `multiplied` and `divided` added as multi-word
+    # lookahead triggers (paired with `by` to form arithmetic operators).
+    assert MULTI_WORD_RESERVED == {"equal", "multiplied", "divided"}
 
 
-def test_total_reserved_count_is_44():
-    # 44 reserved words total. 16 verbs + 18 connectives + 4 operators
-    # + 1 multi-word + 3 articles + 2 v2-deferred verbs = 44.
-    assert len(ALL_RESERVED) == 44
+def test_total_reserved_count_is_49():
+    # 49 reserved words total (Infrastructure Era). 16 verbs +
+    # 19 connectives + 6 operators + 3 multi-word + 3 articles +
+    # 2 v2-deferred verbs = 49.
+    assert len(ALL_RESERVED) == 49
 
 
 def test_reserved_sets_are_disjoint():
