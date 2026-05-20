@@ -4,7 +4,7 @@
 **Source:** Merged PRs #11 (arithmetic operators), #12 (`sort`/`reverse`), #13 (`compare`), #14 (`transform`) on `rmichaelthomas/liminate` `main`. Net vocabulary change: **44 → 51 reserved words**.
 **Scope:** Verbs 16 → 19 (`sort`, `compare`, `transform`); connectives 18 → 19 (`by`); single-word operators 4 → 7 (`plus`, `minus`, `reverse`); multi-word trigger words 1 → 3 (`equal`, `multiplied`, `divided`); **`V2_RESERVED` is now empty** — `transform` and `compare` were the last deferred words. New features: arithmetic expressions with PEMDAS precedence, in-place `sort`, structured `compare`, per-element `transform`.
 
-Per Rob's propagation decision, status values are refreshed alongside vocabulary: **version v0.2.0 → v0.3.0** and **972 → 1053 pytest cases**. The "locked test sentences" count (139 on the site) is a curated metric — leave it at 139 unless you can verify the current curated total; the repo README was left at its own 127 for the same reason.
+Per Rob's propagation decision, status values are refreshed alongside vocabulary: **version v0.2.0 → v0.4.0** and **972 → 1053 pytest cases**. (Rob bumped the package to v0.4.0 to mark the expanded vocabulary; this packet and the live site reflect v0.4.0.) The "locked test sentences" count (139 on the site) is a curated metric — leave it at 139 unless you can verify the current curated total; the repo README was left at its own 127 for the same reason.
 
 ## Pages Requiring Updates
 
@@ -25,7 +25,7 @@ Per Rob's propagation decision, status values are refreshed alongside vocabulary
 ```
 **Updated:**
 ```html
-    <span class="pill"><span data-plain>v0.3.0</span><span data-tech>v0.3.0</span></span>
+    <span class="pill"><span data-plain>v0.4.0</span><span data-tech>v0.4.0</span></span>
 ```
 
 **L36 — current:**
@@ -64,7 +64,7 @@ Per Rob's propagation decision, status values are refreshed alongside vocabulary
 > Status: v0.2.0. Current source has 44 reserved words, 139 locked test sentences, and 972 pytest cases.
 
 **Updated:**
-> Status: v0.3.0. Current source has 51 reserved words, 139 locked test sentences, and 1053 pytest cases.
+> Status: v0.4.0. Current source has 51 reserved words, 139 locked test sentences, and 1053 pytest cases.
 
 (`data-tech` half of L33 has no vocabulary/version-specific numbers beyond "five execution types," which is unchanged — leave it.)
 
