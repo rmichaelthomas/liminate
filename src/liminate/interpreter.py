@@ -62,6 +62,7 @@ _live_value_names_ctx: ContextVar[set[str] | None] = ContextVar(
 )
 from .parser import (
     AddNode,
+    ArithmeticNode,
     AssignNode,
     ASTNode,
     BareWord,
@@ -1425,6 +1426,8 @@ def _evaluate_expression(
         # v2b §77: extract <field> of <record> as a value.
         record = symtab[expr.record_name].value
         return copy.deepcopy(record[expr.field])
+    if isinstance(expr, ArithmeticNode):
+        return _eval_arithmetic(expr, symtab, current_item)
     # Sub-operations that yield a value.
     if isinstance(expr, CombineNode):
         entry = symtab[expr.target.name]
@@ -1592,7 +1595,85 @@ def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
         # field's current value from the named record at compare time.
         record = symtab[value_node.record_name].value
         return record[value_node.field]
+    if isinstance(value_node, ArithmeticNode):
+        # Infrastructure Era — arithmetic on the right-hand side of a
+        # comparison evaluates to a number at compare time.
+        return _eval_arithmetic(value_node, symtab, current_item)
     raise _RuntimeError(f"Unexpected value {type(value_node).__name__}.")
+
+
+def _eval_arithmetic(
+    node: ArithmeticNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> int | float:
+    """Infrastructure Era — evaluate a binary arithmetic expression.
+
+    Operands are resolved via `_evaluate_expression` so all value AST
+    shapes (literals, names, field access, BareWord, nested arithmetic)
+    work uniformly. Runtime numeric guards produce friendly errors when
+    an operand resolves to a non-number. Division by zero is caught and
+    reported as a runtime error rather than a Python exception.
+
+    Result type: integer when both operands are integers and the
+    operation preserves integer-ness (plus, minus, multiplied_by); for
+    divided_by the result is an int when it divides evenly, else float.
+    """
+    left = _eval_arithmetic_operand(node.left, symtab, current_item)
+    right = _eval_arithmetic_operand(node.right, symtab, current_item)
+    if isinstance(left, bool) or not isinstance(left, (int, float)):
+        raise _RuntimeError(
+            f"I can only do arithmetic with numbers, but the left side "
+            f"of '{_OP_PROSE[node.op]}' is {_format_scalar(left)}."
+        )
+    if isinstance(right, bool) or not isinstance(right, (int, float)):
+        raise _RuntimeError(
+            f"I can only do arithmetic with numbers, but the right side "
+            f"of '{_OP_PROSE[node.op]}' is {_format_scalar(right)}."
+        )
+    if node.op == "plus":
+        return left + right
+    if node.op == "minus":
+        return left - right
+    if node.op == "multiplied_by":
+        return left * right
+    if node.op == "divided_by":
+        if right == 0:
+            raise _RuntimeError("I can't divide by zero.")
+        result = left / right
+        if isinstance(result, float) and result.is_integer():
+            return int(result)
+        return result
+    raise _RuntimeError(f"Unknown arithmetic operator '{node.op}'.")
+
+
+def _eval_arithmetic_operand(
+    operand: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> Any:
+    """Resolve an arithmetic operand with iterator-context awareness.
+
+    A BareWord inside `each <list-of-records>` resolves to the field on
+    the current record when present — mirroring the iterator-first
+    resolution that `_exec_add` uses for its item slot. Everything else
+    delegates to `_evaluate_expression`.
+    """
+    if (
+        isinstance(operand, BareWord)
+        and isinstance(current_item, dict)
+        and operand.word in current_item
+    ):
+        return current_item[operand.word]
+    return _evaluate_expression(operand, symtab, current_item)
+
+
+_OP_PROSE = {
+    "plus": "plus",
+    "minus": "minus",
+    "multiplied_by": "multiplied by",
+    "divided_by": "divided by",
+}
 
 
 def _apply_op(op: str, a: Any, b: Any) -> bool:

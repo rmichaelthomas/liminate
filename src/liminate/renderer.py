@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from .parser import (
     AddNode,
+    ArithmeticNode,
     AssignNode,
     ASTNode,
     BareWord,
@@ -87,6 +88,10 @@ def render(node: ASTNode) -> str:
     if isinstance(node, FieldAccessNode):
         # v2b §77: <field> of <record> renders verbatim.
         return f"{node.field} of {node.record_name}"
+    if isinstance(node, ArithmeticNode):
+        # Infrastructure Era — paren-free flat prose. PEMDAS is implicit
+        # in the canonical form, mirroring how humans read arithmetic.
+        return f"{render(node.left)} {_ARITHMETIC_OP_WORDS[node.op]} {render(node.right)}"
 
     if isinstance(node, RememberValueNode):
         # v2a §71 / D6: preserve the user's descriptor verbatim. When the
@@ -298,6 +303,14 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
+
+
+_ARITHMETIC_OP_WORDS = {
+    "plus": "plus",
+    "minus": "minus",
+    "multiplied_by": "multiplied by",
+    "divided_by": "divided by",
+}
 
 
 _NEGATED_OPS = {

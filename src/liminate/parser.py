@@ -375,6 +375,20 @@ class AssignNode(ASTNode):
 
 
 @dataclass
+class ArithmeticNode(ASTNode):
+    """Infrastructure Era — binary arithmetic expression.
+
+    Represents `<left> <op> <right>` where op is one of: plus, minus,
+    multiplied_by, divided_by. PEMDAS precedence is encoded by the
+    shape of the tree (multiplicative nodes nest inside additive ones);
+    same-tier operators are left-associative.
+    """
+    left: ASTNode
+    right: ASTNode
+    op: str  # "plus", "minus", "multiplied_by", "divided_by"
+
+
+@dataclass
 class ExpectNode(ASTNode):
     """Epistemic Era batch 3 — tracked anticipation verb.
 
@@ -1099,8 +1113,10 @@ def _parse_remember_from(
     stream: TokenStream, name: str, comp: set[str], descriptor: str | None = None,
 ) -> ASTNode:
     """`from` in `remember` (v1b §43):
-       next token is VERB  -> result capture via recursive descent
-       next token is UNKNOWN -> simple reference (copy semantics)
+       next token is VERB        -> result capture via recursive descent
+       next token is a known comp -> composition call (with optional param)
+       otherwise                 -> value expression, which may include
+                                    arithmetic (Infrastructure Era)
     """
     peek = stream.peek()
     if peek is None:
@@ -1108,46 +1124,45 @@ def _parse_remember_from(
     if peek.type is TokenType.VERB:
         sub = _parse_verb_statement(stream, comp)
         return RememberValueNode(name=name, value=sub, descriptor=descriptor)
-    if peek.type is TokenType.UNKNOWN:
-        # Could be a composition call (v1b §41 fallback inside the from-expr).
-        if peek.value in comp:
-            stream.consume()
-            # v2d §98 — peek-ahead for parameterized call in value-capture
-            # position. `remember the r called r from find-big from orders`
-            # has two `from` tokens: the outer is value capture, the inner
-            # is parameter passing. Since parameters are names-only (§96),
-            # `from UNKNOWN` after a known composition is always param-
-            # passing.
-            after = stream.peek()
-            if after and after.type is TokenType.CONNECTIVE and after.value == "from":
-                stream.consume()  # eat inner `from`
-                arg = _consume_parameter_arg(stream, comp_name=peek.value)
-                return RememberValueNode(
-                    name=name,
-                    value=CompositionCallNode(name=peek.value, arg=arg),
-                    descriptor=descriptor,
-                )
+    if peek.type is TokenType.UNKNOWN and peek.value in comp:
+        # v1b §41 + v2d §98 — named composition call as value expression.
+        stream.consume()
+        after = stream.peek()
+        if after and after.type is TokenType.CONNECTIVE and after.value == "from":
+            stream.consume()  # eat inner `from`
+            arg = _consume_parameter_arg(stream, comp_name=peek.value)
             return RememberValueNode(
                 name=name,
-                value=CompositionCallNode(name=peek.value),
+                value=CompositionCallNode(name=peek.value, arg=arg),
                 descriptor=descriptor,
             )
-        stream.consume()
-        # v2b §77: `from <field> of <record>` — field-access value.
-        after = stream.peek()
-        if after and after.type is TokenType.CONNECTIVE and after.value == "of":
-            access = _maybe_field_access(stream, peek.value)
-            return RememberValueNode(name=name, value=access, descriptor=descriptor)
         return RememberValueNode(
-            name=name, value=NameRef(name=peek.value), descriptor=descriptor,
+            name=name,
+            value=CompositionCallNode(name=peek.value),
+            descriptor=descriptor,
         )
-    cat = reserved_category(peek.value)
-    if cat:
-        raise _ParseError(
-            f"The word '{peek.value}' is reserved in Liminate — "
-            f"it's used as a {cat} and can't be used as a value."
+    # Value expression — numbers, names (as NameRef per `from` semantics),
+    # field access via `of`, or arithmetic expressions over any of those.
+    value = _parse_value(stream)
+    value = _name_ref_for_from(value)
+    return RememberValueNode(name=name, value=value, descriptor=descriptor)
+
+
+def _name_ref_for_from(node: ASTNode) -> ASTNode:
+    """`from` copy-semantics: a bare UNKNOWN after `from` is a reference
+    to a remembered symbol (NameRef errors if missing), not a string
+    literal fallback (BareWord). Convert single BareWord values to
+    NameRef, and recurse into ArithmeticNode operands so arithmetic
+    operands also obey from-strictness."""
+    if isinstance(node, BareWord):
+        return NameRef(name=node.word)
+    if isinstance(node, ArithmeticNode):
+        return ArithmeticNode(
+            left=_name_ref_for_from(node.left),
+            right=_name_ref_for_from(node.right),
+            op=node.op,
         )
-    raise _ParseError(f"I didn't expect '{peek.value}' after 'from'.")
+    return node
 
 
 # ---------------------------------------------------------------------------
@@ -1791,7 +1806,58 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
 # ---------------------------------------------------------------------------
 
 
+_ADDITIVE_OPS = frozenset({"plus", "minus"})
+_MULTIPLICATIVE_OPS = frozenset({"multiplied_by", "divided_by"})
+
+
 def _parse_value(stream: TokenStream) -> ASTNode:
+    """Parse a value expression, which may include arithmetic.
+
+    Precedence (Infrastructure Era — PEMDAS):
+      Tier 1 (lowest):  plus, minus                — left-associative
+      Tier 2 (highest): multiplied_by, divided_by  — left-associative
+      Atoms: NUMBER, UNKNOWN (with optional `of`), QUOTED_STRING
+
+    Every call site that previously consumed a single value via
+    `_parse_value` now transparently supports arithmetic expressions in
+    that position.
+    """
+    return _parse_additive(stream)
+
+
+def _parse_additive(stream: TokenStream) -> ASTNode:
+    left = _parse_multiplicative(stream)
+    while True:
+        peek = stream.peek()
+        if not (
+            peek
+            and peek.type is TokenType.OPERATOR
+            and peek.value in _ADDITIVE_OPS
+        ):
+            break
+        stream.consume()
+        right = _parse_multiplicative(stream)
+        left = ArithmeticNode(left=left, right=right, op=peek.value)
+    return left
+
+
+def _parse_multiplicative(stream: TokenStream) -> ASTNode:
+    left = _parse_atom(stream)
+    while True:
+        peek = stream.peek()
+        if not (
+            peek
+            and peek.type is TokenType.OPERATOR
+            and peek.value in _MULTIPLICATIVE_OPS
+        ):
+            break
+        stream.consume()
+        right = _parse_atom(stream)
+        left = ArithmeticNode(left=left, right=right, op=peek.value)
+    return left
+
+
+def _parse_atom(stream: TokenStream) -> ASTNode:
     """Consume a single value token (NUMBER, UNKNOWN, or QUOTED_STRING),
     optionally extended by `of <record>` for field access (v2b §77).
 

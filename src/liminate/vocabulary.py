@@ -31,6 +31,10 @@ Sources:
 - Delegated/Epistemic Era batch 3 (16 verbs, 18 connectives, 44
   reserved words total) — `assign` verb (item-to-recipient mapping)
   and `expect` verb (non-halting tracked anticipation).
+- Infrastructure Era (16 verbs, 19 connectives, 49 reserved words
+  total) — `by` connective, `plus`/`minus` operators,
+  `multiplied by`/`divided by` multi-word operators. Arithmetic
+  expressions with PEMDAS precedence.
 """
 
 from dataclasses import dataclass
@@ -95,6 +99,10 @@ CONNECTIVES: frozenset[str] = frozenset({
     # sequences; both produce SequenceNode, distinguished by the
     # `connectors` metadata field.
     "then",
+    # Infrastructure Era: `by` introduces the second operand of the
+    # multi-word arithmetic operators (`multiplied by`, `divided by`).
+    # Reserved standalone for future use by the `transform` verb.
+    "by",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -102,6 +110,11 @@ CONNECTIVES: frozenset[str] = frozenset({
 # token whose value is "equal_to" — see lexer.
 OPERATORS: frozenset[str] = frozenset({
     "is", "above", "below", "not",
+    # Infrastructure Era: arithmetic operators. `plus` and `minus` are
+    # single-word; `multiplied by` and `divided by` are multi-word
+    # (combined by the lexer; `multiplied` and `divided` live in
+    # MULTI_WORD_RESERVED).
+    "plus", "minus",
 })
 
 # v1 articles. `an` added in v1c §47 (previously the table listed `the`, `a`).
@@ -124,9 +137,16 @@ V2_RESERVED: frozenset[str] = frozenset({
 # `equal` is the multi-word lookahead trigger for `equal to`. Reserved
 # independently — allowing it as a name would make the lexer's behavior
 # dependent on what word follows (v1a §29, v1c §47).
-MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
+MULTI_WORD_RESERVED: frozenset[str] = frozenset({
+    "equal",
+    # Infrastructure Era: lookahead triggers for `multiplied by` and
+    # `divided by`. Reserved independently so user programs can't name a
+    # variable `multiplied` or `divided` and silently break the lexer.
+    "multiplied", "divided",
+})
 
-# All 44 reserved words. 16 verbs, 18 connectives. v3a §124 was 34
+# All 49 reserved words. 16 verbs, 19 connectives, 6 operators, 3
+# articles, 2 V2-reserved, 3 multi-word reserved. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
@@ -136,7 +156,9 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({"equal"})
 # period). Normative Era batch 2: +2 — `require` verb (enforcement)
 # and `then` connective (declared sequencing). Delegated/Epistemic Era
 # batch 3: +2 — `assign` (item-to-recipient mapping) and `expect`
-# (tracked anticipation, non-halting divergence).
+# (tracked anticipation, non-halting divergence). Infrastructure Era:
+# +5 — `by` connective, `plus`/`minus` operators, `multiplied` and
+# `divided` multi-word lookahead triggers.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -152,7 +174,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 44 reserved words; see module docstring).
+    surface (currently 49 reserved words; see module docstring).
     """
     if word in VERBS:
         return "verb"
