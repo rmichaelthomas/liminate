@@ -1,0 +1,48 @@
+#!/bin/sh
+# Liminate pre-commit gate.
+# Blocks junk, secret-like files, and oversized blobs from entering a
+# commit — the git-level enforcement counterpart to the
+# liminate-session-contracts "Pre-commit gate". Bypass intentionally with
+# `git commit --no-verify` if you truly mean it.
+set -eu
+
+staged=$(git diff --cached --name-only --diff-filter=AM)
+[ -z "$staged" ] && exit 0
+
+fail=0
+block() { printf 'pre-commit: %s\n' "$1" >&2; fail=1; }
+
+# Iterate via a heredoc (not a pipe) so `fail` survives in this shell.
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  base=${f##*/}
+
+  # Junk
+  [ "$base" = ".DS_Store" ] && block "refusing .DS_Store: $f"
+  [ "$base" = "Thumbs.db" ] && block "refusing Thumbs.db: $f"
+  case "$f" in
+    *__pycache__/*|*.pyc|*.pyo) block "refusing Python cache: $f" ;;
+  esac
+
+  # Secret-like files
+  case "$base" in
+    .env|.env.*) block "refusing env file (possible secret): $f" ;;
+    *.pem|*.key|*.p12|*.pfx) block "refusing key/credential file: $f" ;;
+    id_rsa|id_dsa|id_ecdsa|id_ed25519) block "refusing private SSH key: $f" ;;
+    credentials.json|credentials.yaml|credentials.yml) block "refusing credentials file: $f" ;;
+  esac
+
+  # Oversized staged blob (> 5 MB)
+  size=$(git cat-file -s ":$f" 2>/dev/null || echo 0)
+  if [ "$size" -gt 5242880 ]; then
+    block "refusing large file (>5MB, ${size} bytes): $f"
+  fi
+done <<EOF
+$staged
+EOF
+
+if [ "$fail" -ne 0 ]; then
+  printf 'pre-commit: commit blocked. Unstage the offending paths, or bypass with --no-verify if intentional.\n' >&2
+  exit 1
+fi
+exit 0
