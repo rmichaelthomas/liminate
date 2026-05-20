@@ -415,6 +415,27 @@ class CompareNode(ASTNode):
 
 
 @dataclass
+class TransformNode(ASTNode):
+    """Final V2 promotion — per-element list mutation.
+
+    Two modes, distinguished by whether `field` is set:
+    - Record-field mode (`field` is not None): modifies the named field
+      on each record in `target`. Grammar: `transform <field> of
+      <target> by <expression>`.
+    - Scalar-list mode (`field` is None): replaces each scalar element
+      in `target` with the expression result. Grammar: `transform
+      <target> by <expression>`.
+
+    `expression` is evaluated per element with iterator context — names
+    resolve against the current element first, then the symbol table
+    (v1c §49).
+    """
+    target: NameRef
+    expression: ASTNode
+    field: str | None = None
+
+
+@dataclass
 class ExpectNode(ASTNode):
     """Epistemic Era batch 3 — tracked anticipation verb.
 
@@ -809,6 +830,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_sort(stream)
     if verb.value == "compare":
         return _parse_compare(stream)
+    if verb.value == "transform":
+        return _parse_transform(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1623,6 +1646,99 @@ def _parse_compare(stream: TokenStream) -> CompareNode:
 
 
 # ---------------------------------------------------------------------------
+# transform (final V2 promotion)
+# ---------------------------------------------------------------------------
+
+
+def _parse_transform(stream: TokenStream) -> TransformNode:
+    """`transform <field> of <target> by <expression>`  (record-field mode)
+    or `transform <target> by <expression>`             (scalar-list mode).
+
+    Disambiguation: after consuming the first name, peek for `of`. If
+    present, the first name is the field and the name after `of` is the
+    target (record-field mode). If absent, the first name is the target
+    (scalar-list mode).
+    """
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'transform' needs a target — try: "
+            "transform <list> by <expression>, or "
+            "transform <field> of <list> by <expression>."
+        )
+
+    first_tok = stream.consume()
+    if first_tok is None:
+        raise _ParseError("I expected a name after 'transform'.")
+    if first_tok.type is TokenType.QUOTED_STRING:
+        raise _ParseError(
+            f"Names can't have spaces. Try a hyphenated name like "
+            f"'{_hyphenate(first_tok.value)}' instead."
+        )
+    if first_tok.type is not TokenType.UNKNOWN:
+        cat = reserved_category(first_tok.value)
+        if cat:
+            raise _ParseError(
+                f"The word '{first_tok.value}' is reserved in Liminate "
+                f"— it's used as a {cat}. Please use a name you've "
+                f"created."
+            )
+        raise _ParseError(
+            f"I expected a name after 'transform', not '{first_tok.value}'."
+        )
+
+    peek = stream.peek()
+
+    if peek and peek.type is TokenType.CONNECTIVE and peek.value == "of":
+        # Record-field mode: first_tok is the field name.
+        stream.consume()  # eat `of`
+        _consume_optional_article(stream)
+        target = _consume_target(stream, verb="transform")
+        field_name = first_tok.value
+
+        by_tok = stream.consume()
+        if not (
+            by_tok
+            and by_tok.type is TokenType.CONNECTIVE
+            and by_tok.value == "by"
+        ):
+            raise _ParseError(
+                "'transform' needs an expression after 'by' — try: "
+                f"transform {field_name} of {target.name} by <expression>."
+            )
+        if stream.at_end():
+            raise _ParseError("I expected an expression after 'by'.")
+        stream.push_clause("transform")
+        try:
+            expression = _parse_value(stream)
+        finally:
+            stream.pop_clause()
+        return TransformNode(
+            target=target, expression=expression, field=field_name,
+        )
+
+    if peek and peek.type is TokenType.CONNECTIVE and peek.value == "by":
+        # Scalar-list mode: first_tok is the target.
+        stream.consume()  # eat `by`
+        target = NameRef(name=first_tok.value)
+        if stream.at_end():
+            raise _ParseError("I expected an expression after 'by'.")
+        stream.push_clause("transform")
+        try:
+            expression = _parse_value(stream)
+        finally:
+            stream.pop_clause()
+        return TransformNode(target=target, expression=expression, field=None)
+
+    got = peek.value if peek else "end of line"
+    raise _ParseError(
+        f"I expected 'of' or 'by' after 'transform {first_tok.value}', "
+        f"not '{got}'. Try: transform {first_tok.value} of <list> by "
+        f"<expression>, or transform {first_tok.value} by <expression>."
+    )
+
+
+# ---------------------------------------------------------------------------
 # gather
 # ---------------------------------------------------------------------------
 
@@ -2027,6 +2143,18 @@ def _parse_atom(stream: TokenStream) -> ASTNode:
                 f"instead of \"{tok.value}\"."
             )
         return QuotedString(content=tok.value)
+    # Final V2 promotion: allow `each` as a self-reference pronoun in
+    # value position inside a `transform` clause (scalar-list mode), the
+    # same way it acts as a pronoun inside a `where` condition (v1b §37).
+    # It resolves to the current element during per-element evaluation.
+    if tok.type is TokenType.VERB and tok.value == "each":
+        if stream.in_clause("transform"):
+            return EachPronoun()
+        raise _ParseError(
+            "'each' is a verb in Liminate — it iterates a list, or "
+            "acts as a self-reference pronoun inside a 'where' "
+            "clause. It can't appear as a value on its own."
+        )
     cat = reserved_category(tok.value)
     if cat:
         raise _ParseError(

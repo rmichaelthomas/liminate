@@ -17,14 +17,14 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 18 verbs: 17 + 1 (`compare` — V2 promotion; structured comparison
-    # of two domain values into a `comparison` result record).
-    assert len(VERBS) == 18
+    # 19 verbs: 18 + 1 (`transform` — final V2 promotion; per-element
+    # list mutation via arithmetic expressions).
+    assert len(VERBS) == 19
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
         "add", "remove", "weakens", "require",
-        "assign", "expect", "sort", "compare",
+        "assign", "expect", "sort", "compare", "transform",
     }
 
 
@@ -64,11 +64,11 @@ def test_delimiter_count():
 
 
 def test_v2_reserved():
-    # 1 deferred verb remaining. `when`/`unless` moved to CONNECTIVES in
-    # v3a §108/§109; the V2 promotion build moved `compare` to VERBS.
-    # `transform` continues to be deferred.
-    assert len(V2_RESERVED) == 1
-    assert V2_RESERVED == {"transform"}
+    # V2_RESERVED is now empty. All originally deferred words have been
+    # promoted: `choose` (v2d §99), `when`/`unless` (v3a §108/§109),
+    # `compare` (V2 promotion), `transform` (final V2 promotion).
+    assert len(V2_RESERVED) == 0
+    assert V2_RESERVED == frozenset()
 
 
 def test_multi_word_reserved():
@@ -78,10 +78,10 @@ def test_multi_word_reserved():
 
 
 def test_total_reserved_count_is_51():
-    # 51 reserved words total (unchanged by the V2 promotion — `compare`
-    # moved category, not in/out of the reserved set). 18 verbs +
-    # 19 connectives + 7 operators + 3 multi-word + 3 articles +
-    # 1 v2-deferred verb = 51.
+    # 51 reserved words total (unchanged by the final V2 promotion —
+    # `transform` moved category, not in/out of the reserved set).
+    # 19 verbs + 19 connectives + 7 operators + 3 multi-word +
+    # 3 articles + 0 v2-deferred = 51.
     assert len(ALL_RESERVED) == 51
 
 
@@ -150,6 +150,8 @@ def test_verb_signature_slot_shapes():
     assert VERB_SIGNATURES["sort"] == ["target", "field"]
     # V2 promotion: `compare <left> to <right>`.
     assert VERB_SIGNATURES["compare"] == ["left", "right"]
+    # Final V2 promotion: `transform <target> by <expression>`.
+    assert VERB_SIGNATURES["transform"] == ["target", "expression"]
 
 
 def test_add_is_classified_as_verb():

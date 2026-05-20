@@ -81,6 +81,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    TransformNode,
     WeakensNode,
     WhenNode,
 )
@@ -336,6 +337,8 @@ def _check(
         _check_sort(node, symtab, live_value_names=live_value_names)
     elif isinstance(node, CompareNode):
         _check_compare(node, symtab)
+    elif isinstance(node, TransformNode):
+        _check_transform(node, symtab, live_value_names=live_value_names)
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -516,6 +519,10 @@ def _side_effect_verb(
         # V2 promotion — `compare` stores the `comparison` record as a
         # side effect; the verb phrase itself produces no value.
         return "compare"
+    if isinstance(node, TransformNode):
+        # Final V2 promotion — `transform` mutates the list in place;
+        # returns no value.
+        return "transform"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -950,6 +957,51 @@ def _check_sort(
             f"I can only sort a list. '{name}' is {_singular(entry.type)}."
         )
     if entry.type == "list_of_records" and entry.value:
+        iterator = _make_iterator(name, entry)
+        if iterator.record_schemas is not None:
+            in_all = all(node.field in s for s in iterator.record_schemas)
+            if not in_all:
+                raise _SemanticError(
+                    _schema_mismatch_message(
+                        entry, iterator.record_schemas, node.field,
+                    )
+                )
+
+
+def _check_transform(
+    node: TransformNode,
+    symtab: dict[str, SymbolEntry],
+    *,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """Final V2 promotion — validate the `transform` verb.
+
+    1. Transform is destructive (in-place), so adapter-owned live values
+       can't be transformed.
+    2. Target must exist and be a list.
+    3. Record-field mode (field set): for a known list_of_records, the
+       field must exist on every record's schema.
+    4. The expression itself is validated per-element at runtime (it may
+       reference fields on the current record); the analyzer defers
+       expression type-checking to the interpreter's numeric guards.
+    """
+    name = node.target.name
+    if live_value_names and name in live_value_names:
+        raise _SemanticError(
+            f"'{name}' is a live value provided by the domain pack. "
+            f"'transform' is destructive and can't modify it."
+        )
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
+        raise _SemanticError(
+            f"I can only transform a list. '{name}' is {_singular(entry.type)}."
+        )
+    if node.field is not None and entry.type == "list_of_records" and entry.value:
         iterator = _make_iterator(name, entry)
         if iterator.record_schemas is not None:
             in_all = all(node.field in s for s in iterator.record_schemas)
