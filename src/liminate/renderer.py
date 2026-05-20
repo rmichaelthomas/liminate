@@ -55,6 +55,7 @@ from .parser import (
     RequireNode,
     SequenceNode,
     ShowNode,
+    SortNode,
     WeakensNode,
     WhenNode,
 )
@@ -202,6 +203,14 @@ def render(node: ASTNode) -> str:
     if isinstance(node, AssignNode):
         # Delegated Era batch 3 — `assign <item> to <recipient>`.
         return f"assign {node.item.name} to {render(node.recipient)}"
+    if isinstance(node, SortNode):
+        # Infrastructure Era batch 2 — canonical form keeps the natural
+        # `in reverse` for descending; ascending is the default and
+        # omits the modifier.
+        base = f"sort the {node.target.name} by {node.field}"
+        if node.descending:
+            return f"{base} in reverse"
+        return base
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
