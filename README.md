@@ -2,7 +2,7 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 44 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 51 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.2.0**: 16 verbs, 18 connectives, 44 base reserved words, **972 tests passing** across 127 locked test sentences.
+The current build is **v0.3.0**: 19 verbs, 19 connectives, 51 base reserved words, **1053 tests passing** across 127 locked test sentences.
 
 ### The pipeline
 

@@ -1,15 +1,18 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 44 reserved words plus user-provided names and literal
+prose language: 51 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
 multi-field `each show`, descriptor preservation), v2b (composition
 return values + generalized `of`), v2c (quoting for multi-word
 strings), v2d (composition parameters with `from`, `choose` with
-`if`/`otherwise`), and v3a (event-driven listener mode — `when`,
-`unless`, `finish`, indented action blocks, domain-pack adapters).
+`if`/`otherwise`), v3a (event-driven listener mode — `when`,
+`unless`, `finish`, indented action blocks, domain-pack adapters),
+the `add`/`remove`/`weakens`/`require`/`assign`/`expect` verb
+additions, and the Infrastructure Era (`by`/`plus`/`minus`/`multiplied
+by`/`divided by` arithmetic, `sort`/`reverse`, `compare`, `transform`).
 See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
 what's intentionally not built.
 
@@ -43,7 +46,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 44 reserved words.
+- Cannot be one of the 51 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -56,7 +59,7 @@ see [Values](#values) and [Quoting](#quoting) below.
 
 ## Verbs
 
-There are ten verbs. Most statements begin with one.
+There are nineteen verbs. Most statements begin with one.
 
 ### `remember`
 
@@ -407,6 +410,83 @@ add "received" to audit-log then require amount is above 50000
 Stepwise commit applies: earlier operations remain even if a later
 one fails.
 
+### `sort`
+
+Reorders a list in place by a field. Ascending (smallest first, A–Z)
+by default; add `in reverse` (or just `reverse`) for descending.
+
+```
+sort the orders by total
+sort the orders by total in reverse
+sort the people by name
+```
+
+`sort` mutates the list — subsequent `show` or `each` sees the new
+order. Other fields on each record are preserved. Sorting a list whose
+field values mix incomparable types (some numbers, some text) is a
+runtime error.
+
+### `compare`
+
+Compares two values and stores a structured result record named
+`comparison`, with a `status` field and a `divergences` field. The
+comparison mode is inferred from the operand types.
+
+```
+compare original to revised
+show status of comparison
+show divergences of comparison
+```
+
+`status` is one of `match`, `mismatch`, `type_mismatch`, or
+`length_mismatch`. For two records, `divergences` lists the field
+names that differ (sorted); for two lists, the differing indices; for
+scalars, it is empty. The result is overwritten by the next `compare`.
+Branch on it with `choose if status of comparison is equal to "match"`.
+
+### `transform`
+
+Mutates each element of a list in place by an expression. Two forms:
+
+```
+transform total of the orders by total minus discount
+transform the scores by each plus 5
+```
+
+The first (record-field mode) rewrites the named field on every
+record; the second (scalar-list mode) replaces each element, where
+`each` refers to the current value. The expression after `by` is a
+full arithmetic expression — see [Arithmetic](#arithmetic) — evaluated
+per element with field names resolving against the current element
+first, then the symbol table.
+
+## Arithmetic
+
+Values can be combined with arithmetic operators wherever a value is
+expected (after `with`, `from`, `as`, on the right side of a
+comparison, and in `transform`/`add` items):
+
+| Operator        | Meaning        |
+|-----------------|----------------|
+| `plus`          | addition       |
+| `minus`         | subtraction    |
+| `multiplied by` | multiplication |
+| `divided by`    | division       |
+
+```
+remember a value called total from price plus tax
+remember a value called net from gross minus fees
+remember a value called pay from rate multiplied by hours
+remember a value called share from amount divided by people
+```
+
+Precedence follows PEMDAS: `multiplied by` and `divided by` bind
+tighter than `plus` and `minus`, and operators of the same tier
+evaluate left to right. So `base plus bonus multiplied by rate`
+multiplies first. There is no parenthesized grouping — break complex
+expressions into steps with `remember`. Division by zero is a runtime
+error, and arithmetic operands must be numbers.
+
 ## Lists
 
 Lists are constructed with `and` between values:
@@ -746,7 +826,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 44 reserved words) cannot be used **unquoted**
+Vocabulary words (the 51 reserved words) cannot be used **unquoted**
 as values:
 
 ```

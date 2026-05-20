@@ -25,7 +25,10 @@ If a feature is shipped, it has a locked specification, a working implementation
 | **Tile interface** | Not built — deferred. Branch C in the inception roadmap. | Inception §27 |
 | **Proposal engine** | Not built — deferred. Branch E (Narratia integration). | Inception §27 |
 | **Domain packs as product surfaces** | Not built — deferred. Healthcare/smart-home/game packs are product work; the language ships a test adapter only. | v3a §118/§126 |
-| **`transform`, `compare` verbs** | Not built — reserved slots protected, no grammar yet. | v2d §103 / v3a §124 |
+| **Arithmetic operators** | Shipped. `by`/`plus`/`minus`/`multiplied by`/`divided by`, arithmetic expressions with PEMDAS precedence in value positions. | Infrastructure Era (PR #11) |
+| **`sort` verb + `reverse`** | Shipped. In-place list reordering by a field, ascending or `in reverse`. | Infrastructure Era batch 2 (PR #12) |
+| **`compare` verb** | Shipped. Structured comparison of two values into a `comparison` record (`status` + `divergences`). Promoted from reserved. | V2 promotion (PR #13) |
+| **`transform` verb** | Shipped. Per-element list mutation via arithmetic expressions. The final V2-deferred word — `V2_RESERVED` is now empty. | V2 promotion (PR #14) |
 
 ## What is shipped
 
@@ -36,14 +39,14 @@ If a feature is shipped, it has a locked specification, a working implementation
 - **Single-threaded event queue (Phase 2).** Adapters push `(name, value)` updates into a shared FIFO. The interpreter drains one update to completion (write → re-eval → fire-eligible → cascade) before the next dequeue. (v3a §119)
 - **Edge-triggered evaluation (Phase 2).** Handlers fire on false→true transitions of their compound eligibility. Unchanged adapter updates are silently absorbed. Modifications inside an action block are coalesced by name and cascade depth-first. (v3a §113/§114)
 
-### Vocabulary (44 reserved words)
+### Vocabulary (51 reserved words)
 
-- **16 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`.
-- **18 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`.
-- **4 single-word operators:** `is`, `above`, `below`, `not`. Plus `equal` as a multi-word component (combines with `to` per inception §22).
+- **19 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`, `sort`, `compare`, `transform`.
+- **19 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`, `by`.
+- **7 single-word operators:** `is`, `above`, `below`, `not`, `plus`, `minus`, `reverse`. Plus `equal`/`multiplied`/`divided` as multi-word components (combine with `to`/`by` per inception §22).
 - **3 articles:** `the`, `a`, `an`.
 - **1 delimiter:** `:`.
-- **2 v2-deferred (not executable):** `transform`, `compare`.
+- **0 v2-deferred:** `V2_RESERVED` is now empty — `transform` and `compare` have been promoted to active verbs.
 
 ### Data types and values
 
@@ -110,7 +113,7 @@ Each item below is intentionally absent with a documented reason.
 
 - **Real-world domain packs.** Healthcare, business, home automation, legal/compliance, narrative. Each pack adds 10–15 context-specific terms plus an adapter implementation. The language ships a `TestAdapter` only — real packs are downstream product work, not language work. (v3a §118/§126)
 - **Domain pack activation via Liminate syntax.** A `use`/`load` verb that lets a program declare its adapter dependencies inline rather than via external `--pack` registration. Deferred deliberately at v3a §118.
-- **`transform` and `compare`.** Reserved-word slots protected; no grammar yet specified. These would extend the verb set if a dogfooded gap surfaces a clear use case. (v2d §103, v3a §124)
+- **`transform` and `compare`.** Shipped — both promoted from reserved slots to active verbs (PR #13, PR #14). `compare <left> to <right>` produces a structured `comparison` record; `transform` mutates list elements in place via arithmetic expressions. `V2_RESERVED` is now empty: every word designed at inception has been built. (v2d §103, v3a §124)
 
 ### Execution-model extensions (still deferred)
 
