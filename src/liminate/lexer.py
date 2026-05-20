@@ -25,8 +25,11 @@ Pipeline per BUILD_PLAN Phase 2, extended for v2c:
 4. Lowercase each UNQUOTED word (§22). Quoted content is left
    untouched so case is preserved across the lexer.
 5. Combine `equal` + `to` into a single OPERATOR token `equal_to` via
-   one-word lookahead (§22 line 426). Quoted `"equal"` does NOT combine
-   (it is a value token, not a vocabulary lookup).
+   one-word lookahead (§22 line 426). Same one-word lookahead pattern
+   produces `multiplied_by` and `divided_by` for the Infrastructure
+   Era arithmetic operators. Quoted `"equal"` / `"multiplied"` /
+   `"divided"` do NOT combine (they are value tokens, not vocabulary
+   lookups).
 6. Classify unquoted words against the vocabulary tables; quoted words
    always emit QUOTED_STRING (v2c §89). Bare unquoted unknowns fall
    back to NUMBER (digits + optional decimal point, §22 line 428) or
@@ -220,6 +223,28 @@ def _classify(cleaned: list[tuple[str, int, bool]]) -> list[Token]:
             and not cleaned[j + 1][2]
         ):
             tokens.append(Token(TokenType.OPERATOR, "equal_to", pos))
+            j += 2
+            continue
+
+        # Multi-word lookahead: `multiplied` + `by` -> `multiplied_by` operator.
+        if (
+            word == "multiplied"
+            and j + 1 < len(cleaned)
+            and cleaned[j + 1][0] == "by"
+            and not cleaned[j + 1][2]
+        ):
+            tokens.append(Token(TokenType.OPERATOR, "multiplied_by", pos))
+            j += 2
+            continue
+
+        # Multi-word lookahead: `divided` + `by` -> `divided_by` operator.
+        if (
+            word == "divided"
+            and j + 1 < len(cleaned)
+            and cleaned[j + 1][0] == "by"
+            and not cleaned[j + 1][2]
+        ):
+            tokens.append(Token(TokenType.OPERATOR, "divided_by", pos))
             j += 2
             continue
 

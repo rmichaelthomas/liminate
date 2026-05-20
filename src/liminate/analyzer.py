@@ -48,6 +48,7 @@ from typing import Any
 
 from .parser import (
     AddNode,
+    ArithmeticNode,
     AssignNode,
     ASTNode,
     BareWord,
@@ -407,6 +408,9 @@ def _check_value_expr(
     if isinstance(value_node, FieldAccessNode):
         _check_field_access(value_node, symtab)
         return
+    if isinstance(value_node, ArithmeticNode):
+        _check_arithmetic(value_node, symtab, iterator)
+        return
     if isinstance(value_node, CompositionCallNode):
         # v2b §76 — composition call in value position. v2d §97 extends
         # this with parameter-mismatch checks at the call site, before
@@ -515,6 +519,76 @@ def _side_effect_verb(
     return None
 
 
+def _check_arithmetic(
+    node: ArithmeticNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+) -> None:
+    """Infrastructure Era — validate both operands of a binary
+    arithmetic expression. Both must be numeric (or resolvable to a
+    number at runtime). QuotedString operands are rejected statically;
+    NameRef operands must exist; FieldAccessNode operands must point at
+    a numeric field; BareWord operands defer to runtime (they may
+    resolve via the iterator context). Nested ArithmeticNode operands
+    recurse.
+    """
+    _check_arithmetic_operand(node.left, symtab, iterator)
+    _check_arithmetic_operand(node.right, symtab, iterator)
+
+
+def _check_arithmetic_operand(
+    operand: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+) -> None:
+    if isinstance(operand, NumberLiteral):
+        return
+    if isinstance(operand, QuotedString):
+        raise _SemanticError(
+            f"Arithmetic only works with numbers, not text. "
+            f"'{operand.content}' is text."
+        )
+    if isinstance(operand, ArithmeticNode):
+        _check_arithmetic(operand, symtab, iterator)
+        return
+    if isinstance(operand, FieldAccessNode):
+        _check_field_access(operand, symtab)
+        entry = symtab[operand.record_name]
+        ftype = (entry.schema or {}).get(operand.field)
+        if ftype not in ("number", None, "unknown"):
+            raise _SemanticError(
+                f"Arithmetic only works with numbers, but "
+                f"'{operand.field} of {operand.record_name}' is "
+                f"{_singular(ftype)}."
+            )
+        return
+    if isinstance(operand, NameRef):
+        if operand.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{operand.name}'. "
+                f"You might need to 'remember' it first."
+            )
+        t = symtab[operand.name].type
+        if t not in ("number", "unknown"):
+            raise _SemanticError(
+                f"Arithmetic only works with numbers, but "
+                f"'{operand.name}' is {_singular(t)}."
+            )
+        return
+    if isinstance(operand, BareWord):
+        # Defer to runtime — a BareWord may resolve via the iterator
+        # context (e.g., `each ... add price multiplied by rate to ...`).
+        # If it resolves to a non-numeric, the interpreter's runtime
+        # numeric guard will produce the error.
+        return
+    if isinstance(operand, EachPronoun):
+        # Inside an iterator over scalar numbers, `each` is numeric.
+        return
+    raise _SemanticError(
+        f"Unexpected operand in arithmetic expression: {type(operand).__name__}."
+    )
+
+
 def _check_field_access(
     node: FieldAccessNode, symtab: dict[str, SymbolEntry],
 ) -> None:
@@ -598,6 +672,10 @@ def _infer_item_type(item: ASTNode, symtab: dict[str, SymbolEntry]) -> tuple[str
         _check_field_access(item, symtab)
         entry = symtab[item.record_name]
         return entry.schema[item.field], f"{item.field} of {item.record_name}"
+    if isinstance(item, ArithmeticNode):
+        # Infrastructure Era — list items may be arithmetic expressions.
+        _check_arithmetic(item, symtab, iterator=None)
+        return "number", "arithmetic expression"
     raise _SemanticError(f"Unexpected list item {type(item).__name__}.")
 
 
@@ -968,6 +1046,11 @@ def _resolve_value(
             entry.schema[value_node.field],
             f"{value_node.field} of {value_node.record_name}",
         )
+    if isinstance(value_node, ArithmeticNode):
+        # Infrastructure Era — arithmetic on the right-hand side of a
+        # condition. Result type is always number.
+        _check_arithmetic(value_node, symtab, iterator)
+        return "number", "arithmetic expression"
     raise _SemanticError("Unexpected value in condition.")
 
 
@@ -1603,6 +1686,11 @@ def _infer_add_item_type(
                 f"You might need to 'remember' it first."
             )
         return symtab[item.name].type, item.name
+    if isinstance(item, ArithmeticNode):
+        # Infrastructure Era — `add <expr> to <list>` accepts arithmetic
+        # expressions; the result is always numeric.
+        _check_arithmetic(item, symtab, iterator)
+        return "number", "arithmetic expression"
     raise _SemanticError(f"Unexpected item for 'add': {type(item).__name__}.")
 
 
@@ -1640,6 +1728,11 @@ def _resolve_choose_operand(
             "'each' only refers to the current item inside an 'each' or "
             "'where' clause. In 'choose', name the value directly."
         )
+    if isinstance(node, ArithmeticNode):
+        # Infrastructure Era — arithmetic operands inside `choose` /
+        # `require` / `expect` conditions resolve to numbers.
+        _check_arithmetic(node, symtab, iterator=None)
+        return "number", "arithmetic expression"
     raise _SemanticError("Unexpected operand in 'choose' condition.")
 
 
