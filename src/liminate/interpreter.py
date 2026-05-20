@@ -95,6 +95,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    TransformNode,
     WeakensNode,
     WhenNode,
 )
@@ -570,6 +571,8 @@ def _exec_op(
         return _exec_sort(node, symtab)
     if isinstance(node, CompareNode):
         return _exec_compare(node, symtab, current_item)
+    if isinstance(node, TransformNode):
+        return _exec_transform(node, symtab)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -1067,6 +1070,54 @@ def _exec_sort(node: SortNode, symtab: dict[str, SymbolEntry]) -> list[str]:
             f"I can't sort '{node.target.name}' by '{node.field}' — "
             f"the values are a mix of types that can't be compared."
         )
+    return []
+
+
+def _exec_transform(
+    node: TransformNode,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """Final V2 promotion — per-element in-place list mutation.
+
+    Record-field mode (`node.field` set): re-evaluate the expression for
+    each record with that record as the iterator context and write the
+    result back to the named field. Scalar-list mode (`node.field` None):
+    re-evaluate the expression with the current scalar element as the
+    iterator context (the `each` pronoun resolves to it) and replace the
+    element.
+
+    The per-element evaluator is `_eval_arithmetic_operand`, which
+    resolves a bare field name against the current record dict and
+    delegates everything else (arithmetic, field access, the `each`
+    pronoun, symbol-table names) to `_evaluate_expression` — the same
+    iterator-context resolution `each`/`where`/`add` use. Silent.
+    """
+    entry = symtab[node.target.name]
+    the_list = entry.value
+    if not the_list:
+        return []
+
+    if node.field is not None:
+        for i, item in enumerate(the_list):
+            if not isinstance(item, dict):
+                raise _RuntimeError(
+                    f"I can only transform fields on records. "
+                    f"Item {i + 1} in '{node.target.name}' is "
+                    f"{_format_scalar(item)}."
+                )
+            if node.field not in item:
+                raise _RuntimeError(
+                    f"Record {i + 1} in '{node.target.name}' doesn't "
+                    f"have a field called '{node.field}'."
+                )
+            item[node.field] = _eval_arithmetic_operand(
+                node.expression, symtab, item,
+            )
+    else:
+        for i in range(len(the_list)):
+            the_list[i] = _eval_arithmetic_operand(
+                node.expression, symtab, the_list[i],
+            )
     return []
 
 

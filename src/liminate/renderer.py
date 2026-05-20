@@ -57,6 +57,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    TransformNode,
     WeakensNode,
     WhenNode,
 )
@@ -215,6 +216,16 @@ def render(node: ASTNode) -> str:
     if isinstance(node, CompareNode):
         # V2 promotion — `compare <left> to <right>`.
         return f"compare {render(node.left)} to {render(node.right)}"
+    if isinstance(node, TransformNode):
+        # Final V2 promotion — record-field mode renders the `<field> of`
+        # prefix; scalar-list mode omits it.
+        expr_str = render(node.expression)
+        if node.field is not None:
+            return (
+                f"transform {node.field} of {render(node.target)} "
+                f"by {expr_str}"
+            )
+        return f"transform {render(node.target)} by {expr_str}"
 
     if isinstance(node, PackVerbNode):
         # v4a §137 + v2: pack verbs render as `<word> [<conn>] <value>...`
