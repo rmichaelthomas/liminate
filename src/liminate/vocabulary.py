@@ -35,6 +35,9 @@ Sources:
   total) — `by` connective, `plus`/`minus` operators,
   `multiplied by`/`divided by` multi-word operators. Arithmetic
   expressions with PEMDAS precedence.
+- Infrastructure Era batch 2 (17 verbs, 19 connectives, 51 reserved
+  words total) — `sort` verb (in-place list reordering by field) and
+  `reverse` operator (descending sort modifier).
 """
 
 from dataclasses import dataclass
@@ -82,6 +85,9 @@ VERBS: frozenset[str] = frozenset({
     # Epistemic Era batch 3: `expect <condition>` evaluates a condition
     # and emits a divergence output line on failure; never halts.
     "expect",
+    # Infrastructure Era batch 2: `sort` reorders a list in place by a
+    # field value. Default ascending; `reverse` modifier for descending.
+    "sort",
 })
 
 # v1 / v2a / v2d / v3a connectives. v2a §68 added `of`. v2d §99 added
@@ -115,6 +121,10 @@ OPERATORS: frozenset[str] = frozenset({
     # (combined by the lexer; `multiplied` and `divided` live in
     # MULTI_WORD_RESERVED).
     "plus", "minus",
+    # Infrastructure Era batch 2: `reverse` modifies `sort` direction
+    # from ascending (default) to descending. Lives in OPERATORS so the
+    # name-position check rejects it as a variable name.
+    "reverse",
 })
 
 # v1 articles. `an` added in v1c §47 (previously the table listed `the`, `a`).
@@ -145,7 +155,7 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
     "multiplied", "divided",
 })
 
-# All 49 reserved words. 16 verbs, 19 connectives, 6 operators, 3
+# All 51 reserved words. 17 verbs, 19 connectives, 7 operators, 3
 # articles, 2 V2-reserved, 3 multi-word reserved. v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
@@ -158,7 +168,9 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # batch 3: +2 — `assign` (item-to-recipient mapping) and `expect`
 # (tracked anticipation, non-halting divergence). Infrastructure Era:
 # +5 — `by` connective, `plus`/`minus` operators, `multiplied` and
-# `divided` multi-word lookahead triggers.
+# `divided` multi-word lookahead triggers. Infrastructure Era batch 2:
+# +2 — `sort` verb (in-place list reordering by a field) and `reverse`
+# operator (descending sort modifier).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
 )
@@ -174,7 +186,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 49 reserved words; see module docstring).
+    surface (currently 51 reserved words; see module docstring).
     """
     if word in VERBS:
         return "verb"
@@ -368,6 +380,8 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     # Epistemic Era batch 3: `expect <condition>`. Same condition
     # grammar as `require` / `choose if` / `where`.
     "expect":   ["condition"],
+    # Infrastructure Era batch 2: `sort <target> by <field> [reverse]`.
+    "sort":     ["target", "field"],
 }
 
 

@@ -93,6 +93,7 @@ from .parser import (
     RequireNode,
     SequenceNode,
     ShowNode,
+    SortNode,
     WeakensNode,
     WhenNode,
 )
@@ -564,6 +565,8 @@ def _exec_op(
         return _exec_expect(node, symtab, current_item)
     if isinstance(node, AssignNode):
         return _exec_assign(node, symtab, current_item)
+    if isinstance(node, SortNode):
+        return _exec_sort(node, symtab)
     if isinstance(node, FinishNode):
         # v3a §112 — immediate and total. The exception unwinds out of
         # any surrounding choose/sequence/composition straight to the
@@ -1016,6 +1019,44 @@ def _exec_filter(node: FilterNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     entry = symtab[node.target.name]
     kept = [item for item in entry.value if _eval_condition(node.condition, item, symtab)]
     entry.value[:] = kept  # in-place per §24 line 478
+    return []
+
+
+def _exec_sort(node: SortNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+    """Infrastructure Era batch 2 — in-place sort by a record field.
+
+    Silent like `filter`. Empty lists are a no-op. Non-record items
+    surface as runtime errors so the user gets a clear message instead
+    of a Python exception. Mixed-type field values (some numeric, some
+    text) raise TypeError under Python's stable sort — caught and
+    re-raised as a runtime error.
+    """
+    entry = symtab[node.target.name]
+    the_list = entry.value
+    if not the_list:
+        return []
+    for i, item in enumerate(the_list):
+        if not isinstance(item, dict):
+            raise _RuntimeError(
+                f"I can only sort a list of records by a field. "
+                f"Item {i + 1} in '{node.target.name}' is "
+                f"{_format_scalar(item)}."
+            )
+        if node.field not in item:
+            raise _RuntimeError(
+                f"Record {i + 1} in '{node.target.name}' doesn't "
+                f"have a field called '{node.field}'."
+            )
+    try:
+        the_list.sort(
+            key=lambda r: r[node.field],
+            reverse=node.descending,
+        )
+    except TypeError:
+        raise _RuntimeError(
+            f"I can't sort '{node.target.name}' by '{node.field}' — "
+            f"the values are a mix of types that can't be compared."
+        )
     return []
 
 

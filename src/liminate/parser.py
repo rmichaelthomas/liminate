@@ -389,6 +389,19 @@ class ArithmeticNode(ASTNode):
 
 
 @dataclass
+class SortNode(ASTNode):
+    """Infrastructure Era batch 2 — sort a list in place by a field.
+
+    `target` is the list to sort. `field` is the field name to sort by.
+    `descending` is True when the `reverse` modifier is present
+    (optionally preceded by the word `in`).
+    """
+    target: NameRef
+    field: str
+    descending: bool = False
+
+
+@dataclass
 class ExpectNode(ASTNode):
     """Epistemic Era batch 3 — tracked anticipation verb.
 
@@ -779,6 +792,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_assign(stream)
     if verb.value == "expect":
         return _parse_expect(stream)
+    if verb.value == "sort":
+        return _parse_sort(stream)
     if verb.value == "finish":
         # v3a §112 — slot-less verb. Phase 1 semantic check (in the
         # analyzer) rejects calls outside an action-block context; here
@@ -1476,6 +1491,88 @@ def _parse_expect(stream: TokenStream) -> ExpectNode:
     finally:
         stream.pop_clause()
     return ExpectNode(condition=condition)
+
+
+# ---------------------------------------------------------------------------
+# sort (Infrastructure Era batch 2)
+# ---------------------------------------------------------------------------
+
+
+def _parse_sort(stream: TokenStream) -> SortNode:
+    """`sort [article]? <target> by <field> [in]? [reverse]?`.
+
+    The optional `in` before `reverse` is NOT a reserved word — the
+    parser consumes it as an UNKNOWN token only when `reverse` follows.
+    This keeps the natural English phrasing (`sort by total in reverse`)
+    while leaving `in` available as a user variable name elsewhere.
+    """
+    _consume_optional_article(stream)
+    if stream.at_end():
+        raise _ParseError(
+            "'sort' needs a target list and a field — try: "
+            "sort <list> by <field>."
+        )
+    target = _consume_target(stream, verb="sort")
+
+    by_tok = stream.consume()
+    if not (
+        by_tok
+        and by_tok.type is TokenType.CONNECTIVE
+        and by_tok.value == "by"
+    ):
+        raise _ParseError(
+            "'sort' needs a field to sort by — try: "
+            "sort <list> by <field>."
+        )
+
+    field_tok = stream.consume()
+    if field_tok is None:
+        raise _ParseError("I expected a field name after 'by'.")
+    if field_tok.type is TokenType.QUOTED_STRING:
+        raise _ParseError(
+            f"Field names can't have spaces. Try a hyphenated name "
+            f"like '{_hyphenate(field_tok.value)}' instead."
+        )
+    if field_tok.type is not TokenType.UNKNOWN:
+        cat = reserved_category(field_tok.value)
+        if cat:
+            raise _ParseError(
+                f"The word '{field_tok.value}' is reserved in Liminate "
+                f"— it's used as a {cat}. Please use a field name "
+                f"from your records."
+            )
+        raise _ParseError(
+            f"I expected a field name after 'by', not '{field_tok.value}'."
+        )
+    field_name = field_tok.value
+
+    descending = False
+    peek = stream.peek()
+    if (
+        peek
+        and peek.type is TokenType.UNKNOWN
+        and peek.value == "in"
+    ):
+        # Only consume the `in` if `reverse` follows it. A lone trailing
+        # `in` is left in the stream for the outer parser to surface.
+        peek2 = stream.peek(1)
+        if (
+            peek2
+            and peek2.type is TokenType.OPERATOR
+            and peek2.value == "reverse"
+        ):
+            stream.consume()  # in
+            stream.consume()  # reverse
+            descending = True
+    elif (
+        peek
+        and peek.type is TokenType.OPERATOR
+        and peek.value == "reverse"
+    ):
+        stream.consume()  # reverse
+        descending = True
+
+    return SortNode(target=target, field=field_name, descending=descending)
 
 
 # ---------------------------------------------------------------------------

@@ -79,6 +79,7 @@ from .parser import (
     RequireNode,
     SequenceNode,
     ShowNode,
+    SortNode,
     WeakensNode,
     WhenNode,
 )
@@ -330,6 +331,8 @@ def _check(
             in_action_block=in_action_block,
             live_value_names=live_value_names,
         )
+    elif isinstance(node, SortNode):
+        _check_sort(node, symtab, live_value_names=live_value_names)
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -502,6 +505,10 @@ def _side_effect_verb(
         # Delegated Era batch 3 — `assign` stores into the symbol
         # table; returns no value.
         return "assign"
+    if isinstance(node, SortNode):
+        # Infrastructure Era batch 2 — `sort` reorders the list in
+        # place; returns no value.
+        return "sort"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -900,6 +907,51 @@ def _check_filter(
     entry = _require_list(name, symtab, verb="filter")
     iterator = _make_iterator(name, entry)
     _check_condition(node.condition, symtab, iterator)
+
+
+def _check_sort(
+    node: SortNode,
+    symtab: dict[str, SymbolEntry],
+    *,
+    live_value_names: set[str] | None = None,
+) -> None:
+    """Infrastructure Era batch 2 — validate the `sort` verb.
+
+    1. Sort is destructive (in-place reorder), so adapter-owned live
+       values cannot be sorted.
+    2. Target must exist and be a list.
+    3. If the list is a known list_of_records and not empty, the field
+       must exist on every record's schema. Empty lists and lists with
+       no record schema (e.g. flat scalar lists) defer the field check
+       to runtime — sorting a non-record list is a runtime error so the
+       message can name the offending item.
+    """
+    name = node.target.name
+    if live_value_names and name in live_value_names:
+        raise _SemanticError(
+            f"'{name}' is a live value provided by the domain pack. "
+            f"'sort' is destructive and can't modify it."
+        )
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
+        raise _SemanticError(
+            f"I can only sort a list. '{name}' is {_singular(entry.type)}."
+        )
+    if entry.type == "list_of_records" and entry.value:
+        iterator = _make_iterator(name, entry)
+        if iterator.record_schemas is not None:
+            in_all = all(node.field in s for s in iterator.record_schemas)
+            if not in_all:
+                raise _SemanticError(
+                    _schema_mismatch_message(
+                        entry, iterator.record_schemas, node.field,
+                    )
+                )
 
 
 def _check_keep(node: KeepNode, symtab: dict[str, SymbolEntry]) -> None:
