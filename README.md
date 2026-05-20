@@ -160,31 +160,6 @@ The locked test sentences are simultaneously test cases and grammar artifacts â€
 - **Authorize, don't author.** The on-ramp is modification of a working program, not authorship from a blank file.
 - **The AST is the source of truth.** The parser reconstructs a canonical English sentence so you see what was understood before it runs.
 
-## Releasing a new version
-
-When a build session ships new vocabulary or features:
-
-```bash
-# 1. Bump version in pyproject.toml
-sed -i '' 's/version = "OLD"/version = "NEW"/' pyproject.toml
-
-# 2. Commit and push
-git add pyproject.toml
-git commit -m "bump version to NEW"
-git push origin main
-
-# 3. Build and publish to PyPI
-python -m build
-python -m twine upload dist/liminate-NEW*
-
-# 4. Tag and create GitHub release
-git tag vNEW
-git push origin vNEW
-gh release create vNEW --title "vNEW â€” Title" --notes "Release notes here."
-```
-
-Requires `build`, `twine`, and `gh` CLI installed. PyPI credentials via `~/.pypirc` or environment variables.
-
 ## License
 
 Apache 2.0. See [LICENSE](LICENSE).
