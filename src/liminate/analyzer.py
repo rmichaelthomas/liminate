@@ -55,6 +55,7 @@ from .parser import (
     ChooseBranch,
     ChooseNode,
     CombineNode,
+    CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
     ConditionNode,
@@ -333,6 +334,8 @@ def _check(
         )
     elif isinstance(node, SortNode):
         _check_sort(node, symtab, live_value_names=live_value_names)
+    elif isinstance(node, CompareNode):
+        _check_compare(node, symtab)
     elif isinstance(node, FinishNode):
         # v3a §112: `finish` is legal only inside a `when` action block
         # (directly, in a `choose` branch, or in a composition called
@@ -509,6 +512,10 @@ def _side_effect_verb(
         # Infrastructure Era batch 2 — `sort` reorders the list in
         # place; returns no value.
         return "sort"
+    if isinstance(node, CompareNode):
+        # V2 promotion — `compare` stores the `comparison` record as a
+        # side effect; the verb phrase itself produces no value.
+        return "compare"
     if isinstance(node, (RememberListNode, RememberRecordNode, RememberCompositionNode)):
         return "remember"
     if isinstance(node, RememberValueNode):
@@ -952,6 +959,22 @@ def _check_sort(
                         entry, iterator.record_schemas, node.field,
                     )
                 )
+
+
+def _check_compare(
+    node: CompareNode,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """V2 promotion — validate the `compare` verb. Both operands must
+    exist in the symbol table. No cross-operand type constraint: the
+    interpreter handles type mismatches gracefully (`type_mismatch`
+    status), so the analyzer only checks existence."""
+    for ref in (node.left, node.right):
+        if ref.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{ref.name}'. "
+                f"You might need to 'remember' it first."
+            )
 
 
 def _check_keep(node: KeepNode, symtab: dict[str, SymbolEntry]) -> None:
