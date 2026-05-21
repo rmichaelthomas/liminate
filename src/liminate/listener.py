@@ -508,6 +508,18 @@ class _Runner:
             right = self._eval_operand(cond.value)
             if left is _UNSET or right is _UNSET:
                 return False
+            if cond.op == "within":
+                # Issue #19: |field - target| <= tolerance. `value` is the
+                # tolerance, `value2` the target.
+                target = self._eval_operand(cond.value2)
+                if target is _UNSET:
+                    return False
+                if any(
+                    isinstance(v, bool) or not isinstance(v, (int, float))
+                    for v in (left, right, target)
+                ):
+                    return False
+                return abs(left - target) <= right
             return _apply_op(cond.op, left, right)
         return False
 

@@ -219,6 +219,10 @@ def _walk_dependencies(
     if isinstance(node, ConditionNode):
         _walk_dependencies(node.field, seen, ordered)
         _walk_dependencies(node.value, seen, ordered)
+        # Issue #19: the `within` target operand is also a dependency, so a
+        # Phase 2 `when` handler watches the target variable for changes.
+        if node.value2 is not None:
+            _walk_dependencies(node.value2, seen, ordered)
     elif isinstance(node, CompoundConditionNode):
         _walk_dependencies(node.left, seen, ordered)
         _walk_dependencies(node.right, seen, ordered)
@@ -1710,9 +1714,28 @@ def _eval_condition(
         return bool(l) or bool(_eval_condition(cond.right, current_item, symtab))
     if isinstance(cond, ConditionNode):
         field_val = _eval_field(cond.field, current_item, symtab)
+        if cond.op == "within":
+            # Issue #19: |field - target| <= tolerance.
+            tolerance = _eval_value(cond.value, current_item, symtab)
+            target = _eval_value(cond.value2, current_item, symtab)
+            return _within_tolerance(field_val, tolerance, target)
         value_val = _eval_value(cond.value, current_item, symtab)
         return _apply_op(cond.op, field_val, value_val)
     raise _RuntimeError(f"Can't evaluate condition {type(cond).__name__}.")
+
+
+def _within_tolerance(field_val: Any, tolerance: Any, target: Any) -> bool:
+    """Issue #19 — numeric tolerance comparison: True when
+    |field_val - target| <= tolerance. All three operands must be numbers;
+    a non-number produces a friendly runtime error rather than a Python
+    TypeError."""
+    for label, v in (("value", field_val), ("amount", tolerance), ("target", target)):
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise _RuntimeError(
+                f"'within' compares numbers, but the {label} is "
+                f"{_format_scalar(v)}."
+            )
+    return abs(field_val - target) <= tolerance
 
 
 def _eval_field(field_node: ASTNode, current_item: Any, symtab) -> Any:

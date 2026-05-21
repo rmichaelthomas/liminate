@@ -210,9 +210,23 @@ flat lists, `each is <operator> <value>`:
 | `is not above`  | less than or equal to (includes the boundary)    |
 | `is not below`  | greater than or equal to (includes the boundary) |
 | `is not equal to` | not equal                                      |
+| `is within N of M` | numeric tolerance: `\|field − M\| ≤ N`          |
+| `includes`      | list membership (`<list> includes <value>`)      |
+| `not includes`  | absence from a list                              |
 
 Note that `not above N` means `≤ N` — the boundary value `N` is
 *kept*, not removed. This is intentional and distinct from `below N`.
+
+`is within N of M` is the numeric-tolerance comparison: it is true when
+the field is within `N` of the target `M` (the boundary is inclusive).
+All three operands must be numbers. `N` may be a literal or a name; `M`
+may be any value expression, including a field access:
+
+```
+require amount is within 5 of target
+keep the readings where each is within 2 of baseline
+choose if amount is within tol of total of order1: show "close enough"
+```
 
 **Compound conditions** use `and` and `or` inside the same `where`:
 

@@ -466,6 +466,9 @@ def _render_condition(node: ConditionNode) -> str:
         return f"{field} is {_OP_WORDS[node.op]} {value}"
     if node.op in _NEGATED_OPS:
         return f"{field} is {_NEGATED_OPS[node.op]} {value}"
+    if node.op == "within":
+        # Issue #19: `<field> is within <amount> of <target>`.
+        return f"{field} is within {value} of {render(node.value2)}"
     if node.op == "includes":
         return f"{field} includes {value}"
     if node.op == "not_includes":
