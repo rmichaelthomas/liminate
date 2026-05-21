@@ -1733,6 +1733,14 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
     cat = reserved_category(peek.value)
     if cat:
         if peek.value == "each":
+            # Issue #20: inside an `each` body, `show each` displays the
+            # current iterator item — the natural pronoun form for the same
+            # semantics as a bare `show` (target=None, v1c §49). Outside an
+            # `each` body there is no iterator, so the pronoun is still an
+            # error.
+            if in_each:
+                stream.consume()  # eat the `each` pronoun
+                return ShowNode(target=None)
             raise _ParseError(
                 "'each' is a verb in Liminate — it iterates a list, or "
                 "acts as a self-reference pronoun inside a 'where' "
