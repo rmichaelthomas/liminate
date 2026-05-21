@@ -1060,6 +1060,14 @@ def _check_condition(
         _require_numeric(field_type, field_label, cond.op)
         _require_numeric(value_type, value_label, cond.op)
         return
+    if cond.op == "within":
+        # Issue #19: all three operands of `is within <amount> of <target>`
+        # must be numeric.
+        _require_numeric(field_type, field_label, "within")
+        _require_numeric(value_type, value_label, "within")
+        target_type, target_label = _resolve_value(cond.value2, symtab, iterator)
+        _require_numeric(target_type, target_label, "within")
+        return
     if cond.op == "equal_to":
         return  # any same-type comparison; analyzer doesn't enforce
     if cond.op in ("includes", "not_includes"):
@@ -1382,6 +1390,13 @@ def _check_choose_condition(
     if cond.op in ("above", "below"):
         _require_numeric(field_type, field_label, cond.op)
         _require_numeric(value_type, value_label, cond.op)
+        return
+    if cond.op == "within":
+        # Issue #19 — numeric tolerance, also valid in `choose if`.
+        _require_numeric(field_type, field_label, "within")
+        _require_numeric(value_type, value_label, "within")
+        target_type, target_label = _resolve_choose_operand(cond.value2, symtab)
+        _require_numeric(target_type, target_label, "within")
         return
     if cond.op in ("includes", "not_includes"):
         return
