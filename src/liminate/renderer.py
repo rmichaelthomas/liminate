@@ -72,7 +72,25 @@ _WHEN_BLOCK_INDENT = "  "
 
 
 def render(node: ASTNode) -> str:
-    """Canonical (paren-free) prose rendering of an AST node."""
+    """Canonical (paren-free) prose rendering of an AST node.
+
+    Meta-Structural Era batch 2: if the node carries a `because`
+    rationale (an optional, inert metadata field present on every verb
+    statement node), append the canonical `because "<rationale>"` clause.
+    Sub-expression nodes (conditions, values) and `SequenceNode` have no
+    `rationale` field, so the clause is only ever appended to a statement.
+    A statement nested inside a sequence/choose/each/when action renders
+    its own rationale through the recursive `render` call.
+    """
+    rendered = _render_node(node)
+    rationale = getattr(node, "rationale", None)
+    if rationale is not None:
+        return f'{rendered} because "{rationale}"'
+    return rendered
+
+
+def _render_node(node: ASTNode) -> str:
+    """Render an AST node without its `because` rationale (see `render`)."""
     if isinstance(node, AboutNode):
         # Meta-Structural Era: quote multi-word topics, leave a single
         # (e.g. hyphenated) word bare.

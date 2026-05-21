@@ -30,16 +30,16 @@ def test_verb_count():
 
 
 def test_connective_count():
-    # 19 connectives: 18 + 1 (`by` — Infrastructure Era; introduces the
-    # second operand of `multiplied by` / `divided by` and is reserved
-    # standalone for future use by `transform`).
-    assert len(CONNECTIVES) == 19
+    # 20 connectives: 19 + 1 (`because` — Meta-Structural Era batch 2;
+    # attaches a quoted rationale to a verb statement as inert AST
+    # metadata, statement-terminal, per-statement only per MS-Q2).
+    assert len(CONNECTIVES) == 20
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
         "when", "unless", "includes", "within", "over", "then",
-        "by",
+        "by", "because",
     }
 
 
@@ -78,12 +78,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal", "multiplied", "divided"}
 
 
-def test_total_reserved_count_is_52():
-    # 52 reserved words total. Meta-Structural Era added `about`
-    # (DECLARATIONS, the first declaration). 19 verbs + 19 connectives
-    # + 7 operators + 3 multi-word + 3 articles + 0 v2-deferred +
-    # 1 declaration = 52.
-    assert len(ALL_RESERVED) == 52
+def test_total_reserved_count_is_53():
+    # 53 reserved words total. Meta-Structural Era batch 2 added
+    # `because` (CONNECTIVES). 19 verbs + 20 connectives + 7 operators
+    # + 3 multi-word + 3 articles + 0 v2-deferred + 1 declaration = 53.
+    assert len(ALL_RESERVED) == 53
 
 
 def test_reserved_sets_are_disjoint():

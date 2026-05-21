@@ -51,6 +51,12 @@ Sources:
   connectives. `about` declares the program's topic as inert metadata:
   single, first-line-only (MS-Q1), stored as program-level metadata on
   the manifest — not in the symbol table, not executable.
+- Meta-Structural Era batch 2 (19 verbs, 20 connectives, 1 declaration,
+  53 reserved words total) — `because` connective. Attaches a quoted
+  rationale to any verb statement as inert metadata stored on the AST
+  node. Per-statement only (MS-Q2): statement-terminal, consumed after
+  all verb slots are filled. Visible to rendering, inspect, and Receipts;
+  not executable, not in the symbol table.
 """
 
 from dataclasses import dataclass
@@ -135,6 +141,12 @@ CONNECTIVES: frozenset[str] = frozenset({
     # multi-word arithmetic operators (`multiplied by`, `divided by`).
     # Reserved standalone for future use by the `transform` verb.
     "by",
+    # Meta-Structural Era batch 2: `because` attaches a quoted rationale
+    # to any verb statement. The rationale is inert metadata stored on
+    # the AST node — not executable, not in the symbol table.
+    # Per-statement only (MS-Q2). Statement-terminal: consumed after all
+    # verb slots are filled.
+    "because",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -187,7 +199,7 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # table. Single, first-line-only (MS-Q1).
 DECLARATIONS: frozenset[str] = frozenset({"about"})
 
-# All 52 reserved words. 19 verbs, 19 connectives, 7 operators, 3
+# All 53 reserved words. 19 verbs, 20 connectives, 7 operators, 3
 # articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
 # v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
@@ -210,6 +222,8 @@ DECLARATIONS: frozenset[str] = frozenset({"about"})
 # V2-reserved 1→0); the total stays 51 and V2_RESERVED is now empty.
 # Meta-Structural Era: +1 — `about` declaration (DECLARATIONS), the
 # first member of the new declaration grammatical category. Total 52.
+# Meta-Structural Era batch 2: +1 — `because` connective (attaches a
+# quoted rationale to a verb statement as inert AST metadata). Total 53.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
     | MULTI_WORD_RESERVED | DECLARATIONS
