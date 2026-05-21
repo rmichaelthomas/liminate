@@ -39,6 +39,18 @@ def reorder(tokens: list[Token]) -> ReorderOutput:
     if not tokens:
         return tokens
 
+    # Meta-Structural Era batch 3: a statement-initial `inherited` operator
+    # is a pass-through prefix. The canonical verb statement begins after
+    # it, so reorder the remainder and re-prepend `inherited` unchanged.
+    if (
+        tokens[0].type is TokenType.OPERATOR
+        and tokens[0].value == "inherited"
+    ):
+        rest = reorder(tokens[1:])
+        if isinstance(rest, list):
+            return [tokens[0]] + rest
+        return rest  # propagate a LiminateResult error from the remainder
+
     verb_idx = _find_first_verb(tokens)
     if verb_idx is None:
         # Defer to the parser (named-composition fallback per v1b §41,
