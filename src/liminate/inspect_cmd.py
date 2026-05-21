@@ -15,6 +15,7 @@ Format (plain text, primary):
     === Liminate Executable ===
     Version: Liminate <version>
     Source: <source_filename>
+    Topic: <about-topic>          (only when an `about` declaration is present)
 
     --- Source ---
     <verbatim>
@@ -55,6 +56,10 @@ def _format_plain(m: dict[str, Any]) -> str:
     parts.append("=== Liminate Executable ===")
     parts.append(f"Version: Liminate {m.get('liminate_version', '?')}")
     parts.append(f"Source: {m.get('source_filename', '?')}")
+    # Meta-Structural Era: the `about` declaration's topic, when present.
+    topic = m.get("topic")
+    if topic:
+        parts.append(f"Topic: {topic}")
     parts.append("")
     parts.append("--- Source ---")
     parts.append(m.get("source_text", "").rstrip("\n"))

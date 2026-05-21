@@ -23,6 +23,7 @@ required to round-trip through the parser.
 from __future__ import annotations
 
 from .parser import (
+    AboutNode,
     AddNode,
     ArithmeticNode,
     AssignNode,
@@ -72,6 +73,12 @@ _WHEN_BLOCK_INDENT = "  "
 
 def render(node: ASTNode) -> str:
     """Canonical (paren-free) prose rendering of an AST node."""
+    if isinstance(node, AboutNode):
+        # Meta-Structural Era: quote multi-word topics, leave a single
+        # (e.g. hyphenated) word bare.
+        if " " in node.topic:
+            return f'about "{node.topic}"'
+        return f"about {node.topic}"
     if isinstance(node, NumberLiteral):
         return _fmt_number(node.value)
     if isinstance(node, BareWord):

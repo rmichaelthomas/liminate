@@ -47,7 +47,9 @@ from .parser import (
     RememberCompositionNode,
     SequenceNode,
     WhenNode,
+    _ParseError,
     parse,
+    parse_about,
     parse_when_block,
 )
 from .renderer import render
@@ -86,11 +88,16 @@ class BuildManifest:
     canonical: list[str]
     packs: list[PackManifest]
     vocabulary_in_use: dict[str, list[str]]  # {"verbs": [...], "connectives": [...], "operators": [...]}
+    # Meta-Structural Era: the `about` declaration's topic, or None when
+    # the program has no `about` line. Inert metadata, surfaced by
+    # `--inspect` and the JSON manifest.
+    topic: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "liminate_version": self.liminate_version,
             "source_filename": self.source_filename,
+            "topic": self.topic,
             "source_text": self.source_text,
             "canonical": list(self.canonical),
             "packs": [p.as_summary() for p in self.packs],
@@ -116,7 +123,7 @@ class BuildError(Exception):
         self.message = message
 
 
-def _validate_and_render(source: str) -> tuple[list[str], list[Any]]:
+def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]:
     """Run lex → reorder → parse over each top-level statement (and each
     `when` block) and accumulate canonical renderings + parsed ASTs.
 
@@ -126,6 +133,9 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any]]:
             output preserves paragraph structure).
         asts: the parsed AST for each non-blank statement (used by the
             caller for the Q2 reactive-without-adapter check).
+        topic: the `about` declaration's topic string, or None. Meta-
+            Structural Era — `about` is consumed before the normal
+            pipeline (first-line-only, MS-Q1) and surfaced as metadata.
 
     Raises:
         BuildError on any ERROR_PARSE / ERROR_SEMANTIC / unresolved AMBER
@@ -135,6 +145,8 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any]]:
     canonical: list[str] = []
     asts: list[Any] = []
     composition_names: set[str] = set()
+    topic: str | None = None
+    first_eligible_seen = False
 
     i = 0
     while i < len(lines):
@@ -144,6 +156,31 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any]]:
             canonical.append("")
             i += 1
             continue
+
+        # Meta-Structural Era: an `about` declaration is consumed as
+        # metadata before the normal pipeline. It must be the first
+        # eligible (non-blank, non-comment) line and may appear at most
+        # once (MS-Q1).
+        try:
+            decl_tokens = tokenize(line)
+        except LexError as e:
+            raise BuildError(f"line {i + 1}: {e.message}") from None
+        if decl_tokens and decl_tokens[0].type is TokenType.DECLARATION:
+            if first_eligible_seen or topic is not None:
+                raise BuildError(
+                    f"line {i + 1}: 'about' is a declaration that must be "
+                    f"the first line of the program (after any comments). "
+                    f"Only one 'about' declaration is allowed."
+                )
+            try:
+                node = parse_about(decl_tokens)
+            except _ParseError as e:
+                raise BuildError(f"line {i + 1}: {e.message}") from None
+            topic = node.topic
+            first_eligible_seen = True
+            i += 1
+            continue
+        first_eligible_seen = True
 
         try:
             indent = leading_indent(line)
@@ -192,7 +229,7 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any]]:
         _collect_composition_names(ast, composition_names)
         i += 1
 
-    return canonical, asts
+    return canonical, asts, topic
 
 
 def _parse_line(line: str, comp_names: set[str], *, line_no: int) -> Any:
@@ -538,7 +575,7 @@ def build(
         return 2
 
     try:
-        canonical, asts = _validate_and_render(source_text)
+        canonical, asts, topic = _validate_and_render(source_text)
     except BuildError as e:
         err.write(f"Error: {e.message}\n")
         return 1
@@ -559,6 +596,7 @@ def build(
         canonical=canonical,
         packs=packs,
         vocabulary_in_use=_compute_vocabulary_in_use(source_text),
+        topic=topic,
     )
 
     # Generate entry script + invoke PyInstaller.
