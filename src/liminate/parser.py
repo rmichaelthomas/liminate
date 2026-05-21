@@ -333,8 +333,12 @@ class SequenceNode(ASTNode):
 @dataclass
 class ConditionNode(ASTNode):
     field: ASTNode               # NameRef or EachPronoun
-    op: str                      # is, above, below, equal_to, not_above, not_below, not_equal_to
+    op: str                      # is, above, below, equal_to, not_above, not_below, not_equal_to, within, includes
     value: ASTNode               # NumberLiteral, BareWord, NameRef, EachPronoun
+    # Second right-hand operand, used only by the `within` numeric-tolerance
+    # operator (issue #19): `<field> is within <value> of <value2>` is true
+    # when |field - value2| <= value. None for every other operator.
+    value2: ASTNode | None = None
 
 
 @dataclass
@@ -2435,6 +2439,24 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
     if nxt is None:
         raise _ParseError("I expected a value or comparison after 'is'.")
 
+    # `is within <amount> of <target>` — numeric tolerance (issue #19):
+    # true when |field - target| <= amount. `within` is a connective, so
+    # it is dispatched here rather than in the OPERATOR branch below.
+    if nxt.type is TokenType.CONNECTIVE and nxt.value == "within":
+        stream.consume()  # eat `within`
+        tolerance = _parse_within_tolerance(stream)
+        of_tok = stream.consume()
+        if not (of_tok and of_tok.type is TokenType.CONNECTIVE and of_tok.value == "of"):
+            got = of_tok.value if of_tok else "end of line"
+            raise _ParseError(
+                f"'within' needs a target — try: "
+                f"<field> is within <amount> of <target>. Got: {got}."
+            )
+        target = _parse_value(stream)
+        return ConditionNode(
+            field=field_node, op="within", value=tolerance, value2=target,
+        )
+
     if nxt.type is TokenType.OPERATOR:
         if nxt.value == "not":
             stream.consume()
@@ -2459,6 +2481,37 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
     # `is` as equality operator: consume a value.
     value = _parse_value(stream)
     return ConditionNode(field=field_node, op="is", value=value)
+
+
+def _parse_within_tolerance(stream: TokenStream) -> ASTNode:
+    """Parse the tolerance operand of `is within <amount> of <target>`
+    (issue #19) as a single bare atom — a number literal or a name.
+
+    This deliberately does NOT go through `_parse_value`: that would let
+    `_maybe_field_access` swallow the structural `of` (reading the
+    tolerance and target as a single `<name> of <record>` field access),
+    so `within tol of target` would lose its `of`. A name resolves to its
+    numeric value at evaluation time (a `BareWord`, like any other
+    right-hand condition operand)."""
+    tok = stream.consume()
+    if tok is None:
+        raise _ParseError(
+            "'within' needs an amount — try: "
+            "<field> is within <amount> of <target>."
+        )
+    if tok.type is TokenType.NUMBER:
+        return NumberLiteral(value=_parse_number(tok.value))
+    if tok.type is TokenType.UNKNOWN:
+        return BareWord(word=tok.value)
+    cat = reserved_category(tok.value)
+    if cat:
+        raise _ParseError(
+            f"'within' needs a numeric amount, but '{tok.value}' is a "
+            f"{cat} in Liminate."
+        )
+    raise _ParseError(
+        f"'within' needs a numeric amount, not '{tok.value}'."
+    )
 
 
 # ---------------------------------------------------------------------------
