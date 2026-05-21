@@ -105,6 +105,13 @@ class RememberValueNode(ASTNode):
     # __eq__ on the same grounds as `descriptor` — two ASTs differing only
     # in rationale are semantically equivalent at execution time.
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -114,6 +121,13 @@ class RememberListNode(ASTNode):
     # v2a §71 / D6 — see RememberValueNode for rationale.
     descriptor: str | None = field(default=None, compare=False)
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -123,6 +137,13 @@ class RememberRecordNode(ASTNode):
     # v2a §71 / D6 — see RememberValueNode for rationale.
     descriptor: str | None = field(default=None, compare=False)
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -135,6 +156,13 @@ class RememberCompositionNode(ASTNode):
     # word exclusion via _consume_name).
     param: str | None = None
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -172,6 +200,13 @@ class ShowNode(ASTNode):
     # ShowNode is the body of an EachNode and `target` is a NameRef.
     extra_fields: list[str] = field(default_factory=list)
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -179,6 +214,13 @@ class FilterNode(ASTNode):
     target: NameRef
     condition: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -191,12 +233,26 @@ class KeepNode(ASTNode):
     target: NameRef
     condition: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class CountNode(ASTNode):
     target: NameRef
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -205,12 +261,26 @@ class GatherNode(ASTNode):
     from_val: int | float
     to_val: int | float
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class CombineNode(ASTNode):
     target: NameRef
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -218,6 +288,13 @@ class EachNode(ASTNode):
     collection: NameRef
     action: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -229,6 +306,13 @@ class CompositionCallNode(ASTNode):
     # parse time.
     arg: str | None = None
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -282,6 +366,13 @@ class ChooseNode(ASTNode):
     """
     branches: list[ChooseBranch]
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -321,6 +412,13 @@ class PackVerbNode(ASTNode):
     signature: PackVerbSignature
     slot_values: dict[str, ASTNode] = field(default_factory=dict)
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -334,6 +432,13 @@ class AddNode(ASTNode):
     item: ASTNode
     target: NameRef
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -347,6 +452,13 @@ class RemoveNode(ASTNode):
     item: ASTNode
     target: NameRef
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -359,6 +471,13 @@ class WeakensNode(ASTNode):
     subject: NameRef
     period: NumberLiteral
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -370,6 +489,13 @@ class FinishNode(ASTNode):
     block). `finish` during Phase 1 is a semantic error.
     """
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -383,6 +509,13 @@ class RequireNode(ASTNode):
     """
     condition: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -399,6 +532,13 @@ class AssignNode(ASTNode):
     item: NameRef
     recipient: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -427,6 +567,13 @@ class SortNode(ASTNode):
     field: str
     descending: bool = False
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -441,6 +588,13 @@ class CompareNode(ASTNode):
     left: NameRef
     right: NameRef
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -465,6 +619,13 @@ class TransformNode(ASTNode):
     # attribute below rebinds the name `field` in this class body, which
     # would shadow the imported `dataclasses.field` for any later call.
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
     field: str | None = None
 
 
@@ -479,6 +640,13 @@ class ExpectNode(ASTNode):
     """
     condition: ASTNode
     rationale: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution. Both are inert provenance metadata (compare=False),
+    # never read by execution. `inherited` marks the statement as carried
+    # forward from a prior context; `inherited_from` names the authoring
+    # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -804,6 +972,17 @@ def parse_when_block(
 # ---------------------------------------------------------------------------
 
 
+def _starts_operation(tok: Token | None) -> bool:
+    """True if `tok` can begin a sequenced operation — a verb, or the
+    statement-initial `inherited` operator (Meta-Structural Era batch 3),
+    which is followed by its own verb."""
+    if tok is None:
+        return False
+    if tok.type is TokenType.VERB:
+        return True
+    return tok.type is TokenType.OPERATOR and tok.value == "inherited"
+
+
 def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
     first = _parse_one_operation(stream, comp)
     operations: list[ASTNode] = [first]
@@ -814,7 +993,7 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
             break
         if peek.value == "and":
             nxt = stream.peek(1)
-            if not (nxt and nxt.type is TokenType.VERB):
+            if not _starts_operation(nxt):
                 # `and` followed by a non-verb means we're not sequencing
                 # operations (could be a condition continuation handled
                 # elsewhere). Stop the loop and let the caller decide.
@@ -824,10 +1003,11 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
             operations.append(_parse_one_operation(stream, comp))
         elif peek.value == "then":
             # Normative Era batch 2: `then` always sequences operations;
-            # the next token must be a verb. Unlike `and`, `then` has no
-            # other meaning, so a non-verb follower is a hard parse error.
+            # the next token must be a verb (or an `inherited` verb). Unlike
+            # `and`, `then` has no other meaning, so anything else is a hard
+            # parse error.
             nxt = stream.peek(1)
-            if not (nxt and nxt.type is TokenType.VERB):
+            if not _starts_operation(nxt):
                 raise _ParseError(
                     "I expected a verb after 'then'. "
                     "Try: <action> then <next-action>."
@@ -871,7 +1051,67 @@ def _try_consume_because(stream: TokenStream) -> str | None:
     return rationale_tok.value
 
 
+def _try_consume_inherited_from(stream: TokenStream) -> str | None:
+    """Consume an optional `from <agent-name>` attribution at the end of
+    an `inherited` statement (Meta-Structural Era batch 3, MS-Q4).
+
+    Returns the agent name string if `from` attribution is present, None
+    otherwise. Only called on `inherited` statements — on non-inherited
+    statements, a trailing `from` belongs to other grammatical roles
+    (remember-copy semantics, gather range, remove source, composition
+    argument) and is left untouched here.
+
+    The agent name is a single UNKNOWN token (a hyphenated name like
+    `agent-compliance`). Quoted strings and reserved words are rejected.
+    """
+    peek = stream.peek()
+    if not (
+        peek
+        and peek.type is TokenType.CONNECTIVE
+        and peek.value == "from"
+    ):
+        return None
+    stream.consume()  # eat `from`
+    agent_tok = stream.consume()
+    if agent_tok is None:
+        raise _ParseError(
+            "'from' in an inherited statement needs an agent name — "
+            "try: inherited <verb> ... from <agent-name>."
+        )
+    if agent_tok.type is TokenType.QUOTED_STRING:
+        raise _ParseError(
+            f"Agent names can't have spaces. Try a hyphenated name "
+            f"like '{_hyphenate(agent_tok.value)}' instead."
+        )
+    if agent_tok.type is not TokenType.UNKNOWN:
+        cat = reserved_category(agent_tok.value)
+        if cat:
+            raise _ParseError(
+                f"The word '{agent_tok.value}' is reserved in Liminate "
+                f"— it's used as a {cat}. Please use a name for the "
+                f"agent, like 'agent-compliance'."
+            )
+        raise _ParseError(
+            f"I expected an agent name after 'from', not "
+            f"'{agent_tok.value}'."
+        )
+    return agent_tok.value
+
+
 def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
+    # Statement-initial `inherited` modifier (Meta-Structural Era batch 3).
+    # Marks the statement as carried forward from a prior context. The flag
+    # is set on the resulting node after the verb + slots are parsed.
+    is_inherited = False
+    peek = stream.peek()
+    if (
+        peek
+        and peek.type is TokenType.OPERATOR
+        and peek.value == "inherited"
+    ):
+        stream.consume()  # eat `inherited`
+        is_inherited = True
+
     # Parse the operation itself, then consume an optional statement-terminal
     # `because "<rationale>"` clause (MS-Q2). Routing the rationale through
     # this single chokepoint attaches it to the last-parsed statement node
@@ -881,6 +1121,16 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
     rationale = _try_consume_because(stream)
     if rationale is not None:
         node.rationale = rationale
+
+    # Statement-final `from <agent>` attribution (MS-Q4) — scoped to
+    # `inherited` statements only. Canonical order is
+    # `inherited <verb> <slots> because "<rationale>" from <agent>`: by the
+    # time we get here the verb parser has already consumed any `from` that
+    # belongs to a slot (remember-copy, gather, remove, composition arg), so
+    # the only `from` left is the attribution.
+    if is_inherited:
+        node.inherited = True
+        node.inherited_from = _try_consume_inherited_from(stream)
     return node
 
 
