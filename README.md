@@ -2,7 +2,7 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 51 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 52 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -67,7 +67,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.4.0**: 19 verbs, 19 connectives, 51 base reserved words, **1053 tests passing**.
+The current build is **v0.5.0**: 19 verbs, 19 connectives, 1 declaration, 52 base reserved words, **1085 tests passing**.
 
 ### The pipeline
 
@@ -78,7 +78,7 @@ Two phases of execution:
 - **Phase 1 — sequential.** Each statement runs in order. Stepwise commit: if a later op fails, earlier side effects remain and the error names what was completed.
 - **Phase 2 — reactive listener.** `when`/`unless` register handlers driven by an external event source (a domain pack adapter). Edge-triggered, depth-first cascading, conservative same-handler-twice cycle detection. `finish` exits immediately and totally.
 
-### The vocabulary (51 words)
+### The vocabulary (52 words)
 
 **Verbs (19):** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`, `sort`, `compare`, `transform`.
 
@@ -88,6 +88,8 @@ Two phases of execution:
 
 **Articles (3):** `the`, `a`, `an` — decorative; the parser ignores them.
 
+**Declarations (1):** `about` — declares the program's topic as inert metadata. Single, first-line-only; visible to tooling (`inspect`, the build manifest) but never stored or executed. `about "expense authorization"` or `about expense-authorization`.
+
 **Delimiter (1):** `:` — separates a composition name from its body, and a `choose` branch's condition from its action.
 
 `"..."` brackets a multi-word string value or one that would collide with a reserved word. Quotes are value-position only; names use hyphens. Quoted content is preserved verbatim, case included.
@@ -96,7 +98,7 @@ Arithmetic expressions use PEMDAS precedence (multiply/divide before add/subtrac
 
 ### Domain packs
 
-A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 51 words are permanent; pack-contributed words are reserved only when the pack is active.
+A pack is a small JSON file that adds nouns and verbs while it's loaded. The base 52 words are permanent; pack-contributed words are reserved only when the pack is active.
 
 A pack verb declares a slot signature, a type constraint, and one of six execution dispatches:
 
@@ -142,7 +144,7 @@ liminate --pack examples/pack_ui.json --quiet \
 liminate/
 ├── src/liminate/        Pipeline (lexer, reorderer, parser, renderer,
 │                        analyzer, interpreter, listener, adapter, packs/)
-├── tests/               1053 tests
+├── tests/               1085 tests
 ├── examples/            Runnable .limn programs + reference packs
 ├── docs/spec/           Locked specification documents
 └── docs/                Quickstart, syntax tour, pipeline walkthrough
@@ -155,7 +157,7 @@ The locked test sentences are simultaneously test cases and grammar artifacts �
 ### Design principles
 
 - **The prose IS the program.** No inference, no guessing. If the prose doesn't say it, it doesn't happen.
-- **The vocabulary is the boundary.** 51 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
+- **The vocabulary is the boundary.** 52 base reserved words. Expressiveness scales through composition and domain packs, not through adding keywords.
 - **The reorderer does not guess.** Ambiguous arrangements produce an amber clarification prompt rather than a silent pick.
 - **Authorize, don't author.** The on-ramp is modification of a working program, not authorship from a blank file.
 - **The AST is the source of truth.** The parser reconstructs a canonical English sentence so you see what was understood before it runs.

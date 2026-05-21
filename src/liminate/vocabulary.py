@@ -45,6 +45,12 @@ Sources:
   reserved words total) — per-element list mutation via arithmetic
   expressions. V2_RESERVED is now empty; all originally deferred
   words have been promoted.
+- Meta-Structural Era (19 verbs, 19 connectives, 1 declaration, 52
+  reserved words total) — `about` declaration. A declaration is a new
+  grammatical category (TokenType.DECLARATION), distinct from verbs and
+  connectives. `about` declares the program's topic as inert metadata:
+  single, first-line-only (MS-Q1), stored as program-level metadata on
+  the manifest — not in the symbol table, not executable.
 """
 
 from dataclasses import dataclass
@@ -63,6 +69,10 @@ class TokenType(Enum):
     # bypasses vocabulary lookup (§89) and is valid only in value
     # positions per §87.
     QUOTED_STRING = "QUOTED_STRING"
+    # Meta-Structural Era: a declaration is a new grammatical category,
+    # distinct from verbs/connectives/operators. `about` is the first
+    # declaration — it declares the program's topic as inert metadata.
+    DECLARATION = "DECLARATION"
 
 
 @dataclass
@@ -171,8 +181,15 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
     "multiplied", "divided",
 })
 
-# All 51 reserved words. 19 verbs, 19 connectives, 7 operators, 3
-# articles, 0 V2-reserved, 3 multi-word reserved. v3a §124 was 34
+# Meta-structural Era: declarations are a new grammatical category.
+# `about` declares the program's topic as inert metadata — visible to
+# tooling (inspect, Receipts, Inyim) but not to the runtime symbol
+# table. Single, first-line-only (MS-Q1).
+DECLARATIONS: frozenset[str] = frozenset({"about"})
+
+# All 52 reserved words. 19 verbs, 19 connectives, 7 operators, 3
+# articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
+# v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
 # addendum: +2 (list membership test in conditions, retract item from a
@@ -191,8 +208,11 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # V2-reserved count fell to 1; the total stays 51. Final V2 promotion:
 # +0 net — `transform` moved from V2_RESERVED to VERBS (verbs 18→19,
 # V2-reserved 1→0); the total stays 51 and V2_RESERVED is now empty.
+# Meta-Structural Era: +1 — `about` declaration (DECLARATIONS), the
+# first member of the new declaration grammatical category. Total 52.
 ALL_RESERVED: frozenset[str] = (
-    VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED | MULTI_WORD_RESERVED
+    VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
+    | MULTI_WORD_RESERVED | DECLARATIONS
 )
 
 
@@ -219,6 +239,8 @@ def reserved_category(word: str) -> str | None:
         return "article"
     if word in V2_RESERVED:
         return "reserved word"
+    if word in DECLARATIONS:
+        return "declaration"
     if word in _ACTIVE_PACK_VERBS:
         return "verb"
     if word in _ACTIVE_PACK_NOUNS:

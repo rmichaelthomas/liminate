@@ -4,6 +4,7 @@ from liminate.vocabulary import (
     ALL_RESERVED,
     ARTICLES,
     CONNECTIVES,
+    DECLARATIONS,
     DELIMITERS,
     MULTI_WORD_RESERVED,
     OPERATORS,
@@ -77,17 +78,20 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal", "multiplied", "divided"}
 
 
-def test_total_reserved_count_is_51():
-    # 51 reserved words total (unchanged by the final V2 promotion —
-    # `transform` moved category, not in/out of the reserved set).
-    # 19 verbs + 19 connectives + 7 operators + 3 multi-word +
-    # 3 articles + 0 v2-deferred = 51.
-    assert len(ALL_RESERVED) == 51
+def test_total_reserved_count_is_52():
+    # 52 reserved words total. Meta-Structural Era added `about`
+    # (DECLARATIONS, the first declaration). 19 verbs + 19 connectives
+    # + 7 operators + 3 multi-word + 3 articles + 0 v2-deferred +
+    # 1 declaration = 52.
+    assert len(ALL_RESERVED) == 52
 
 
 def test_reserved_sets_are_disjoint():
     # No word should appear in more than one category.
-    sets = [VERBS, CONNECTIVES, OPERATORS, ARTICLES, V2_RESERVED, MULTI_WORD_RESERVED]
+    sets = [
+        VERBS, CONNECTIVES, OPERATORS, ARTICLES, V2_RESERVED,
+        MULTI_WORD_RESERVED, DECLARATIONS,
+    ]
     total = sum(len(s) for s in sets)
     assert total == len(ALL_RESERVED)
 
@@ -105,6 +109,8 @@ def test_reserved_category_for_each_word():
         assert reserved_category(w) == "article"
     for w in V2_RESERVED:
         assert reserved_category(w) == "reserved word"
+    for w in DECLARATIONS:
+        assert reserved_category(w) == "declaration"
 
 
 def test_reserved_category_returns_none_for_unknown():
@@ -186,6 +192,8 @@ def test_token_type_enum_members():
         "DELIMITER", "NUMBER", "UNKNOWN",
         # v2c §86: quoted strings emitted as a single token.
         "QUOTED_STRING",
+        # Meta-Structural Era: `about` and future declarations.
+        "DECLARATION",
     }
 
 

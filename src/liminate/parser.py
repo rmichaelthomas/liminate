@@ -16,6 +16,10 @@ Sources:
 - v1c §51 (parser lookahead + clause-context tracking)
 - v1d §58 (duplicate `remember` names overwrite — interpreter concern)
 - v1d §60/§61 (record schemas, single-token strings)
+- Meta-Structural Era (`about` declaration): `AboutNode` + `parse_about`,
+  a separate top-level entry point called by the CLI for the first
+  non-blank, non-comment line. `about` is rejected inside the normal
+  `parse()` pipeline (declarations are first-line-only, MS-Q1).
 
 Output:
 - An AST node on success.
@@ -447,6 +451,23 @@ class ExpectNode(ASTNode):
     condition: ASTNode
 
 
+@dataclass
+class AboutNode(ASTNode):
+    """Meta-Structural Era — program topic declaration.
+
+    `about` is a declaration, not a verb. It declares the program's
+    topic as inert metadata: visible to tooling (inspect, Receipts,
+    Inyim, TUI header) but not stored in the symbol table and not
+    executable. Single, first-line-only (MS-Q1).
+
+    `topic` is the declared topic string. For quoted input
+    (`about "expense authorization"`), it is the quoted content.
+    For bare-word input (`about expense authorization`), it is the
+    remaining tokens joined with spaces.
+    """
+    topic: str
+
+
 # Set of operator words that may follow `is` as a comparison introducer.
 _COMPARISON_OPERATORS = frozenset({"above", "below", "equal_to"})
 
@@ -554,6 +575,55 @@ def parse(
         )
 
     return ast
+
+
+# ---------------------------------------------------------------------------
+# Meta-Structural Era: `about` declaration
+# ---------------------------------------------------------------------------
+
+
+def parse_about(tokens: list[Token]) -> AboutNode | None:
+    """Parse an `about` declaration from the first non-blank, non-comment
+    line of a program.
+
+    Returns AboutNode if the line is an `about` declaration, None if it
+    is not (the line should then be fed to the normal parse pipeline).
+    Raises _ParseError (surfaced as ERROR_PARSE by the caller) if the
+    line starts with `about` but has malformed content.
+
+    Design: single, first-line-only (MS-Q1). The CLI calls this on the
+    first eligible line; if it returns an AboutNode, the line is consumed
+    and not passed to the normal pipeline. If it returns None, the line
+    is a normal statement.
+    """
+    if not tokens:
+        return None
+    if not (tokens[0].type is TokenType.DECLARATION and tokens[0].value == "about"):
+        return None
+
+    # `about` with no content is a parse error.
+    if len(tokens) == 1:
+        raise _ParseError(
+            "'about' needs a topic — try: about \"expense authorization\" "
+            "or about expense-authorization."
+        )
+
+    # Quoted string: `about "expense authorization"` — one QUOTED_STRING
+    # token, nothing after it.
+    if tokens[1].type is TokenType.QUOTED_STRING:
+        if len(tokens) > 2:
+            raise _ParseError(
+                f"I didn't expect anything after the quoted topic in "
+                f"'about'. Try: about \"{tokens[1].value}\"."
+            )
+        return AboutNode(topic=tokens[1].value)
+
+    # Bare words: `about expense authorization` — join remaining tokens.
+    # All token types are accepted (UNKNOWN, NUMBER, etc.) and joined
+    # with spaces. Reserved words in this position are allowed — they
+    # are being used as topic words, not as Liminate syntax.
+    words = [t.value for t in tokens[1:]]
+    return AboutNode(topic=" ".join(words))
 
 
 # ---------------------------------------------------------------------------
@@ -781,6 +851,14 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
             "'unless' is a guard clause that follows a 'when' condition — "
             "it can't introduce a statement on its own. "
             "Try: when <condition> unless <guard>."
+        )
+    # Meta-structural: declarations are first-line-only and handled by
+    # the CLI before the normal pipeline. If `about` reaches here, it
+    # means it appeared on a non-first line.
+    if t.type is TokenType.DECLARATION:
+        raise _ParseError(
+            f"'{t.value}' is a declaration that must be the first line "
+            f"of the program (after any comments). It can't appear here."
         )
     raise _ParseError(f"I didn't expect '{t.value}' at the start of an operation.")
 
