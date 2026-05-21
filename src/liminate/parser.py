@@ -100,6 +100,11 @@ class RememberValueNode(ASTNode):
     # Excluded from __eq__ because descriptors are semantically decorative
     # (v1b §36) — two ASTs that differ only in descriptor are equivalent.
     descriptor: str | None = field(default=None, compare=False)
+    # Meta-Structural Era batch 2 — optional `because "<rationale>"` clause.
+    # Inert metadata: rendered and inspected, never executed. Excluded from
+    # __eq__ on the same grounds as `descriptor` — two ASTs differing only
+    # in rationale are semantically equivalent at execution time.
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -108,6 +113,7 @@ class RememberListNode(ASTNode):
     items: list[ASTNode]
     # v2a §71 / D6 — see RememberValueNode for rationale.
     descriptor: str | None = field(default=None, compare=False)
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -116,6 +122,7 @@ class RememberRecordNode(ASTNode):
     fields: list[tuple[str, ASTNode]]
     # v2a §71 / D6 — see RememberValueNode for rationale.
     descriptor: str | None = field(default=None, compare=False)
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -127,6 +134,7 @@ class RememberCompositionNode(ASTNode):
     # The parameter name follows v1's name rules (UNKNOWN token, reserved-
     # word exclusion via _consume_name).
     param: str | None = None
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -163,12 +171,14 @@ class ShowNode(ASTNode):
     # `field1: value1, field2: value2, ...`. Only valid when this
     # ShowNode is the body of an EachNode and `target` is a NameRef.
     extra_fields: list[str] = field(default_factory=list)
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class FilterNode(ASTNode):
     target: NameRef
     condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -180,11 +190,13 @@ class KeepNode(ASTNode):
     (resolving D3)."""
     target: NameRef
     condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class CountNode(ASTNode):
     target: NameRef
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -192,17 +204,20 @@ class GatherNode(ASTNode):
     name: str
     from_val: int | float
     to_val: int | float
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class CombineNode(ASTNode):
     target: NameRef
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
 class EachNode(ASTNode):
     collection: NameRef
     action: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -213,6 +228,7 @@ class CompositionCallNode(ASTNode):
     # reference (names-only per §96); literal values are rejected at
     # parse time.
     arg: str | None = None
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -265,6 +281,7 @@ class ChooseNode(ASTNode):
     is represented as a single-branch list with no terminal.
     """
     branches: list[ChooseBranch]
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -303,6 +320,7 @@ class PackVerbNode(ASTNode):
     word: str
     signature: PackVerbSignature
     slot_values: dict[str, ASTNode] = field(default_factory=dict)
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -315,6 +333,7 @@ class AddNode(ASTNode):
     """
     item: ASTNode
     target: NameRef
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -327,6 +346,7 @@ class RemoveNode(ASTNode):
     """
     item: ASTNode
     target: NameRef
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -338,6 +358,7 @@ class WeakensNode(ASTNode):
     """
     subject: NameRef
     period: NumberLiteral
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -348,7 +369,7 @@ class FinishNode(ASTNode):
     a `choose` branch, or inside a composition called from an action
     block). `finish` during Phase 1 is a semantic error.
     """
-    pass
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -361,6 +382,7 @@ class RequireNode(ASTNode):
     leaves and CompoundConditionNode `and`/`or` combinators.
     """
     condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -376,6 +398,7 @@ class AssignNode(ASTNode):
     """
     item: NameRef
     recipient: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -403,6 +426,7 @@ class SortNode(ASTNode):
     target: NameRef
     field: str
     descending: bool = False
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -416,6 +440,7 @@ class CompareNode(ASTNode):
     """
     left: NameRef
     right: NameRef
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -436,6 +461,10 @@ class TransformNode(ASTNode):
     """
     target: NameRef
     expression: ASTNode
+    # `rationale` is declared before `field` because assigning the `field`
+    # attribute below rebinds the name `field` in this class body, which
+    # would shadow the imported `dataclasses.field` for any later call.
+    rationale: str | None = field(default=None, compare=False)
     field: str | None = None
 
 
@@ -449,6 +478,7 @@ class ExpectNode(ASTNode):
     Same condition AST as `require` / `choose if` / `where`.
     """
     condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -812,7 +842,49 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
     return SequenceNode(operations=operations, connectors=connectors)
 
 
+def _try_consume_because(stream: TokenStream) -> str | None:
+    """Consume an optional `because "<rationale>"` clause at the end of a
+    verb statement (Meta-Structural Era batch 2, MS-Q2).
+
+    `because` is statement-terminal: it attaches a quoted rationale to the
+    immediately-preceding verb statement as inert metadata. Returns the
+    rationale string if `because` is present, None otherwise. Raises
+    _ParseError if `because` is present but not followed by a quoted
+    string — bare words and numbers are rejected because rationales are
+    natural-language prose that may contain reserved words.
+    """
+    peek = stream.peek()
+    if not (
+        peek
+        and peek.type is TokenType.CONNECTIVE
+        and peek.value == "because"
+    ):
+        return None
+    stream.consume()  # eat `because`
+    rationale_tok = stream.consume()
+    if rationale_tok is None or rationale_tok.type is not TokenType.QUOTED_STRING:
+        got = rationale_tok.value if rationale_tok else "end of line"
+        raise _ParseError(
+            f"'because' needs a quoted rationale — try: "
+            f'because "your reason here". Got: {got}.'
+        )
+    return rationale_tok.value
+
+
 def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
+    # Parse the operation itself, then consume an optional statement-terminal
+    # `because "<rationale>"` clause (MS-Q2). Routing the rationale through
+    # this single chokepoint attaches it to the last-parsed statement node
+    # in every context — top-level, `and`/`then` sequences, `choose`
+    # branches, and `each` bodies — without per-verb plumbing.
+    node = _parse_one_operation_inner(stream, comp)
+    rationale = _try_consume_because(stream)
+    if rationale is not None:
+        node.rationale = rationale
+    return node
+
+
+def _parse_one_operation_inner(stream: TokenStream, comp: set[str]) -> ASTNode:
     t = stream.peek()
     if t is None:
         raise _ParseError("I expected an operation here.")
