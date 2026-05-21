@@ -52,7 +52,7 @@ from .listener import listen
 from .packs.file_watcher import make_file_watcher_pack
 from .packs.stdin import make_stdin_pack
 from .packs.timer import make_timer_pack
-from .parser import parse, parse_when_block
+from .parser import _ParseError, parse, parse_about, parse_when_block
 from .reorderer import reorder
 from .result import LiminateResult, ResultStatus
 from .vocabulary import TokenType
@@ -85,6 +85,11 @@ class Session:
         # Reset by display_result whenever a non-HANDLER_FIRE result is
         # surfaced (so any Phase-1 / shutdown / error line clears it).
         self._last_trigger_key: tuple | None = None
+
+        # Meta-Structural Era: the `about` declaration's topic, set by
+        # run_file when the program's first eligible line is an `about`
+        # declaration. Inert metadata — not stored in the symbol table.
+        self.topic: str | None = None
 
         # v4a §137: pack vocabulary (verbs + nouns) is process-global
         # state. Reset before activating this Session's packs so the
@@ -497,6 +502,11 @@ def run_file(
     write = (out.write if out is not None else lambda s: print(s, end=""))
     lines = content.splitlines()
 
+    # Meta-Structural Era: track whether the first eligible (non-blank,
+    # non-comment) line has been seen, so `about` is recognized only as
+    # the first line and a second `about` anywhere is rejected (MS-Q1).
+    first_eligible_seen = False
+
     i = 0
     while i < len(lines):
         line = lines[i]
@@ -511,6 +521,48 @@ def run_file(
                 write("\n")
             i += 1
             continue
+
+        # Meta-Structural Era: an `about` declaration is consumed before
+        # the normal pipeline. It must be the first eligible line and may
+        # appear at most once. A `DECLARATION` token anywhere else (a
+        # second `about`, or `about` after a normal statement) is an
+        # ERROR_PARSE.
+        try:
+            decl_tokens = tokenize(line)
+        except LexError:
+            decl_tokens = []
+        if decl_tokens and decl_tokens[0].type is TokenType.DECLARATION:
+            if first_eligible_seen or session.topic is not None:
+                err = LiminateResult(
+                    status=ResultStatus.ERROR_PARSE,
+                    message=(
+                        "'about' is a declaration that must be the first "
+                        "line of the program (after any comments). Only one "
+                        "'about' declaration is allowed."
+                    ),
+                    executed=False,
+                )
+            else:
+                try:
+                    node = parse_about(decl_tokens)
+                    session.topic = node.topic
+                    err = None
+                except _ParseError as e:
+                    err = LiminateResult(
+                        status=ResultStatus.ERROR_PARSE,
+                        message=e.message,
+                        executed=False,
+                    )
+            first_eligible_seen = True
+            if err is not None:
+                display_result(
+                    err, session,
+                    auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
+                )
+                session.record_result(err)
+            i += 1
+            continue
+        first_eligible_seen = True
 
         # Tab-in-leading-whitespace is a v3a §110 lex error — surface it
         # as ERROR_PARSE and skip this line.
