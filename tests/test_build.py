@@ -59,7 +59,7 @@ def test_validate_basic_program():
         "remember a number called age with 30\n"
         "show age\n"
     )
-    canonical, asts = _validate_and_render(source)
+    canonical, asts, _ = _validate_and_render(source)
     assert canonical == [
         "remember a number called age with 30",
         "show age",
@@ -69,7 +69,7 @@ def test_validate_basic_program():
 
 def test_validate_blank_lines_preserved():
     source = "remember a number called age with 30\n\nshow age\n"
-    canonical, _ = _validate_and_render(source)
+    canonical, _, _ = _validate_and_render(source)
     assert canonical == [
         "remember a number called age with 30",
         "",
@@ -89,7 +89,7 @@ def test_validate_when_block():
         "when level is above 50\n"
         "  show level\n"
     )
-    canonical, asts = _validate_and_render(source)
+    canonical, asts, _ = _validate_and_render(source)
     assert _contains_when(asts)
     # The when statement renders multi-line; first line begins with 'when'.
     assert canonical[1].startswith("when ")
@@ -103,7 +103,7 @@ def test_validate_composition_then_call():
         "remember how to bump: remember a number called age with 31\n"
         "bump\n"
     )
-    canonical, asts = _validate_and_render(source)
+    canonical, asts, _ = _validate_and_render(source)
     assert len(asts) == 2
 
 

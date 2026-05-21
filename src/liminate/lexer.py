@@ -56,6 +56,7 @@ import re
 from .vocabulary import (
     ARTICLES,
     CONNECTIVES,
+    DECLARATIONS,
     OPERATORS,
     Token,
     TokenType,
@@ -261,6 +262,11 @@ def _classify(cleaned: list[tuple[str, int, bool]]) -> list[Token]:
             tokens.append(Token(TokenType.OPERATOR, word, pos))
         elif word in ARTICLES:
             tokens.append(Token(TokenType.ARTICLE, word, pos))
+        elif word in DECLARATIONS:
+            # Meta-Structural Era: declarations are a new grammatical
+            # category. `about` is handled by the CLI before the normal
+            # parse pipeline (first-line-only, MS-Q1).
+            tokens.append(Token(TokenType.DECLARATION, word, pos))
         elif _NUMBER_RE.match(word):
             tokens.append(Token(TokenType.NUMBER, word, pos))
         else:
