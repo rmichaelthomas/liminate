@@ -141,11 +141,16 @@ def _render_node(node: ASTNode) -> str:
         # ("value" for a scalar; "list"/"record" for the other node types).
         desc = node.descriptor or "value"
         art = _article_for(desc)
-        # Literals/strings go through `with`; name references and verb-phrase
-        # results go through `from` (v1b §43). Vocabulary words cannot
-        # appear after `with` (v1c §46), so verb-phrase values must use
-        # `from` for the canonical form to be re-parseable.
-        if isinstance(node.value, (NumberLiteral, BareWord)):
+        # Literal values go through `with`; name references, verb-phrase
+        # results, and computed expressions go through `from` (v1b §43).
+        # `QuotedString` is a literal and MUST use `with`: under `from`,
+        # the parser's copy-semantics turn a bare token into a NameRef
+        # (`_name_ref_for_from`), and conditional quoting drops the quotes
+        # around a safe single word — so a `from`-rendered string literal
+        # re-parses as a copy reference, changing the statement's meaning
+        # and breaking at runtime (issue #18). NumberLiteral/BareWord were
+        # already routed through `with`; QuotedString was the gap.
+        if isinstance(node.value, (NumberLiteral, BareWord, QuotedString)):
             return f"remember {art} {desc} called {node.name} with {render(node.value)}"
         return f"remember {art} {desc} called {node.name} from {render(node.value)}"
     if isinstance(node, RememberListNode):
