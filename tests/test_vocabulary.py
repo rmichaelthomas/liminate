@@ -44,13 +44,15 @@ def test_connective_count():
 
 
 def test_operator_count():
-    # 7 single-word operators (was 6); Infrastructure Era batch 2 added
-    # `reverse` as the descending-sort modifier. `equal to` /
-    # `multiplied by` / `divided by` are multi-word lexer tokens
-    # combined from MULTI_WORD_RESERVED triggers.
-    assert len(OPERATORS) == 7
+    # 8 single-word operators (was 7); Meta-Structural Era batch 3 added
+    # `inherited` as a statement-initial provenance modifier.
+    # Infrastructure Era batch 2 added `reverse` as the descending-sort
+    # modifier. `equal to` / `multiplied by` / `divided by` are multi-word
+    # lexer tokens combined from MULTI_WORD_RESERVED triggers.
+    assert len(OPERATORS) == 8
     assert OPERATORS == {
         "is", "above", "below", "not", "plus", "minus", "reverse",
+        "inherited",
     }
 
 
@@ -78,11 +80,11 @@ def test_multi_word_reserved():
     assert MULTI_WORD_RESERVED == {"equal", "multiplied", "divided"}
 
 
-def test_total_reserved_count_is_53():
-    # 53 reserved words total. Meta-Structural Era batch 2 added
-    # `because` (CONNECTIVES). 19 verbs + 20 connectives + 7 operators
-    # + 3 multi-word + 3 articles + 0 v2-deferred + 1 declaration = 53.
-    assert len(ALL_RESERVED) == 53
+def test_total_reserved_count_is_54():
+    # 54 reserved words total. Meta-Structural Era batch 3 added
+    # `inherited` (OPERATORS). 19 verbs + 20 connectives + 8 operators
+    # + 3 multi-word + 3 articles + 0 v2-deferred + 1 declaration = 54.
+    assert len(ALL_RESERVED) == 54
 
 
 def test_reserved_sets_are_disjoint():

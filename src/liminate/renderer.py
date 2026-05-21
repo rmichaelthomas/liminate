@@ -81,11 +81,25 @@ def render(node: ASTNode) -> str:
     `rationale` field, so the clause is only ever appended to a statement.
     A statement nested inside a sequence/choose/each/when action renders
     its own rationale through the recursive `render` call.
+
+    Meta-Structural Era batch 3: if the node is `inherited`, prepend the
+    `inherited` modifier; if it carries `from` attribution, append the
+    `from <agent>` clause after the rationale. Canonical order:
+    `inherited <verb> <slots> because "<rationale>" from <agent>`.
     """
     rendered = _render_node(node)
+
+    if getattr(node, "inherited", False):
+        rendered = f"inherited {rendered}"
+
     rationale = getattr(node, "rationale", None)
     if rationale is not None:
-        return f'{rendered} because "{rationale}"'
+        rendered = f'{rendered} because "{rationale}"'
+
+    inherited_from = getattr(node, "inherited_from", None)
+    if inherited_from is not None:
+        rendered = f"{rendered} from {inherited_from}"
+
     return rendered
 
 

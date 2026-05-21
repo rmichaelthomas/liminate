@@ -140,9 +140,9 @@ def test_reserved_category_about_is_declaration():
     assert reserved_category("about") == "declaration"
 
 
-def test_all_reserved_count_is_53():
-    # Meta-Structural Era batch 2 added the `because` connective (52 → 53).
-    assert len(ALL_RESERVED) == 53
+def test_all_reserved_count_is_54():
+    # Meta-Structural Era batch 3 added the `inherited` operator (53 → 54).
+    assert len(ALL_RESERVED) == 54
 
 
 def test_about_cannot_be_used_as_variable_name():

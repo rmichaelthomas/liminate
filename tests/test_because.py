@@ -81,8 +81,8 @@ def test_reserved_category_because_is_connective():
     assert reserved_category("because") == "connective"
 
 
-def test_all_reserved_count_is_53():
-    assert len(ALL_RESERVED) == 53
+def test_all_reserved_count_is_54():
+    assert len(ALL_RESERVED) == 54
 
 
 # ---------------------------------------------------------------------------
