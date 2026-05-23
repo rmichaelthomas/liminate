@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install package with dev extras
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest tests/ -v
+
+  pack-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compute canonical pack hash
+        id: canonical
+        run: |
+          CANONICAL_SHA=$(sha256sum examples/pack_session.json | awk '{print $1}')
+          echo "canonical=$CANONICAL_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch session-contracts pack copy
+        id: session_contracts
+        run: |
+          curl -sL https://raw.githubusercontent.com/rmichaelthomas/liminate-session-contracts/main/references/session_pack.json -o /tmp/session_contracts_pack.json
+          SC_SHA=$(sha256sum /tmp/session_contracts_pack.json | awk '{print $1}')
+          echo "sc_sha=$SC_SHA" >> "$GITHUB_OUTPUT"
+
+      # NOTE: liminate-receipts/packs/session_pack.json is intentionally NOT
+      # checked here. That repo is private and pre-launch, so an unauthenticated
+      # raw fetch returns a 404 body that would fail this job on every run. The
+      # copy is currently byte-identical to canonical (verified manually). When
+      # liminate-receipts is made public at launch, add a fetch step mirroring
+      # the session-contracts step above (URL:
+      # https://raw.githubusercontent.com/rmichaelthomas/liminate-receipts/main/packs/session_pack.json)
+      # and extend the comparison below to include it.
+
+      - name: Compare pack hashes
+        run: |
+          CANONICAL="${{ steps.canonical.outputs.canonical }}"
+          SC="${{ steps.session_contracts.outputs.sc_sha }}"
+          FAIL=0
+          if [ "$CANONICAL" != "$SC" ]; then
+            echo "::error::Pack sync FAILED: liminate-session-contracts/references/session_pack.json differs from canonical (liminate/examples/pack_session.json)"
+            echo "  Canonical: $CANONICAL"
+            echo "  Session-contracts: $SC"
+            FAIL=1
+          fi
+          if [ "$FAIL" -eq 1 ]; then
+            echo ""
+            echo "To fix: copy liminate/examples/pack_session.json to the divergent repo(s) and push."
+            exit 1
+          fi
+          echo "Pack sync OK: canonical and session-contracts copies match ($CANONICAL)"
