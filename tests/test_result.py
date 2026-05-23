@@ -12,13 +12,15 @@ def test_all_ten_statuses_present():
     # program has a bug"); REQUIREMENT_NOT_MET means "the data
     # violates a rule" enforced by a `require` statement. Deontic Era
     # adds PROHIBITION_VIOLATED — the `forbid` counterpart, raised when
-    # a prohibited condition evaluates true.
+    # a prohibited condition evaluates true. Deontic Era batch 2 adds
+    # PERMITTED — informational, for the receipt's deontic_mode envelope
+    # (the interpreter returns SUCCESS for `permit`, not PERMITTED).
     names = {s.name for s in ResultStatus}
     assert names == {
         "SUCCESS", "AMBER_PRECEDENCE", "AMBER_AMBIGUITY",
         "ERROR_PARSE", "ERROR_SEMANTIC",
         "LISTENING", "HANDLER_FIRE", "SHUTDOWN", "ERROR_RUNTIME",
-        "REQUIREMENT_NOT_MET", "PROHIBITION_VIOLATED",
+        "REQUIREMENT_NOT_MET", "PROHIBITION_VIOLATED", "PERMITTED",
     }
 
 

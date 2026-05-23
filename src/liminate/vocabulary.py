@@ -57,8 +57,9 @@ Sources:
   node. Per-statement only (MS-Q2): statement-terminal, consumed after
   all verb slots are filled. Visible to rendering, inspect, and Receipts;
   not executable, not in the symbol table.
-- Deontic Era (20 verbs, 20 connectives, 55 reserved words total)
-  — `forbid` verb (prohibition, inverted `require`).
+- Deontic Era (21 verbs, 20 connectives, 56 reserved words total)
+  — `forbid` verb (prohibition, inverted `require`) and `permit`
+  verb (explicit permission, informational emission).
 - Meta-Structural Era batch 3 (19 verbs, 20 connectives, 8 operators, 1
   declaration, 54 reserved words total) — `inherited` operator. A
   statement-initial modifier marking a verb statement as carried forward
@@ -117,6 +118,12 @@ VERBS: frozenset[str] = frozenset({
     # with inverted polarity — `require` halts when false, `forbid`
     # halts when true.
     "forbid",
+    # Deontic Era: `permit` evaluates a condition and emits an output
+    # line if true; silent on false. Never halts. Completes the deontic
+    # triangle: require (obligation), forbid (prohibition), permit
+    # (permission). Independent of require/forbid — no runtime
+    # interaction.
+    "permit",
     # Delegated Era batch 3: `assign <item> to <recipient>` stores an
     # item-to-recipient mapping in the symbol table.
     "assign",
@@ -221,7 +228,7 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # table. Single, first-line-only (MS-Q1).
 DECLARATIONS: frozenset[str] = frozenset({"about"})
 
-# All 55 reserved words. 20 verbs, 20 connectives, 8 operators, 3
+# All 56 reserved words. 21 verbs, 20 connectives, 8 operators, 3
 # articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
 # v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
@@ -251,6 +258,8 @@ DECLARATIONS: frozenset[str] = frozenset({"about"})
 # `from` connective (MS-Q4), so no new word. Total 54.
 # Deontic Era: +1 — `forbid` verb (prohibition, inverted `require`).
 # Total 55.
+# Deontic Era batch 2: +1 — `permit` verb (explicit permission,
+# informational). Total 56.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
     | MULTI_WORD_RESERVED | DECLARATIONS
@@ -267,7 +276,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 55 reserved words — 20 verbs, 0 V2-reserved;
+    surface (currently 56 reserved words — 21 verbs, 0 V2-reserved;
     see module docstring).
     """
     if word in VERBS:
@@ -481,6 +490,9 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     # Deontic Era: `forbid <condition>`. Same condition grammar as
     # `require` / `choose if` / `where`.
     "forbid":   ["condition"],
+    # Deontic Era: `permit <condition>`. Same condition grammar as
+    # `require` / `forbid` / `choose if` / `where`.
+    "permit":   ["condition"],
     # Delegated Era batch 3: `assign <item> to <recipient>`.
     "assign":   ["item", "recipient"],
     # Epistemic Era batch 3: `expect <condition>`. Same condition
