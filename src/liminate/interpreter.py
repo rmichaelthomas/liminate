@@ -94,6 +94,7 @@ from .parser import (
     RememberValueNode,
     RequireNode,
     ForbidNode,
+    PermitNode,
     SequenceNode,
     ShowNode,
     SortNode,
@@ -607,6 +608,8 @@ def _exec_op(
         return _exec_require(node, symtab, current_item)
     if isinstance(node, ForbidNode):
         return _exec_forbid(node, symtab, current_item)
+    if isinstance(node, PermitNode):
+        return _exec_permit(node, symtab, current_item)
     if isinstance(node, ExpectNode):
         return _exec_expect(node, symtab, current_item)
     if isinstance(node, AssignNode):
@@ -1397,6 +1400,26 @@ def _exec_forbid(
     if actual:
         msg += f" {actual}"
     raise _ProhibitionViolated(msg)
+
+
+def _exec_permit(
+    node: PermitNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Deontic Era — evaluate the condition. If true, emit an output
+    line recording the explicit permission. If false, silent pass.
+    Never halts. The output message echoes the condition in canonical
+    form and reports the actual value(s) that satisfied the permission.
+    """
+    if not _eval_condition(node.condition, current_item, symtab):
+        return []
+    condition_text = render(node.condition)
+    actual = _condition_actual_values(node.condition, current_item, symtab)
+    msg = f"Permitted: {condition_text}."
+    if actual:
+        msg += f" {actual}"
+    return [msg]
 
 
 def _exec_expect(

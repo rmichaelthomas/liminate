@@ -37,6 +37,12 @@ class ResultStatus(Enum):
     # "the data triggers a prohibition." The deontic triple:
     # require (obligation), forbid (prohibition), permit (permission).
     PROHIBITION_VIOLATED = "prohibition_violated"
+    # Deontic Era: a `permit` condition evaluated true at runtime.
+    # Informational — the program continues with SUCCESS. Distinct from
+    # SUCCESS to mark the deontic mode in the receipt's meta envelope.
+    # The deontic triple: require (obligation), forbid (prohibition),
+    # permit (permission).
+    PERMITTED = "permitted"
 
 
 @dataclass
