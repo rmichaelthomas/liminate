@@ -954,6 +954,10 @@ def _run_build_subcommand(args: list[str]) -> int:
     imported lazily inside build() so users who never invoke `build`
     don't pay the import cost (and so the package keeps loading even
     when the optional `[build]` extra isn't installed)."""
+    if "--help" in args or "-h" in args:
+        print("Usage: liminate build <source.limn> [--pack <json>]... --output <name>")
+        return 0
+
     from .build import build  # late import — PyInstaller is an optional dep
 
     source: str | None = None
@@ -1012,6 +1016,10 @@ def _run_inspect_subcommand(args: list[str]) -> int:
 
     Shells out to `<binary> --inspect [--json]`. The binary's argv
     handler short-circuits before executing the embedded program."""
+    if "--help" in args or "-h" in args:
+        print("Usage: liminate inspect <binary> [--json]")
+        return 0
+
     from .inspect_cmd import inspect_binary
 
     binary: str | None = None
@@ -1061,6 +1069,24 @@ def main(argv: list[str] | None = None) -> int:
             verbose = True
         elif a == "--version":
             print(f"Liminate {_pkg_version('liminate')}")
+            return 0
+        elif a in ("--help", "-h"):
+            print(
+                "Usage: liminate [options] [file.limn]\n"
+                "       liminate build <file.limn> [--pack <json>]... --output <name>\n"
+                "       liminate inspect <binary> [--json]\n"
+                "\n"
+                "Options:\n"
+                "  --pack <json>   Load a domain pack (JSON file or inline JSON)\n"
+                "  --test          Auto-confirm amber (ambiguous) outcomes\n"
+                "  --quiet         Suppress 'I understand this as:' echo\n"
+                "  --verbose       Emit per-line execution metadata (JSON to stderr)\n"
+                "  --version       Print version and exit\n"
+                "  --help, -h      Show this help and exit\n"
+                "\n"
+                "With no file argument, starts an interactive REPL.\n"
+                "Documentation: https://liminate.dev"
+            )
             return 0
         elif a == "--pack":
             # `--pack <arg>` registers a domain pack. `<arg>` may be
