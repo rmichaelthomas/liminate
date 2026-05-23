@@ -39,6 +39,39 @@ def reorder(tokens: list[Token]) -> ReorderOutput:
     if not tokens:
         return tokens
 
+    # Temporal-Boundary Era: statement-initial `starting` and/or `until`
+    # connectives are pass-through prefixes (same pattern as `inherited`).
+    # Each is followed by a QUOTED_STRING date token. Strip the temporal
+    # prefix, reorder the remainder, re-prepend. Placed BEFORE the
+    # `inherited` check so the canonical order
+    # `starting ... until ... inherited <verb> ...` is preserved.
+    temporal_prefix: list[Token] = []
+    rest_start = 0
+    if (
+        tokens[0].type is TokenType.CONNECTIVE
+        and tokens[0].value == "starting"
+        and len(tokens) > 1
+        and tokens[1].type is TokenType.QUOTED_STRING
+    ):
+        temporal_prefix.extend([tokens[0], tokens[1]])
+        rest_start = 2
+
+    if (
+        rest_start < len(tokens)
+        and tokens[rest_start].type is TokenType.CONNECTIVE
+        and tokens[rest_start].value == "until"
+        and rest_start + 1 < len(tokens)
+        and tokens[rest_start + 1].type is TokenType.QUOTED_STRING
+    ):
+        temporal_prefix.extend([tokens[rest_start], tokens[rest_start + 1]])
+        rest_start = rest_start + 2
+
+    if temporal_prefix:
+        rest = reorder(tokens[rest_start:])
+        if isinstance(rest, list):
+            return temporal_prefix + rest
+        return rest  # propagate a LiminateResult error from the remainder
+
     # Meta-Structural Era batch 3: a statement-initial `inherited` operator
     # is a pass-through prefix. The canonical verb statement begins after
     # it, so reorder the remainder and re-prepend `inherited` unchanged.

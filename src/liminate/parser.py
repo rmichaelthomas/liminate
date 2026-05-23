@@ -39,6 +39,7 @@ other descriptors remain decorative.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -112,6 +113,13 @@ class RememberValueNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -128,6 +136,13 @@ class RememberListNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -144,6 +159,13 @@ class RememberRecordNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -163,6 +185,13 @@ class RememberCompositionNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -207,6 +236,13 @@ class ShowNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -221,6 +257,13 @@ class FilterNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -240,6 +283,13 @@ class KeepNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -253,6 +303,13 @@ class CountNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -268,6 +325,13 @@ class GatherNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -281,6 +345,13 @@ class CombineNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -295,6 +366,13 @@ class EachNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -313,6 +391,13 @@ class CompositionCallNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -377,6 +462,13 @@ class ChooseNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -423,6 +515,13 @@ class PackVerbNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -443,6 +542,13 @@ class AddNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -463,6 +569,13 @@ class RemoveNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -482,6 +595,13 @@ class WeakensNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -500,6 +620,13 @@ class FinishNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -520,6 +647,13 @@ class RequireNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -535,6 +669,13 @@ class ForbidNode(ASTNode):
     rationale: str | None = field(default=None, compare=False)
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -551,6 +692,13 @@ class PermitNode(ASTNode):
     rationale: str | None = field(default=None, compare=False)
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -574,6 +722,13 @@ class AssignNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -609,6 +764,13 @@ class SortNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -630,6 +792,13 @@ class CompareNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -661,6 +830,13 @@ class TransformNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
     field: str | None = None
 
 
@@ -682,6 +858,13 @@ class ExpectNode(ASTNode):
     # agent (MS-Q3 overridable / MS-Q4 reuse `from`).
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
+    # Temporal-Boundary Era — `starting` and `until` connectives.
+    # Quoted ISO 8601 date strings as inert metadata (compare=False).
+    # `starting_date` is the effective date; `until_date` is the sunset.
+    # Both None when no temporal boundary is declared. Evaluation is a
+    # product-layer concern (Receipts server temporal_window field).
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -1057,6 +1240,77 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
     return SequenceNode(operations=operations, connectors=connectors)
 
 
+def _try_consume_starting_until(
+    stream: TokenStream,
+) -> tuple[str | None, str | None]:
+    """Consume optional `starting "<date>"` and/or `until "<date>"`
+    clauses at statement-initial position (Temporal-Boundary Era, DT-Q4).
+
+    Returns (starting_date, until_date). Either or both may be None.
+    Raises _ParseError if `starting`/`until` is present but not followed
+    by a quoted string, or if the quoted string is not valid ISO 8601.
+
+    Canonical order: `starting` before `until`. Both before `inherited`.
+    A reversed `until ... starting ...` consumes `until` only; the
+    trailing `starting` is left in the stream and errors on the verb —
+    canonical order is enforced by grammar, not by an explicit message.
+    """
+    starting_date: str | None = None
+    until_date: str | None = None
+
+    peek = stream.peek()
+    if (
+        peek
+        and peek.type is TokenType.CONNECTIVE
+        and peek.value == "starting"
+    ):
+        stream.consume()  # eat `starting`
+        date_tok = stream.consume()
+        if date_tok is None or date_tok.type is not TokenType.QUOTED_STRING:
+            got = date_tok.value if date_tok else "end of line"
+            raise _ParseError(
+                f"'starting' needs a quoted date — try: "
+                f'starting "2025-07-01". Got: {got}.'
+            )
+        _validate_iso_date(date_tok.value, "starting")
+        starting_date = date_tok.value
+
+    peek = stream.peek()
+    if (
+        peek
+        and peek.type is TokenType.CONNECTIVE
+        and peek.value == "until"
+    ):
+        stream.consume()  # eat `until`
+        date_tok = stream.consume()
+        if date_tok is None or date_tok.type is not TokenType.QUOTED_STRING:
+            got = date_tok.value if date_tok else "end of line"
+            raise _ParseError(
+                f"'until' needs a quoted date — try: "
+                f'until "2025-12-31". Got: {got}.'
+            )
+        _validate_iso_date(date_tok.value, "until")
+        until_date = date_tok.value
+
+    return starting_date, until_date
+
+
+def _validate_iso_date(date_str: str, keyword: str) -> None:
+    """Validate that a date string is ISO 8601 format (YYYY-MM-DD).
+
+    Raises _ParseError with a helpful message if the format is wrong.
+    Does NOT validate that the date is a real calendar date (e.g.
+    2025-02-30 passes format validation but is not a real date) —
+    that's a runtime concern if needed later. The parser only checks
+    the structural format.
+    """
+    if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+        raise _ParseError(
+            f"'{keyword}' needs an ISO 8601 date (YYYY-MM-DD) — "
+            f'try: {keyword} "2025-07-01". Got: "{date_str}".'
+        )
+
+
 def _try_consume_because(stream: TokenStream) -> str | None:
     """Consume an optional `because "<rationale>"` clause at the end of a
     verb statement (Meta-Structural Era batch 2, MS-Q2).
@@ -1134,6 +1388,12 @@ def _try_consume_inherited_from(stream: TokenStream) -> str | None:
 
 
 def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
+    # Statement-initial `starting`/`until` temporal modifiers
+    # (Temporal-Boundary Era, DT-Q4). Consumed before `inherited` so the
+    # canonical order is `starting ... until ... inherited <verb> ...`.
+    # The dates are attached to the resulting node after the verb is parsed.
+    starting_date, until_date = _try_consume_starting_until(stream)
+
     # Statement-initial `inherited` modifier (Meta-Structural Era batch 3).
     # Marks the statement as carried forward from a prior context. The flag
     # is set on the resulting node after the verb + slots are parsed.
@@ -1166,6 +1426,13 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
     if is_inherited:
         node.inherited = True
         node.inherited_from = _try_consume_inherited_from(stream)
+
+    # Attach temporal-boundary metadata (Temporal-Boundary Era). Inert —
+    # never read by execution; rendered in canonical order by the renderer.
+    if starting_date is not None:
+        node.starting_date = starting_date
+    if until_date is not None:
+        node.until_date = until_date
     return node
 
 
