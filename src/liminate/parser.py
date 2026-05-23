@@ -523,6 +523,21 @@ class RequireNode(ASTNode):
 
 
 @dataclass
+class ForbidNode(ASTNode):
+    """Deontic Era — prohibition verb.
+
+    Evaluates `condition`; if true, execution halts with
+    PROHIBITION_VIOLATED. If false, silent pass. Same condition AST
+    as `require` / `choose if` / `where`. Mirrors `require` with
+    inverted polarity.
+    """
+    condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
+
+
+@dataclass
 class AssignNode(ASTNode):
     """Delegated Era batch 3 — assignment/delegation verb.
 
@@ -1226,6 +1241,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_weakens(stream)
     if verb.value == "require":
         return _parse_require(stream)
+    if verb.value == "forbid":
+        return _parse_forbid(stream)
     if verb.value == "assign":
         return _parse_assign(stream)
     if verb.value == "expect":
@@ -1884,6 +1901,31 @@ def _parse_require(stream: TokenStream) -> RequireNode:
     finally:
         stream.pop_clause()
     return RequireNode(condition=condition)
+
+
+# ---------------------------------------------------------------------------
+# forbid (Deontic Era)
+# ---------------------------------------------------------------------------
+
+
+def _parse_forbid(stream: TokenStream) -> ForbidNode:
+    """`forbid <condition>` — prohibition verb.
+
+    Same condition grammar as `require`. The difference is purely
+    in runtime behavior: `require` halts on false, `forbid` halts
+    on true.
+    """
+    if stream.at_end():
+        raise _ParseError(
+            "'forbid' needs a condition — try: "
+            "forbid <field> is <operator> <value>."
+        )
+    stream.push_clause("forbid")
+    try:
+        condition = _parse_or_condition(stream)
+    finally:
+        stream.pop_clause()
+    return ForbidNode(condition=condition)
 
 
 # ---------------------------------------------------------------------------
@@ -2797,6 +2839,10 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, RequireNode):
         # Normative Era batch 2: `require` conditions follow the same
         # mixed-precedence rule as `where` / `choose if` clauses (v1a §30).
+        return _condition_is_mixed(node.condition)
+    if isinstance(node, ForbidNode):
+        # Deontic Era: `forbid` conditions follow the same
+        # mixed-precedence rule as `require` / `where`.
         return _condition_is_mixed(node.condition)
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3: `expect` conditions follow the same

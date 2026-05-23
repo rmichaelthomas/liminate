@@ -32,6 +32,11 @@ class ResultStatus(Enum):
     # runtime. Distinct from ERROR_SEMANTIC ("the program has a bug")
     # — REQUIREMENT_NOT_MET means "the data violates a rule."
     REQUIREMENT_NOT_MET = "requirement_not_met"
+    # Deontic Era: a `forbid` condition evaluated true at runtime.
+    # Distinct from REQUIREMENT_NOT_MET — PROHIBITION_VIOLATED means
+    # "the data triggers a prohibition." The deontic triple:
+    # require (obligation), forbid (prohibition), permit (permission).
+    PROHIBITION_VIOLATED = "prohibition_violated"
 
 
 @dataclass
