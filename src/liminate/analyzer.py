@@ -79,6 +79,7 @@ from .parser import (
     RememberValueNode,
     RequireNode,
     ForbidNode,
+    PermitNode,
     SequenceNode,
     ShowNode,
     SortNode,
@@ -328,6 +329,10 @@ def _check(
         # Behavior differs only at runtime (halts on true instead
         # of false).
         _check_choose_condition(node.condition, symtab)
+    elif isinstance(node, PermitNode):
+        # Deontic Era — same condition validation as `require`/`forbid`.
+        # Behavior differs only at runtime (emits on true, never halts).
+        _check_choose_condition(node.condition, symtab)
     elif isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — same condition validation as `require`.
         # Behavior differs only at runtime (divergence emits output;
@@ -513,6 +518,10 @@ def _side_effect_verb(
         # Deontic Era — `forbid` halts on true or passes silently.
         # Never produces a value.
         return "forbid"
+    if isinstance(node, PermitNode):
+        # Deontic Era — `permit` emits an output line on true or passes
+        # silently. Never produces a capturable value.
+        return "permit"
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — `expect` is silent on pass; emits
         # divergence output on failure. Never produces a value.
