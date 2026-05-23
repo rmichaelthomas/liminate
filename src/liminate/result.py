@@ -41,6 +41,8 @@ class LiminateResult:
     output: list[str] | None = None
     message: str | None = None
     executed: bool = False
+    timestamp: str | None = None
+    duration_ms: float | None = None
     # `pending_ast` carries the parsed-but-not-executed AST through an amber
     # outcome so the CLI wrapper can resume after user confirmation
     # (v1d §64: two-step flow keeps the core interpreter stateless).

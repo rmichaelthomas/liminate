@@ -13,6 +13,9 @@ Usage:
     liminate <file> --quiet             # Suppress "I understand this as: ..."
                                         # echo; mirror blank source lines so
                                         # visual grouping survives. U1/U4.
+    liminate <file> --verbose           # Emit per-line execution metadata
+                                        # (JSON to stderr). Combinable with
+                                        # --quiet for headless pipeline mode.
     liminate --version                  # Print "Liminate <version>" and exit.
 
 `python -m liminate` is the equivalent module-invocation form and works
@@ -32,6 +35,8 @@ from __future__ import annotations
 
 import json
 import sys
+import time
+from datetime import datetime, timezone
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
@@ -476,6 +481,21 @@ def _prompt(message: str) -> str:
         return ""
 
 
+def _emit_verbose_metadata(
+    line_num: int,
+    timestamp: str,
+    duration_ms: float,
+    *,
+    verbose_out=None,
+) -> None:
+    metadata = {
+        "line": line_num,
+        "timestamp": timestamp,
+        "duration_ms": duration_ms,
+    }
+    print(json.dumps(metadata), file=verbose_out or sys.stderr)
+
+
 # ---------------------------------------------------------------------------
 # File + REPL drivers
 # ---------------------------------------------------------------------------
@@ -486,8 +506,10 @@ def run_file(
     *,
     auto_confirm_amber: bool = False,
     quiet: bool = False,
+    verbose: bool = False,
     domain_packs: list[DomainPack] | None = None,
     out=None,
+    verbose_out=None,
 ) -> None:
     """Execute an Liminate source file (Phase 1 + optional Phase 2).
 
@@ -560,6 +582,11 @@ def run_file(
                     auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
                 )
                 session.record_result(err)
+                if verbose:
+                    ts = datetime.now(timezone.utc).isoformat()
+                    _emit_verbose_metadata(
+                        i + 1, ts, 0.0, verbose_out=verbose_out,
+                    )
             i += 1
             continue
         first_eligible_seen = True
@@ -579,6 +606,9 @@ def run_file(
                 auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
             )
             session.record_result(err)
+            if verbose:
+                ts = datetime.now(timezone.utc).isoformat()
+                _emit_verbose_metadata(i + 1, ts, 0.0, verbose_out=verbose_out)
             i += 1
             continue
 
@@ -606,11 +636,19 @@ def run_file(
                 quiet=quiet,
                 out=out,
                 write=write,
+                verbose=verbose,
+                verbose_out=verbose_out,
             )
             continue
 
         # Regular Phase 1 sequential statement.
+        ts = datetime.now(timezone.utc).isoformat()
+        t0 = time.monotonic()
         result = session.run_line(line)
+        dur = round((time.monotonic() - t0) * 1000, 3)
+        if result is not None:
+            result.timestamp = ts
+            result.duration_ms = dur
         display_result(
             result, session,
             auto_confirm_amber=auto_confirm_amber,
@@ -618,6 +656,8 @@ def run_file(
             out=out,
         )
         session.record_result(result)
+        if verbose and result is not None:
+            _emit_verbose_metadata(i + 1, ts, dur, verbose_out=verbose_out)
         i += 1
 
     # v3a §107 — Phase 2 gate: only enter listener mode if Phase 1 had
@@ -664,6 +704,8 @@ def _consume_when_block(
     quiet: bool,
     out,
     write,
+    verbose: bool = False,
+    verbose_out=None,
 ) -> int:
     """Buffer the indented action block starting at line index
     `start_idx + 1` and dispatch the full when-block to the session.
@@ -734,9 +776,20 @@ def _consume_when_block(
             auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
         )
         session.record_result(err)
+        if verbose:
+            ts = datetime.now(timezone.utc).isoformat()
+            _emit_verbose_metadata(
+                start_idx + 1, ts, 0.0, verbose_out=verbose_out,
+            )
         return consumed_through + 1
 
+    ts = datetime.now(timezone.utc).isoformat()
+    t0 = time.monotonic()
     result = session.run_when_block(header_line, action_lines)
+    dur = round((time.monotonic() - t0) * 1000, 3)
+    if result is not None:
+        result.timestamp = ts
+        result.duration_ms = dur
     display_result(
         result, session,
         auto_confirm_amber=auto_confirm_amber,
@@ -744,6 +797,8 @@ def _consume_when_block(
         out=out,
     )
     session.record_result(result)
+    if verbose and result is not None:
+        _emit_verbose_metadata(start_idx + 1, ts, dur, verbose_out=verbose_out)
     return j  # j points to the first un-consumed line
 
 
@@ -964,6 +1019,7 @@ def main(argv: list[str] | None = None) -> int:
 
     auto = False
     quiet = False
+    verbose = False
     pack_paths: list[str] = []
     positional: list[str] = []
     i = 0
@@ -973,6 +1029,8 @@ def main(argv: list[str] | None = None) -> int:
             auto = True
         elif a == "--quiet":
             quiet = True
+        elif a == "--verbose":
+            verbose = True
         elif a == "--version":
             print(f"Liminate {_pkg_version('liminate')}")
             return 0
@@ -1012,6 +1070,7 @@ def main(argv: list[str] | None = None) -> int:
             positional[0],
             auto_confirm_amber=auto,
             quiet=quiet,
+            verbose=verbose,
             domain_packs=domain_packs or None,
         )
     else:
