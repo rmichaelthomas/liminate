@@ -383,10 +383,21 @@ class PackVerbSignature:
 _ACTIVE_PACK_VERBS: dict[str, PackVerbSignature] = {}
 _ACTIVE_PACK_NOUNS: set[str] = set()
 
+# Receipts v5 §15 dim. 3 — verb word -> contributing pack name. Populated
+# alongside _ACTIVE_PACK_VERBS so the interpreter can attribute a pack verb
+# result to the pack that defined it. PackVerbSignature is frozen, so the
+# attribution lives here rather than on the signature.
+_ACTIVE_PACK_VERB_OWNERS: dict[str, str] = {}
+
 
 def get_active_pack_verb(word: str) -> PackVerbSignature | None:
     """Return the signature for `word` if it's an active pack verb."""
     return _ACTIVE_PACK_VERBS.get(word)
+
+
+def get_pack_verb_owner(word: str) -> str | None:
+    """Return the name of the pack that contributed `word`, if any."""
+    return _ACTIVE_PACK_VERB_OWNERS.get(word)
 
 
 def active_pack_verb_words() -> frozenset[str]:
@@ -400,14 +411,21 @@ def active_pack_nouns() -> frozenset[str]:
 def activate_pack_words(
     verbs: list[PackVerbSignature] | None = None,
     nouns: list[str] | None = None,
+    pack_name: str | None = None,
 ) -> None:
     """Add the given pack verbs and nouns to the active vocabulary
     (v4a §137 / v1a §29). Each pack contributes additively; the caller
     decides when to reset via `deactivate_all_pack_words`. Duplicate
     pack verb registrations (same word) overwrite — packs are vetted
-    by the Session, not by this table."""
+    by the Session, not by this table.
+
+    `pack_name` records which pack contributed each verb so the
+    interpreter can attribute results (Receipts v5 §15 dim. 3). When
+    omitted, verbs activate without an owner and carry no attribution."""
     for sig in verbs or ():
         _ACTIVE_PACK_VERBS[sig.word] = sig
+        if pack_name is not None:
+            _ACTIVE_PACK_VERB_OWNERS[sig.word] = pack_name
     for word in nouns or ():
         _ACTIVE_PACK_NOUNS.add(word)
 
@@ -418,6 +436,7 @@ def deactivate_all_pack_words() -> None:
     the current Session's pack list."""
     _ACTIVE_PACK_VERBS.clear()
     _ACTIVE_PACK_NOUNS.clear()
+    _ACTIVE_PACK_VERB_OWNERS.clear()
 
 
 # Verb signatures (inception §17, refined by v1b/v1c/v1d). Each verb maps
