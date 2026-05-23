@@ -93,6 +93,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    RequireEachNode,
     ForbidNode,
     PermitNode,
     SequenceNode,
@@ -606,6 +607,8 @@ def _exec_op(
         return _exec_weakens(node, symtab)
     if isinstance(node, RequireNode):
         return _exec_require(node, symtab, current_item)
+    if isinstance(node, RequireEachNode):
+        return _exec_require_each(node, symtab)
     if isinstance(node, ForbidNode):
         return _exec_forbid(node, symtab, current_item)
     if isinstance(node, PermitNode):
@@ -1380,6 +1383,55 @@ def _exec_require(
     if actual:
         msg += f" {actual}"
     raise _RequirementNotMet(msg)
+
+
+def _exec_require_each(
+    node: RequireEachNode,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """v8a §49 — iterated enforcement. Evaluate the condition once per
+    element in the collection, binding the current element under
+    `binding_name` (a temporary symbol-table entry) and as the iterator
+    `current_item`. Silent if every element passes; raises
+    _RequirementNotMet identifying the first failing element otherwise.
+
+    The temporary binding uses save/restore semantics (composition
+    parameter pattern, v2d §96) so an existing symbol with the same name
+    survives the require-each evaluation. The `finally` guarantees the
+    binding never leaks, even when the condition fails or an unexpected
+    error unwinds the loop.
+    """
+    the_list = symtab[node.collection.name].value
+
+    saved = symtab.get(node.binding_name)
+    try:
+        for i, item in enumerate(the_list):
+            item_type, item_schema = _infer_type_and_schema(item)
+            symtab[node.binding_name] = SymbolEntry(
+                name=node.binding_name,
+                value=item,
+                type=item_type,
+                schema=item_schema,
+            )
+            if not _eval_condition(node.condition, item, symtab):
+                condition_text = render(node.condition)
+                actual = _condition_actual_values(node.condition, item, symtab)
+                # 1-indexed for human readability.
+                msg = (
+                    f"Requirement not met: require each {node.binding_name} "
+                    f"in {node.collection.name} {condition_text}. "
+                    f"Failed at element {i + 1}."
+                )
+                if actual:
+                    msg += f" {actual}"
+                raise _RequirementNotMet(msg)
+    finally:
+        if saved is not None:
+            symtab[node.binding_name] = saved
+        else:
+            symtab.pop(node.binding_name, None)
+
+    return []
 
 
 def _exec_forbid(

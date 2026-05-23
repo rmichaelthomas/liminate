@@ -55,6 +55,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    RequireEachNode,
     ForbidNode,
     PermitNode,
     SequenceNode,
@@ -269,6 +270,12 @@ def _render_node(node: ASTNode) -> str:
     if isinstance(node, RequireNode):
         # Normative Era batch 2 — `require <condition>`.
         return f"require {render(node.condition)}"
+    if isinstance(node, RequireEachNode):
+        # v8a §49 — `require each <name> in <list> <condition>`.
+        return (
+            f"require each {node.binding_name} in "
+            f"{node.collection.name} {render(node.condition)}"
+        )
     if isinstance(node, ForbidNode):
         # Deontic Era — `forbid <condition>`.
         return f"forbid {render(node.condition)}"
