@@ -93,6 +93,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    ForbidNode,
     SequenceNode,
     ShowNode,
     SortNode,
@@ -360,6 +361,15 @@ class _RequirementNotMet(Exception):
         self.message = message
 
 
+class _ProhibitionViolated(Exception):
+    """Deontic Era — raised when a `forbid` condition evaluates true.
+    Surfaced to callers as PROHIBITION_VIOLATED. Same unwind semantics
+    as _RequirementNotMet: stepwise operations stay committed."""
+    def __init__(self, message: str):
+        super().__init__(message)
+        self.message = message
+
+
 def _execute_single(
     node: ASTNode,
     symtab: dict[str, SymbolEntry],
@@ -392,6 +402,13 @@ def _execute_single(
     except _RequirementNotMet as e:
         return LiminateResult(
             status=ResultStatus.REQUIREMENT_NOT_MET,
+            canonical=render(node),
+            message=e.message,
+            executed=False,
+        )
+    except _ProhibitionViolated as e:
+        return LiminateResult(
+            status=ResultStatus.PROHIBITION_VIOLATED,
             canonical=render(node),
             message=e.message,
             executed=False,
@@ -448,6 +465,17 @@ def _execute_sequence(
                 op,
                 LiminateResult(
                     status=ResultStatus.REQUIREMENT_NOT_MET,
+                    message=e.message,
+                ),
+                completed_canonicals,
+                outputs,
+                seq,
+            )
+        except _ProhibitionViolated as e:
+            return _stepwise_error(
+                op,
+                LiminateResult(
+                    status=ResultStatus.PROHIBITION_VIOLATED,
                     message=e.message,
                 ),
                 completed_canonicals,
@@ -577,6 +605,8 @@ def _exec_op(
         return _exec_weakens(node, symtab)
     if isinstance(node, RequireNode):
         return _exec_require(node, symtab, current_item)
+    if isinstance(node, ForbidNode):
+        return _exec_forbid(node, symtab, current_item)
     if isinstance(node, ExpectNode):
         return _exec_expect(node, symtab, current_item)
     if isinstance(node, AssignNode):
@@ -1347,6 +1377,26 @@ def _exec_require(
     if actual:
         msg += f" {actual}"
     raise _RequirementNotMet(msg)
+
+
+def _exec_forbid(
+    node: ForbidNode,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any,
+) -> list[str]:
+    """Deontic Era — evaluate the condition. Silent on false (no
+    prohibition triggered); raises _ProhibitionViolated on true.
+    The error message echoes the condition in canonical form and
+    reports the actual value(s) that triggered the prohibition.
+    """
+    if not _eval_condition(node.condition, current_item, symtab):
+        return []
+    condition_text = render(node.condition)
+    actual = _condition_actual_values(node.condition, current_item, symtab)
+    msg = f"Prohibition violated: {condition_text}."
+    if actual:
+        msg += f" {actual}"
+    raise _ProhibitionViolated(msg)
 
 
 def _exec_expect(

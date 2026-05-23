@@ -140,9 +140,10 @@ def test_reserved_category_about_is_declaration():
     assert reserved_category("about") == "declaration"
 
 
-def test_all_reserved_count_is_54():
+def test_all_reserved_count_is_55():
     # Meta-Structural Era batch 3 added the `inherited` operator (53 → 54).
-    assert len(ALL_RESERVED) == 54
+    # Deontic Era added the `forbid` verb (54 → 55).
+    assert len(ALL_RESERVED) == 55
 
 
 def test_about_cannot_be_used_as_variable_name():

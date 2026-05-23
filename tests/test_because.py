@@ -81,8 +81,9 @@ def test_reserved_category_because_is_connective():
     assert reserved_category("because") == "connective"
 
 
-def test_all_reserved_count_is_54():
-    assert len(ALL_RESERVED) == 54
+def test_all_reserved_count_is_55():
+    # Deontic Era added the `forbid` verb (54 → 55).
+    assert len(ALL_RESERVED) == 55
 
 
 # ---------------------------------------------------------------------------

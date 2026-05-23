@@ -10,13 +10,15 @@ def test_all_ten_statuses_present():
     # ERROR_RUNTIME) for Phase 2 execution. Normative Era batch 2
     # adds REQUIREMENT_NOT_MET — distinct from ERROR_SEMANTIC ("the
     # program has a bug"); REQUIREMENT_NOT_MET means "the data
-    # violates a rule" enforced by a `require` statement.
+    # violates a rule" enforced by a `require` statement. Deontic Era
+    # adds PROHIBITION_VIOLATED — the `forbid` counterpart, raised when
+    # a prohibited condition evaluates true.
     names = {s.name for s in ResultStatus}
     assert names == {
         "SUCCESS", "AMBER_PRECEDENCE", "AMBER_AMBIGUITY",
         "ERROR_PARSE", "ERROR_SEMANTIC",
         "LISTENING", "HANDLER_FIRE", "SHUTDOWN", "ERROR_RUNTIME",
-        "REQUIREMENT_NOT_MET",
+        "REQUIREMENT_NOT_MET", "PROHIBITION_VIOLATED",
     }
 
 
