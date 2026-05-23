@@ -46,6 +46,7 @@ from .vocabulary import (
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
+    get_pack_verb_owner,
 )
 
 
@@ -396,12 +397,21 @@ def _execute_single(
             executed=False,
         )
     _mark_live_value_active_if_remember(node, live_value_registry)
-    return LiminateResult(
+    result = LiminateResult(
         status=ResultStatus.SUCCESS,
         canonical=render(node),
         output=output if output else None,
         executed=True,
     )
+    # Receipts v5 §15 dim. 3 — attribute pack-verb results to the pack
+    # that contributed the verb. Base verbs leave the key absent.
+    if isinstance(node, PackVerbNode):
+        owner = get_pack_verb_owner(node.word)
+        if owner is not None:
+            if result.metadata is None:
+                result.metadata = {}
+            result.metadata["pack"] = owner
+    return result
 
 
 def _execute_sequence(

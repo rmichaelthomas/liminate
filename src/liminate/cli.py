@@ -105,7 +105,9 @@ class Session:
             verbs = pack.verbs()
             nouns = [w for (w, cat) in pack.vocabulary() if cat == "noun"]
             if verbs or nouns:
-                activate_pack_words(verbs=verbs, nouns=nouns)
+                activate_pack_words(
+                    verbs=verbs, nouns=nouns, pack_name=pack.name(),
+                )
 
         # Register declared live values from each pack. Names become
         # visible in the symbol table before Phase 1 begins so `when`
@@ -486,6 +488,7 @@ def _emit_verbose_metadata(
     timestamp: str,
     duration_ms: float,
     *,
+    result: LiminateResult | None = None,
     verbose_out=None,
 ) -> None:
     metadata = {
@@ -493,6 +496,9 @@ def _emit_verbose_metadata(
         "timestamp": timestamp,
         "duration_ms": duration_ms,
     }
+    # Receipts v5 §15 dim. 3 — surface the contributing pack for pack verbs.
+    if result is not None and result.metadata and "pack" in result.metadata:
+        metadata["pack"] = result.metadata["pack"]
     print(json.dumps(metadata), file=verbose_out or sys.stderr)
 
 
@@ -657,7 +663,9 @@ def run_file(
         )
         session.record_result(result)
         if verbose and result is not None:
-            _emit_verbose_metadata(i + 1, ts, dur, verbose_out=verbose_out)
+            _emit_verbose_metadata(
+                i + 1, ts, dur, result=result, verbose_out=verbose_out,
+            )
         i += 1
 
     # v3a §107 — Phase 2 gate: only enter listener mode if Phase 1 had
@@ -798,7 +806,9 @@ def _consume_when_block(
     )
     session.record_result(result)
     if verbose and result is not None:
-        _emit_verbose_metadata(start_idx + 1, ts, dur, verbose_out=verbose_out)
+        _emit_verbose_metadata(
+            start_idx + 1, ts, dur, result=result, verbose_out=verbose_out,
+        )
     return j  # j points to the first un-consumed line
 
 
