@@ -538,6 +538,22 @@ class ForbidNode(ASTNode):
 
 
 @dataclass
+class PermitNode(ASTNode):
+    """Deontic Era — explicit permission verb.
+
+    Evaluates `condition`; if true, emits an output line recording
+    the permission. If false, silent pass. Never halts. Same
+    condition AST as `require` / `forbid` / `choose if` / `where`.
+    Completes the deontic triangle: require (obligation), forbid
+    (prohibition), permit (permission).
+    """
+    condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
+
+
+@dataclass
 class AssignNode(ASTNode):
     """Delegated Era batch 3 — assignment/delegation verb.
 
@@ -1243,6 +1259,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_require(stream)
     if verb.value == "forbid":
         return _parse_forbid(stream)
+    if verb.value == "permit":
+        return _parse_permit(stream)
     if verb.value == "assign":
         return _parse_assign(stream)
     if verb.value == "expect":
@@ -1926,6 +1944,31 @@ def _parse_forbid(stream: TokenStream) -> ForbidNode:
     finally:
         stream.pop_clause()
     return ForbidNode(condition=condition)
+
+
+# ---------------------------------------------------------------------------
+# permit (Deontic Era)
+# ---------------------------------------------------------------------------
+
+
+def _parse_permit(stream: TokenStream) -> PermitNode:
+    """`permit <condition>` — explicit permission verb.
+
+    Same condition grammar as `require`/`forbid`. The difference
+    is purely in runtime behavior: `permit` emits on true, never
+    halts.
+    """
+    if stream.at_end():
+        raise _ParseError(
+            "'permit' needs a condition — try: "
+            "permit <field> is <operator> <value>."
+        )
+    stream.push_clause("permit")
+    try:
+        condition = _parse_or_condition(stream)
+    finally:
+        stream.pop_clause()
+    return PermitNode(condition=condition)
 
 
 # ---------------------------------------------------------------------------
@@ -2843,6 +2886,10 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, ForbidNode):
         # Deontic Era: `forbid` conditions follow the same
         # mixed-precedence rule as `require` / `where`.
+        return _condition_is_mixed(node.condition)
+    if isinstance(node, PermitNode):
+        # Deontic Era: `permit` conditions follow the same
+        # mixed-precedence rule as `require` / `forbid` / `where`.
         return _condition_is_mixed(node.condition)
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3: `expect` conditions follow the same

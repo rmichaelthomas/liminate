@@ -18,13 +18,13 @@ from liminate.vocabulary import (
 
 
 def test_verb_count():
-    # 20 verbs: 19 + 1 (`forbid` — Deontic Era; prohibition verb,
-    # inverted `require`).
-    assert len(VERBS) == 20
+    # 21 verbs: 20 + 1 (`permit` — Deontic Era batch 2; explicit
+    # permission verb, informational emission).
+    assert len(VERBS) == 21
     assert VERBS == {
         "remember", "show", "filter", "keep", "count",
         "gather", "combine", "each", "choose", "finish",
-        "add", "remove", "weakens", "require", "forbid",
+        "add", "remove", "weakens", "require", "forbid", "permit",
         "assign", "expect", "sort", "compare", "transform",
     }
 
@@ -81,10 +81,10 @@ def test_multi_word_reserved():
 
 
 def test_total_reserved_count_is_54():
-    # 55 reserved words total. Deontic Era added `forbid` (VERBS).
-    # 20 verbs + 20 connectives + 8 operators + 3 multi-word
-    # + 3 articles + 0 v2-deferred + 1 declaration = 55.
-    assert len(ALL_RESERVED) == 55
+    # 56 reserved words total. Deontic Era batch 2 added `permit` (VERBS).
+    # 21 verbs + 20 connectives + 8 operators + 3 multi-word
+    # + 3 articles + 0 v2-deferred + 1 declaration = 56.
+    assert len(ALL_RESERVED) == 56
 
 
 def test_reserved_sets_are_disjoint():
