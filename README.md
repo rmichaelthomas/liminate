@@ -53,6 +53,8 @@ liminate --version
 liminate demo.limn
 ```
 
+The interpreter runs entirely on your machine. No network calls, no telemetry, no server dependency.
+
 Standalone binaries for macOS, Linux, and Windows are on the [Releases page](https://github.com/rmichaelthomas/liminate/releases) â€” no Python needed.
 
 For contributors:
@@ -161,6 +163,10 @@ The locked test sentences are simultaneously test cases and grammar artifacts â€
 - **The reorderer does not guess.** Ambiguous arrangements produce an amber clarification prompt rather than a silent pick.
 - **Authorize, don't author.** The on-ramp is modification of a working program, not authorship from a blank file.
 - **The AST is the source of truth.** The parser reconstructs a canonical English sentence so you see what was understood before it runs.
+
+## Security and data flow
+
+See [TRUST-BOUNDARY.md](https://github.com/rmichaelthomas/liminate-session-contracts/blob/main/docs/TRUST-BOUNDARY.md) for a complete description of what data moves where across the three usage modes: local-only, Receipts save, and fragment-encoded inspection.
 
 ## License
 
