@@ -86,14 +86,38 @@ def render(node: ASTNode) -> str:
 
     Meta-Structural Era batch 3: if the node is `inherited`, prepend the
     `inherited` modifier; if it carries `from` attribution, append the
-    `from <agent>` clause after the rationale. Canonical order:
-    `inherited <verb> <slots> because "<rationale>" from <agent>`.
+    `from <agent>` clause after the rationale.
+
+    Temporal-Boundary Era: `starting "<date>"` and/or `until "<date>"`
+    are the outermost statement-initial prefixes (before `inherited`).
+    Canonical order:
+    `starting "<d>" until "<d>" inherited <verb> <slots>
+     because "<rationale>" from <agent>`.
+
+    The metadata is assembled in a single pass: prefix components are
+    built left-to-right into a list, then suffix clauses are appended
+    right-to-left, so every field lands in canonical order.
     """
     rendered = _render_node(node)
 
-    if getattr(node, "inherited", False):
-        rendered = f"inherited {rendered}"
+    # Prefix components, in canonical order: starting, until, inherited.
+    prefix_parts: list[str] = []
 
+    starting = getattr(node, "starting_date", None)
+    if starting is not None:
+        prefix_parts.append(f'starting "{starting}"')
+
+    until_d = getattr(node, "until_date", None)
+    if until_d is not None:
+        prefix_parts.append(f'until "{until_d}"')
+
+    if getattr(node, "inherited", False):
+        prefix_parts.append("inherited")
+
+    if prefix_parts:
+        rendered = " ".join(prefix_parts) + " " + rendered
+
+    # Suffix clauses: because, then from.
     rationale = getattr(node, "rationale", None)
     if rationale is not None:
         rendered = f'{rendered} because "{rationale}"'
