@@ -39,10 +39,10 @@ If a feature is shipped, it has a locked specification, a working implementation
 - **Single-threaded event queue (Phase 2).** Adapters push `(name, value)` updates into a shared FIFO. The interpreter drains one update to completion (write → re-eval → fire-eligible → cascade) before the next dequeue. (v3a §119)
 - **Edge-triggered evaluation (Phase 2).** Handlers fire on false→true transitions of their compound eligibility. Unchanged adapter updates are silently absorbed. Modifications inside an action block are coalesced by name and cascade depth-first. (v3a §113/§114)
 
-### Vocabulary (54 reserved words)
+### Vocabulary (58 reserved words)
 
-- **19 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `assign`, `expect`, `sort`, `compare`, `transform`.
-- **20 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`, `by`, `because`.
+- **21 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `forbid`, `permit`, `assign`, `expect`, `sort`, `compare`, `transform`.
+- **22 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`, `by`, `because`, `starting`, `until`.
 - **8 single-word operators:** `is`, `above`, `below`, `not`, `plus`, `minus`, `reverse`, `inherited`. Plus `equal`/`multiplied`/`divided` as multi-word components (combine with `to`/`by` per inception §22).
 - **3 articles:** `the`, `a`, `an`.
 - **1 declaration:** `about`.
@@ -50,6 +50,8 @@ If a feature is shipped, it has a locked specification, a working implementation
 - **0 v2-deferred:** `V2_RESERVED` is now empty — `transform` and `compare` have been promoted to active verbs.
 
 The Meta-Structural Era added three self-describing words as inert metadata (visible to rendering and `inspect`, never executed): `about` (program topic declaration, first line), `because` (statement-terminal quoted rationale on any verb statement), and `inherited` (statement-initial provenance modifier marking a statement as carried forward from a prior context, with optional `from <agent>` attribution).
+
+The Deontic Era completed the obligation/prohibition/permission triangle: `forbid` (halts with `PROHIBITION_VIOLATED` when its condition is true — the mirror of `require`) and `permit` (emits an informational line when its condition is true, never halts — the `expect` pattern). The Temporal-Boundary Era added `starting` and `until`, statement-initial connectives attaching quoted ISO 8601 effective dates and sunset clauses as inert metadata; temporal evaluation is a product-layer concern, not interpreter runtime.
 
 ### Data types and values
 

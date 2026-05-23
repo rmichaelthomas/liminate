@@ -1,7 +1,7 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 54 reserved words plus user-provided names and literal
+prose language: 58 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
@@ -11,8 +11,11 @@ strings), v2d (composition parameters with `from`, `choose` with
 `if`/`otherwise`), v3a (event-driven listener mode — `when`,
 `unless`, `finish`, indented action blocks, domain-pack adapters),
 the `add`/`remove`/`weakens`/`require`/`assign`/`expect` verb
-additions, and the Infrastructure Era (`by`/`plus`/`minus`/`multiplied
-by`/`divided by` arithmetic, `sort`/`reverse`, `compare`, `transform`).
+additions, the Infrastructure Era (`by`/`plus`/`minus`/`multiplied
+by`/`divided by` arithmetic, `sort`/`reverse`, `compare`, `transform`),
+the Deontic Era (`forbid`/`permit` — completing the
+require/forbid/permit triangle), and the Temporal-Boundary Era
+(`starting`/`until` — effective dates and sunset clauses).
 See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
 what's intentionally not built.
 
@@ -46,7 +49,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 54 reserved words.
+- Cannot be one of the 58 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -59,7 +62,7 @@ see [Values](#values) and [Quoting](#quoting) below.
 
 ## Verbs
 
-There are nineteen verbs. Most statements begin with one.
+There are twenty-one verbs. Most statements begin with one.
 
 ### `remember`
 
@@ -382,6 +385,44 @@ The condition grammar matches `where` and `choose if` — comparison
 operators, `includes`, `not`, compound `and` / `or`, field access
 via `of`. Mixed `and` / `or` in one clause triggers the amber prompt.
 
+### `forbid`
+
+The mirror of `require`. Evaluates a condition; if it holds, the
+program halts with `PROHIBITION_VIOLATED` and the error message echoes
+the condition and the triggering value. If the condition is false,
+`forbid` passes silently. Where `require` halts on a *false* condition,
+`forbid` halts on a *true* one.
+
+```
+forbid total is above 10000
+forbid categories includes "restricted"
+```
+
+Same condition grammar as `require`. `require` and `forbid` are
+independent — neither knows about the other.
+
+### `permit`
+
+The third corner of the deontic triangle, and the one that never
+halts. Evaluates a condition; if it holds, `permit` emits one
+informational line — `Permitted: <condition>. <actual>.` — and
+execution continues with `SUCCESS`. If the condition is false, it
+passes silently. `permit` follows the `expect` pattern (emit on match)
+rather than the `require`/`forbid` pattern (halt on violation).
+
+```
+permit expenses is below 5000
+permit category is "travel"
+```
+
+Together the three express obligation (`require`), prohibition
+(`forbid`), and permission (`permit`). They compose freely in a
+sequence and evaluate independently:
+
+```
+require total is above 100 and forbid total is above 10000 and permit category is "travel"
+```
+
 ### `assign`
 
 Stores an item-to-recipient mapping. The item becomes the variable
@@ -473,6 +514,40 @@ record; the second (scalar-list mode) replaces each element, where
 full arithmetic expression — see [Arithmetic](#arithmetic) — evaluated
 per element with field names resolving against the current element
 first, then the symbol table.
+
+## Temporal boundaries (`starting` / `until`)
+
+Two statement-initial connectives give a rule an effective date and a
+sunset clause. They attach to any verb statement and take a quoted
+ISO 8601 date (`YYYY-MM-DD`):
+
+```
+starting "2025-07-01" require amount is above 50000
+until "2025-12-31" forbid total is above 10000
+starting "2025-07-01" until "2025-12-31" permit category is "travel"
+```
+
+`starting` declares when a rule takes effect; `until` declares when it
+expires. Either may appear alone, both may co-occur, or neither. When
+both are present, `starting` comes first — the reverse order is a parse
+error.
+
+The dates are **inert metadata**. The interpreter validates the
+`YYYY-MM-DD` format at parse time and stores the values on the AST, but
+it does *not* evaluate them against a clock — a rule with a temporal
+boundary executes exactly as it would without one. Whether a rule is
+currently `active`, `expired`, `future`, or `unbounded` is a
+product-layer concern (for example, the Receipts inspection surface),
+not interpreter runtime. Termination is hard: a rule is in effect or it
+is not, with no decay. For gradual decay, compose with
+[`weakens`](#weakens).
+
+Temporal boundaries are the outermost statement-initial modifiers. The
+full canonical order is:
+
+```
+starting "2025-07-01" until "2025-12-31" inherited require amount is above 50000 because "regulatory cap" from agent-compliance
+```
 
 ## Arithmetic
 
@@ -840,7 +915,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 54 reserved words) cannot be used **unquoted**
+Vocabulary words (the 58 reserved words) cannot be used **unquoted**
 as values:
 
 ```
