@@ -55,6 +55,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    ForbidNode,
     SequenceNode,
     ShowNode,
     SortNode,
@@ -243,6 +244,9 @@ def _render_node(node: ASTNode) -> str:
     if isinstance(node, RequireNode):
         # Normative Era batch 2 — `require <condition>`.
         return f"require {render(node.condition)}"
+    if isinstance(node, ForbidNode):
+        # Deontic Era — `forbid <condition>`.
+        return f"forbid {render(node.condition)}"
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — `expect <condition>`.
         return f"expect {render(node.condition)}"
@@ -328,6 +332,8 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
         return _render_sequence(node, render_with_explicit_precedence)
     if isinstance(node, RequireNode):
         return f"require {render_with_explicit_precedence(node.condition)}"
+    if isinstance(node, ForbidNode):
+        return f"forbid {render_with_explicit_precedence(node.condition)}"
     if isinstance(node, ExpectNode):
         return f"expect {render_with_explicit_precedence(node.condition)}"
     if isinstance(node, AssignNode):
