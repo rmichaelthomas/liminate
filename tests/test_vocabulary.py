@@ -30,16 +30,16 @@ def test_verb_count():
 
 
 def test_connective_count():
-    # 20 connectives: 19 + 1 (`because` — Meta-Structural Era batch 2;
-    # attaches a quoted rationale to a verb statement as inert AST
-    # metadata, statement-terminal, per-statement only per MS-Q2).
-    assert len(CONNECTIVES) == 20
+    # 22 connectives: 20 + 2 (`starting`/`until` — Temporal-Boundary
+    # Era; statement-initial modifiers attaching quoted ISO 8601 dates
+    # as inert AST metadata, co-occurrence allowed per DT-Q4).
+    assert len(CONNECTIVES) == 22
     assert CONNECTIVES == {
         "where", "and", "or", "from", "with",
         "called", "to", "how", "as", "of",
         "if", "otherwise",
         "when", "unless", "includes", "within", "over", "then",
-        "by", "because",
+        "by", "because", "starting", "until",
     }
 
 
@@ -81,10 +81,10 @@ def test_multi_word_reserved():
 
 
 def test_total_reserved_count_is_54():
-    # 56 reserved words total. Deontic Era batch 2 added `permit` (VERBS).
-    # 21 verbs + 20 connectives + 8 operators + 3 multi-word
-    # + 3 articles + 0 v2-deferred + 1 declaration = 56.
-    assert len(ALL_RESERVED) == 56
+    # 58 reserved words total. Temporal-Boundary Era added `starting`
+    # and `until` (CONNECTIVES). 21 verbs + 22 connectives + 8 operators
+    # + 3 multi-word + 3 articles + 0 v2-deferred + 1 declaration = 58.
+    assert len(ALL_RESERVED) == 58
 
 
 def test_reserved_sets_are_disjoint():

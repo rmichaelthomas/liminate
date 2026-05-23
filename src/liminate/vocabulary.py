@@ -68,6 +68,10 @@ Sources:
   The `from` connective gains a new grammatical position: statement-final
   agent attribution on `inherited` statements (MS-Q4, no new word). The
   Meta-Structural Era is complete: `about`, `because`, `inherited`.
+- Temporal-Boundary Era (21 verbs, 22 connectives, 58 reserved words
+  total) — `starting` connective (effective date) and `until`
+  connective (sunset clause). Statement-initial modifiers with quoted
+  ISO 8601 dates as inert AST metadata. Hard termination (DT-Q5).
 """
 
 from dataclasses import dataclass
@@ -169,6 +173,12 @@ CONNECTIVES: frozenset[str] = frozenset({
     # Per-statement only (MS-Q2). Statement-terminal: consumed after all
     # verb slots are filled.
     "because",
+    # Temporal-Boundary Era: `starting` introduces an effective date;
+    # `until` introduces a sunset clause. Both are statement-initial
+    # modifiers attaching ISO 8601 quoted-string dates as inert AST
+    # metadata. Co-occurrence allowed. Temporal evaluation is a
+    # product-layer concern (Receipts server), not interpreter runtime.
+    "starting", "until",
 })
 
 # v1 single-word operators (inception §11). `equal to` is a multi-word
@@ -228,7 +238,7 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # table. Single, first-line-only (MS-Q1).
 DECLARATIONS: frozenset[str] = frozenset({"about"})
 
-# All 56 reserved words. 21 verbs, 20 connectives, 8 operators, 3
+# All 58 reserved words. 21 verbs, 22 connectives, 8 operators, 3
 # articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
 # v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
@@ -260,6 +270,8 @@ DECLARATIONS: frozenset[str] = frozenset({"about"})
 # Total 55.
 # Deontic Era batch 2: +1 — `permit` verb (explicit permission,
 # informational). Total 56.
+# Temporal-Boundary Era: +2 — `starting` connective (effective date)
+# and `until` connective (sunset clause). Total 58.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
     | MULTI_WORD_RESERVED | DECLARATIONS
@@ -276,7 +288,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 56 reserved words — 21 verbs, 0 V2-reserved;
+    surface (currently 58 reserved words — 21 verbs, 0 V2-reserved;
     see module docstring).
     """
     if word in VERBS:

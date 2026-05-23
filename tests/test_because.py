@@ -81,9 +81,9 @@ def test_reserved_category_because_is_connective():
     assert reserved_category("because") == "connective"
 
 
-def test_all_reserved_count_is_56():
-    # Deontic Era batch 2 added the `permit` verb (55 → 56).
-    assert len(ALL_RESERVED) == 56
+def test_all_reserved_count_is_58():
+    # Temporal-Boundary Era added `starting`/`until` connectives (56 → 58).
+    assert len(ALL_RESERVED) == 58
 
 
 # ---------------------------------------------------------------------------
