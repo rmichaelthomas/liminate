@@ -180,10 +180,11 @@ fallback.
 Builds an abstract syntax tree (AST). The parser is **slot-filling**:
 each verb has a known signature (e.g. `filter` expects a target and a
 condition), and the parser walks the tokens filling each slot in
-canonical order. The nineteen verbs (`remember`, `show`, `filter`,
+canonical order. The twenty-one verbs (`remember`, `show`, `filter`,
 `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`,
-`add`, `remove`, `weakens`, `require`, `assign`, `expect`, `sort`,
-`compare`, `transform`) each route to a verb-specific sub-parser that
+`add`, `remove`, `weakens`, `require`, `forbid`, `permit`, `assign`,
+`expect`, `sort`, `compare`, `transform`) each route to a verb-specific
+sub-parser that
 shares helpers — `keep` and `filter` share their target-plus-condition
 shape, for instance.
 
