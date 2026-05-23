@@ -657,6 +657,32 @@ class RequireNode(ASTNode):
 
 
 @dataclass
+class RequireEachNode(ASTNode):
+    """v8a §49 — iterated enforcement verb.
+
+    Evaluates `condition` once per element in `collection`, with
+    `binding_name` bound to the current element as a temporary
+    symbol-table entry. If any element violates the condition,
+    execution halts with REQUIREMENT_NOT_MET. If all pass, silent.
+
+    The condition uses the same unified condition grammar as
+    RequireNode / ForbidNode / FilterNode / ChooseNode — inherited
+    wholesale from `_parse_or_condition`. A condition that elides its
+    field (begins with `is`/`includes`) binds to the current element
+    via an implicit `EachPronoun`; an explicit reference to
+    `binding_name` resolves to the same element (a NameRef).
+    """
+    binding_name: str
+    collection: NameRef
+    condition: ASTNode
+    rationale: str | None = field(default=None, compare=False)
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
+
+
+@dataclass
 class ForbidNode(ASTNode):
     """Deontic Era — prohibition verb.
 
@@ -2165,7 +2191,7 @@ def _parse_weakens(stream: TokenStream) -> WeakensNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_require(stream: TokenStream) -> RequireNode:
+def _parse_require(stream: TokenStream) -> RequireNode | RequireEachNode:
     """`require <condition>` — enforcement verb.
 
     The condition uses the same parser path as `choose if` /
@@ -2174,18 +2200,83 @@ def _parse_require(stream: TokenStream) -> RequireNode:
     full set of comparison operators. The clause-context stack is
     pushed so condition sub-parsers can see they're inside a
     `require` clause if they ever need to.
+
+    v8a §49 — a second parse shape, `require each {name} in {list}
+    {condition}`, is selected when the next token is the `each` verb.
     """
     if stream.at_end():
         raise _ParseError(
             "'require' needs a condition — try: "
             "require <field> is <operator> <value>."
         )
+
+    # Second parse shape: `require each {name} in {list} {condition}`.
+    peek = stream.peek()
+    if peek and peek.type is TokenType.VERB and peek.value == "each":
+        return _parse_require_each(stream)
+
     stream.push_clause("require")
     try:
         condition = _parse_or_condition(stream)
     finally:
         stream.pop_clause()
     return RequireNode(condition=condition)
+
+
+def _parse_require_each(stream: TokenStream) -> RequireEachNode:
+    """Parse `require each {name} in {list} {condition}` (v8a §49).
+
+    `each` has been peeked but not consumed. Consume it, then the
+    binding name (UNKNOWN, reserved-word-excluded), the positional `in`
+    (UNKNOWN token, not a connective), the collection name, and finally
+    the condition via the unified `_parse_or_condition` path.
+
+    The `require-each` clause is pushed so `_parse_simple_condition`
+    treats a field-elided condition (one that begins with `is` /
+    `includes`) as referring to the current element via `EachPronoun`.
+    """
+    stream.consume()  # eat `each`
+
+    # Binding name — an UNKNOWN token, never a reserved word.
+    binding_name = _consume_name(stream, after="'require each'")
+
+    # `in` — consumed positionally as an UNKNOWN token (it is not a
+    # reserved connective; the same way `sort` consumes `in`).
+    in_tok = stream.consume()
+    if in_tok is None:
+        raise _ParseError(
+            "'require each' needs a list — try: "
+            f"require each {binding_name} in <list-name> <condition>."
+        )
+    if not (in_tok.type is TokenType.UNKNOWN and in_tok.value == "in"):
+        raise _ParseError(
+            f"I expected 'in' after 'require each {binding_name}', "
+            f"not '{in_tok.value}'. Try: "
+            f"require each {binding_name} in <list-name> <condition>."
+        )
+
+    # Collection name.
+    _consume_optional_article(stream)
+    collection = _consume_target(stream, verb="require each")
+
+    # Condition — same unified path as the simple `require`.
+    if stream.at_end():
+        raise _ParseError(
+            f"'require each {binding_name} in {collection.name}' "
+            f"needs a condition — try: require each {binding_name} "
+            f"in {collection.name} is <operator> <value>."
+        )
+    stream.push_clause("require-each")
+    try:
+        condition = _parse_or_condition(stream)
+    finally:
+        stream.pop_clause()
+
+    return RequireEachNode(
+        binding_name=binding_name,
+        collection=collection,
+        condition=condition,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -2713,9 +2804,21 @@ def _parse_and_condition(stream: TokenStream) -> ASTNode:
 
 def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
     # Field reference or `each` pronoun (v1b §37).
-    head = stream.consume()
+    head = stream.peek()
     if head is None:
         raise _ParseError("I expected a field after 'where'.")
+    # v8a §49 — inside `require each`, a condition may elide its field:
+    # `is above 70` / `includes "x"` with no LHS binds to the current
+    # element via an implicit `each` pronoun. Detect the elided form by a
+    # leading comparison/membership token and inject EachPronoun without
+    # consuming it, so the operator-parsing below proceeds normally.
+    if stream.in_clause("require-each") and (
+        (head.type is TokenType.OPERATOR and head.value in ("is", "not"))
+        or (head.type is TokenType.CONNECTIVE and head.value == "includes")
+    ):
+        field_node: ASTNode = EachPronoun()
+        return _finish_simple_condition(stream, field_node)
+    head = stream.consume()
     if head.type is TokenType.VERB and head.value == "each":
         field_node: ASTNode = EachPronoun()
     elif head.type is TokenType.UNKNOWN:
@@ -2769,6 +2872,13 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
             )
         raise _ParseError(f"I didn't expect '{head.value}' as a field name.")
 
+    return _finish_simple_condition(stream, field_node)
+
+
+def _finish_simple_condition(stream: TokenStream, field_node: ASTNode) -> ConditionNode:
+    """Parse the operator + value tail of a simple condition, given an
+    already-resolved field node. Shared between the explicit-field path
+    and the `require each` field-elided path (v8a §49)."""
     # `includes` is a list-membership connective; it replaces the entire
     # `is <op>` pattern: `<list> includes <value>` or
     # `<list> not includes <value>`.
@@ -3149,6 +3259,10 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, RequireNode):
         # Normative Era batch 2: `require` conditions follow the same
         # mixed-precedence rule as `where` / `choose if` clauses (v1a §30).
+        return _condition_is_mixed(node.condition)
+    if isinstance(node, RequireEachNode):
+        # v8a §49: `require each` conditions follow the same
+        # mixed-precedence rule as the simple `require`.
         return _condition_is_mixed(node.condition)
     if isinstance(node, ForbidNode):
         # Deontic Era: `forbid` conditions follow the same
