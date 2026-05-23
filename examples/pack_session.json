@@ -1,6 +1,6 @@
 {
   "name": "session",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "vocabulary": [
     { "word": "claim", "category": "noun" },
     { "word": "source", "category": "noun" },

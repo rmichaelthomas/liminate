@@ -84,6 +84,12 @@ class Session:
         # (§107) blocks Phase 2. The CLI populates this via run_line's
         # caller — record_result is the integration point.
         self.phase1_had_error: bool = False
+        # Exit-code accumulator: tracks ALL error statuses across both
+        # phases (parse, semantic, runtime), not just the Phase 1 gate
+        # errors. run_file() returns this so main() can propagate a
+        # non-zero exit code to automated consumers (CI, git hooks,
+        # &&-chained commands). Errors are sticky — once set, stays set.
+        self.had_any_error: bool = False
         # U1/U2 — display state for HANDLER_FIRE outputs. Tracks the
         # most recently-displayed trigger key so the [trigger-tag] prefix
         # appears once per firing rather than once per action statement.
@@ -230,6 +236,12 @@ class Session:
             ResultStatus.AMBER_AMBIGUITY,
         ):
             self.phase1_had_error = True
+        if result.status in (
+            ResultStatus.ERROR_PARSE,
+            ResultStatus.ERROR_SEMANTIC,
+            ResultStatus.ERROR_RUNTIME,
+        ):
+            self.had_any_error = True
 
 
 # ---------------------------------------------------------------------------
@@ -516,8 +528,11 @@ def run_file(
     domain_packs: list[DomainPack] | None = None,
     out=None,
     verbose_out=None,
-) -> None:
+) -> bool:
     """Execute an Liminate source file (Phase 1 + optional Phase 2).
+
+    Returns True if any error (parse, semantic, or runtime) occurred
+    across either phase, so callers can propagate a non-zero exit code.
 
     Phase 1 reads the file line-by-line. Top-level `when` lines start
     an indentation-aware block: subsequent indented lines belong to
@@ -673,13 +688,13 @@ def run_file(
     # source executed as a regular v2d program (or reported Phase 1
     # errors that the user must fix before listening can begin).
     if session.handler_table.is_empty():
-        return
+        return session.had_any_error
     if session.phase1_had_error:
         # Don't even yield a SHUTDOWN — the existing error stream is the
         # user's signal that Phase 2 didn't start. The condition is
         # rare in practice: most programs that contain `when` blocks are
         # error-free Phase 1 setup.
-        return
+        return session.had_any_error
 
     # Phase 2 streams results from the listener generator. v3a §122
     # data (HANDLER_FIRE output, SHUTDOWN message, errors) is always
@@ -701,6 +716,9 @@ def run_file(
             quiet=quiet,
             out=out,
         )
+        session.record_result(result)
+
+    return session.had_any_error
 
 
 def _consume_when_block(
@@ -936,6 +954,10 @@ def _run_build_subcommand(args: list[str]) -> int:
     imported lazily inside build() so users who never invoke `build`
     don't pay the import cost (and so the package keeps loading even
     when the optional `[build]` extra isn't installed)."""
+    if "--help" in args or "-h" in args:
+        print("Usage: liminate build <source.limn> [--pack <json>]... --output <name>")
+        return 0
+
     from .build import build  # late import — PyInstaller is an optional dep
 
     source: str | None = None
@@ -994,6 +1016,10 @@ def _run_inspect_subcommand(args: list[str]) -> int:
 
     Shells out to `<binary> --inspect [--json]`. The binary's argv
     handler short-circuits before executing the embedded program."""
+    if "--help" in args or "-h" in args:
+        print("Usage: liminate inspect <binary> [--json]")
+        return 0
+
     from .inspect_cmd import inspect_binary
 
     binary: str | None = None
@@ -1044,6 +1070,24 @@ def main(argv: list[str] | None = None) -> int:
         elif a == "--version":
             print(f"Liminate {_pkg_version('liminate')}")
             return 0
+        elif a in ("--help", "-h"):
+            print(
+                "Usage: liminate [options] [file.limn]\n"
+                "       liminate build <file.limn> [--pack <json>]... --output <name>\n"
+                "       liminate inspect <binary> [--json]\n"
+                "\n"
+                "Options:\n"
+                "  --pack <json>   Load a domain pack (JSON file or inline JSON)\n"
+                "  --test          Auto-confirm amber (ambiguous) outcomes\n"
+                "  --quiet         Suppress 'I understand this as:' echo\n"
+                "  --verbose       Emit per-line execution metadata (JSON to stderr)\n"
+                "  --version       Print version and exit\n"
+                "  --help, -h      Show this help and exit\n"
+                "\n"
+                "With no file argument, starts an interactive REPL.\n"
+                "Documentation: https://liminate.dev"
+            )
+            return 0
         elif a == "--pack":
             # `--pack <arg>` registers a domain pack. `<arg>` may be
             # either a JSON file path or an inline JSON string (starts
@@ -1076,13 +1120,14 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     if positional:
-        run_file(
+        had_error = run_file(
             positional[0],
             auto_confirm_amber=auto,
             quiet=quiet,
             verbose=verbose,
             domain_packs=domain_packs or None,
         )
+        return 1 if had_error else 0
     else:
         repl()
     return 0
