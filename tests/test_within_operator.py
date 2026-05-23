@@ -46,7 +46,7 @@ def _run(tmp_path, src):
 def test_within_still_connective_and_count_unchanged():
     assert reserved_category("within") == "connective"
     assert "within" in ALL_RESERVED
-    assert len(ALL_RESERVED) == 54
+    assert len(ALL_RESERVED) == 55
 
 
 # ---------------------------------------------------------------------------

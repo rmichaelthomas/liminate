@@ -78,6 +78,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    ForbidNode,
     SequenceNode,
     ShowNode,
     SortNode,
@@ -322,6 +323,11 @@ def _check(
         # validation path as `choose if`: no iterator, names resolve
         # against the symbol table directly, field access uses `of`.
         _check_choose_condition(node.condition, symtab)
+    elif isinstance(node, ForbidNode):
+        # Deontic Era — same condition validation as `require`.
+        # Behavior differs only at runtime (halts on true instead
+        # of false).
+        _check_choose_condition(node.condition, symtab)
     elif isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — same condition validation as `require`.
         # Behavior differs only at runtime (divergence emits output;
@@ -503,6 +509,10 @@ def _side_effect_verb(
         # Normative Era batch 2 — `require` either passes silently or
         # halts with REQUIREMENT_NOT_MET. Never produces a value.
         return "require"
+    if isinstance(node, ForbidNode):
+        # Deontic Era — `forbid` halts on true or passes silently.
+        # Never produces a value.
+        return "forbid"
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — `expect` is silent on pass; emits
         # divergence output on failure. Never produces a value.
