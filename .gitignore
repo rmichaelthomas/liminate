@@ -21,3 +21,6 @@ docs/superpowers/
 
 # Branch D reference asset — kept locally for design reference, not committed.
 liminate_visual_identity.html
+
+# Local experiment scratch — exploratory work, not part of the spec.
+experiments/
