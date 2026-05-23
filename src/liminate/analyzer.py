@@ -78,6 +78,7 @@ from .parser import (
     RememberRecordNode,
     RememberValueNode,
     RequireNode,
+    RequireEachNode,
     ForbidNode,
     PermitNode,
     SequenceNode,
@@ -153,6 +154,11 @@ class IteratorContext:
     record_schemas: list[dict[str, str]] | None = None
     # For flat lists: type of the items ("number" or "string").
     scalar_type: str | None = None
+    # v8a §49: for `require each`, the name bound to the current element.
+    # When set, a NameRef matching it resolves to the current element
+    # (the same target as the `each` pronoun) rather than erroring or
+    # being checked against a record schema.
+    binding_name: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -324,6 +330,11 @@ def _check(
         # validation path as `choose if`: no iterator, names resolve
         # against the symbol table directly, field access uses `of`.
         _check_choose_condition(node.condition, symtab)
+    elif isinstance(node, RequireEachNode):
+        # v8a §49 — iterated enforcement. Validate the collection is a
+        # list and the binding name doesn't collide with it; the
+        # condition resolves against the bound element.
+        _check_require_each(node, symtab)
     elif isinstance(node, ForbidNode):
         # Deontic Era — same condition validation as `require`.
         # Behavior differs only at runtime (halts on true instead
@@ -1150,6 +1161,13 @@ def _resolve_field(
         return iterator.scalar_type or "unknown", "each"
     if isinstance(field_node, NameRef):
         name = field_node.name
+        if iterator.binding_name is not None and name == iterator.binding_name:
+            # v8a §49 — an explicit reference to the `require each`
+            # binding resolves to the current element, exactly like the
+            # `each` pronoun.
+            if iterator.record_schemas is not None:
+                return "record", name
+            return iterator.scalar_type or "unknown", name
         if iterator.record_schemas is not None:
             in_all = all(name in s for s in iterator.record_schemas)
             if in_all:
@@ -1267,6 +1285,65 @@ def _check_each(
         in_action_block=in_action_block,
         live_value_names=live_value_names,
     )
+
+
+def _check_require_each(
+    node: RequireEachNode,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """v8a §49 — semantic checks for `require each {name} in {list}
+    {condition}`:
+
+    (a) the collection exists and is a list;
+    (b) the binding name is not identical to the list name (which would
+        read ambiguously);
+    (c) the condition is well-formed against the bound element. The
+        binding is injected as a temporary symbol-table entry and named
+        on the iterator context so both implicit (`each`) and explicit
+        (the binding name) references resolve to the current element.
+    """
+    name = node.collection.name
+    entry = _require_list(name, symtab, verb="iterate over")
+
+    if node.binding_name == name:
+        raise _SemanticError(
+            f"The binding name can't be the same as the list name. "
+            f"Try: require each <item> in {name} <condition>."
+        )
+
+    iterator = _make_iterator(name, entry)
+    iterator.binding_name = node.binding_name
+
+    # Inject a temporary binding so right-hand references (a BareWord
+    # naming the binding) and `<field> of <binding>` access resolve. The
+    # type mirrors the collection's element type. Save/restore any
+    # existing symbol with the same name (v2d §96 pattern).
+    if entry.type == "list_of_records":
+        element_type = "record"
+        element_schema = (
+            {k: _value_type(v) for k, v in entry.value[0].items()}
+            if entry.value
+            else None
+        )
+    elif entry.type == "list_of_strings":
+        element_type, element_schema = "string", None
+    else:
+        element_type, element_schema = "number", None
+
+    saved = symtab.get(node.binding_name)
+    symtab[node.binding_name] = SymbolEntry(
+        name=node.binding_name,
+        value=None,
+        type=element_type,
+        schema=element_schema,
+    )
+    try:
+        _check_condition(node.condition, symtab, iterator)
+    finally:
+        if saved is not None:
+            symtab[node.binding_name] = saved
+        else:
+            symtab.pop(node.binding_name, None)
 
 
 # ---------------------------------------------------------------------------
