@@ -2,7 +2,9 @@
 
 The sentence is the program.
 
-Liminate is a programming language whose syntax is plain English. A small, bounded vocabulary of 58 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
+*Part of the Prosecode family — a set of tools for writing, verifying, and transferring structured reasoning.*
+
+Liminate is a prose-as-syntax language whose syntax is plain English. A small, bounded vocabulary of 58 reserved words combines into sentences that a real interpreter lexes, parses, type-checks, and runs. Not a prompt. Not a code generator. The prose IS the program.
 
 ## What it does
 
@@ -24,9 +26,9 @@ liminate demo.limn
 
 You get back `1, 2, 3, 4, 5, 6, 7, 8, 9, 10` and then `40` — the sum of what's left after filtering. The interpreter also echoes each statement in canonical form so you can see exactly how it was understood before it ran.
 
-## Part of the Liminate family
+## Built by Liminate
 
-Liminate is a prose-as-syntax programming language where plain English sentences execute directly. These five repos form a system for writing, verifying, and transferring structured reasoning.
+Liminate is a prose-as-syntax language where plain English sentences execute directly. These five repos form a system for writing, verifying, and transferring structured reasoning.
 
 | | Repo | What it does |
 |---|---|---|
@@ -174,4 +176,4 @@ Apache 2.0. See [LICENSE](LICENSE).
 
 ---
 
-*A programming language is a tool for naming. The question was never whether non-programmers could think computationally — the question was why we kept handing them someone else's language to do it in.*
+*A language is a tool for naming. The question was never whether non-programmers could think computationally — the question was why we kept handing them someone else's language to do it in.*
