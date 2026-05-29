@@ -35,213 +35,28 @@ from __future__ import annotations
 
 import json
 import sys
-import time
-from datetime import datetime, timezone
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
 from .adapter import (
     DomainPack,
-    LiveValueRegistry,
     TestDomainPack,
     parse_pack_verb_signature,
 )
-from .vocabulary import (
-    activate_pack_words,
-    deactivate_all_pack_words,
-)
-from .analyzer import SymbolEntry
-from .interpreter import HandlerTable, execute
-from .lexer import LexError, leading_indent, tokenize
-from .listener import listen
+from .interpreter import execute
 from .packs.file_watcher import make_file_watcher_pack
 from .packs.stdin import make_stdin_pack
 from .packs.timer import make_timer_pack
-from .parser import _ParseError, parse, parse_about, parse_when_block
-from .reorderer import reorder
 from .result import LiminateResult, ResultStatus
-from .vocabulary import TokenType
-
-
-# ---------------------------------------------------------------------------
-# Session: the shared symbol table across statements (+ v3a listener state)
-# ---------------------------------------------------------------------------
-
-
-class Session:
-    def __init__(
-        self,
-        *,
-        domain_packs: list[DomainPack] | None = None,
-    ) -> None:
-        self.symtab: dict[str, SymbolEntry] = {}
-        # v3a §108 / §117 / §118 — listener-mode state.
-        self.handler_table = HandlerTable()
-        self.live_value_registry = LiveValueRegistry()
-        self.domain_packs: list[DomainPack] = list(domain_packs or [])
-        # Phase 1 error accumulator: if any sequential statement produced
-        # ERROR_PARSE, ERROR_SEMANTIC, or an unresolved AMBER, the gate
-        # (§107) blocks Phase 2. The CLI populates this via run_line's
-        # caller — record_result is the integration point.
-        self.phase1_had_error: bool = False
-        # Exit-code accumulator: tracks ALL error statuses across both
-        # phases (parse, semantic, runtime), not just the Phase 1 gate
-        # errors. run_file() returns this so main() can propagate a
-        # non-zero exit code to automated consumers (CI, git hooks,
-        # &&-chained commands). Errors are sticky — once set, stays set.
-        self.had_any_error: bool = False
-        # U1/U2 — display state for HANDLER_FIRE outputs. Tracks the
-        # most recently-displayed trigger key so the [trigger-tag] prefix
-        # appears once per firing rather than once per action statement.
-        # Reset by display_result whenever a non-HANDLER_FIRE result is
-        # surfaced (so any Phase-1 / shutdown / error line clears it).
-        self._last_trigger_key: tuple | None = None
-
-        # Meta-Structural Era: the `about` declaration's topic, set by
-        # run_file when the program's first eligible line is an `about`
-        # declaration. Inert metadata — not stored in the symbol table.
-        self.topic: str | None = None
-
-        # v4a §137: pack vocabulary (verbs + nouns) is process-global
-        # state. Reset before activating this Session's packs so the
-        # active vocabulary always reflects the current Session, not a
-        # leftover from an earlier one.
-        deactivate_all_pack_words()
-        for pack in self.domain_packs:
-            verbs = pack.verbs()
-            nouns = [w for (w, cat) in pack.vocabulary() if cat == "noun"]
-            if verbs or nouns:
-                activate_pack_words(
-                    verbs=verbs, nouns=nouns, pack_name=pack.name(),
-                )
-
-        # Register declared live values from each pack. Names become
-        # visible in the symbol table before Phase 1 begins so `when`
-        # condition resolution (§108) can see them.
-        for pack in self.domain_packs:
-            for decl in pack.declarations():
-                self.live_value_registry.declare(decl, pack.name())
-                if decl.name not in self.symtab:
-                    self.symtab[decl.name] = SymbolEntry(
-                        name=decl.name,
-                        value=None,
-                        type=decl.value_type,
-                    )
-
-    def composition_names(self) -> set[str]:
-        return {n for n, e in self.symtab.items() if e.type == "composition"}
-
-    def run_line(self, line: str) -> LiminateResult | None:
-        """Execute one source line. Returns the result, or None for blank."""
-        try:
-            tokens = tokenize(line)
-        except LexError as e:
-            # v2c §86/§92 — unclosed or empty quoted strings surface as
-            # ERROR_PARSE (Outcome 4 per v1c §50).
-            return LiminateResult(
-                status=ResultStatus.ERROR_PARSE,
-                message=e.message,
-                executed=False,
-            )
-        if not tokens:
-            return None
-        reordered = reorder(tokens)
-        if isinstance(reordered, LiminateResult):
-            return reordered
-        ast = parse(reordered, composition_names=self.composition_names())
-        if isinstance(ast, LiminateResult):
-            # Amber outcomes carry a pending_ast for confirmation flow.
-            return ast
-        return execute(
-            ast, self.symtab,
-            handler_table=self.handler_table,
-            live_value_registry=self.live_value_registry,
-        )
-
-    def run_when_block(
-        self,
-        header_line: str,
-        action_lines: list[str],
-    ) -> LiminateResult | None:
-        """Execute a v3a `when` block — header line plus its already-
-        de-indented action lines.
-
-        The caller (run_file) is responsible for indentation validation
-        (§110): tabs, deeper-than-block, empty block. By the time we
-        get here, `action_lines` is a list of action statement strings
-        with leading whitespace stripped — they tokenize and parse like
-        any other line.
-        """
-        try:
-            header_tokens = tokenize(header_line)
-        except LexError as e:
-            return LiminateResult(
-                status=ResultStatus.ERROR_PARSE,
-                message=e.message,
-                executed=False,
-            )
-        header_reordered = reorder(header_tokens)
-        if isinstance(header_reordered, LiminateResult):
-            return header_reordered
-
-        action_token_lists: list = []
-        for raw in action_lines:
-            try:
-                toks = tokenize(raw)
-            except LexError as e:
-                return LiminateResult(
-                    status=ResultStatus.ERROR_PARSE,
-                    message=e.message,
-                    executed=False,
-                )
-            if not toks:
-                continue  # blank line inside the block — v1c §48
-            re_ordered = reorder(toks)
-            if isinstance(re_ordered, LiminateResult):
-                return re_ordered
-            action_token_lists.append(re_ordered)
-
-        ast = parse_when_block(
-            header_reordered, action_token_lists,
-            composition_names=self.composition_names(),
-        )
-        if isinstance(ast, LiminateResult):
-            return ast
-        return execute(
-            ast, self.symtab,
-            handler_table=self.handler_table,
-            live_value_registry=self.live_value_registry,
-        )
-
-    def adapters(self):
-        """Return the adapter for each registered domain pack, in pack
-        registration order."""
-        return [pack.adapter() for pack in self.domain_packs]
-
-    def record_result(self, result: LiminateResult | None) -> None:
-        """Track whether Phase 1 had any blocking outcomes (v3a §107).
-
-        Called by the display layer after each result so the Session can
-        decide whether to enter Phase 2 once the source is exhausted.
-        ERROR_PARSE, ERROR_SEMANTIC, and unresolved-AMBER outcomes set
-        the gate; SUCCESS does not. Resolved amber clears nothing —
-        once an amber is confirmed, the display layer feeds the
-        replacement SUCCESS/ERROR result back through this hook."""
-        if result is None:
-            return
-        if result.status in (
-            ResultStatus.ERROR_PARSE,
-            ResultStatus.ERROR_SEMANTIC,
-            ResultStatus.AMBER_PRECEDENCE,
-            ResultStatus.AMBER_AMBIGUITY,
-        ):
-            self.phase1_had_error = True
-        if result.status in (
-            ResultStatus.ERROR_PARSE,
-            ResultStatus.ERROR_SEMANTIC,
-            ResultStatus.ERROR_RUNTIME,
-        ):
-            self.had_any_error = True
+# The program-execution loop and Session live in `run` (v11 §22). `cli`
+# depends on `run`, never the reverse. Session is re-exported here for the
+# REPL and for tests that import `liminate.cli.Session`.
+from .run import (  # noqa: F401  (Session/ContractResult re-exported)
+    ContractResult,
+    Session,
+    run as run_program,
+)
+from .run import _consume_when_block as _run_consume_when_block
 
 
 # ---------------------------------------------------------------------------
@@ -529,196 +344,45 @@ def run_file(
     out=None,
     verbose_out=None,
 ) -> bool:
-    """Execute an Liminate source file (Phase 1 + optional Phase 2).
+    """Execute a Liminate source file (Phase 1 + optional Phase 2).
 
-    Returns True if any error (parse, semantic, or runtime) occurred
-    across either phase, so callers can propagate a non-zero exit code.
+    Thin I/O wrapper over the shared program-execution loop `run.run()`
+    (v11 §22): read the file, drive the loop, and render each result inline
+    through the unchanged `display_result`. Returns True if any error
+    (parse, semantic, or runtime) occurred across either phase, so callers
+    can propagate a non-zero exit code.
 
-    Phase 1 reads the file line-by-line. Top-level `when` lines start
-    an indentation-aware block: subsequent indented lines belong to
-    the action block (v3a §110). After Phase 1 completes, if any
-    handlers registered and Phase 1 had no errors, Phase 2 enters
-    listener mode (§107).
+    Display is driven inline via the `on_result` sink — not after the run —
+    so interactive amber confirmation and quiet-mode blank-line mirroring
+    happen at the exact loop position they always did, keeping CLI output
+    byte-for-byte identical. `run()` owns `record_result`; the sink only
+    renders (display + verbose metadata).
     """
-    session = Session(domain_packs=domain_packs)
     content = Path(path).read_text(encoding="utf-8")
     write = (out.write if out is not None else lambda s: print(s, end=""))
-    lines = content.splitlines()
 
-    # Meta-Structural Era: track whether the first eligible (non-blank,
-    # non-comment) line has been seen, so `about` is recognized only as
-    # the first line and a second `about` anywhere is rejected (MS-Q1).
-    first_eligible_seen = False
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-
-        # v1c §48 — blank lines are skipped by the lexer. --quiet mirrors
-        # them so the user's paragraph breaks survive (U1/U4). Comment
-        # lines (`--` after optional leading whitespace) are handled
-        # identically: the lexer returns [] for both.
-        stripped = line.lstrip()
-        if not stripped or stripped.startswith("--"):
-            if quiet:
-                write("\n")
-            i += 1
-            continue
-
-        # Meta-Structural Era: an `about` declaration is consumed before
-        # the normal pipeline. It must be the first eligible line and may
-        # appear at most once. A `DECLARATION` token anywhere else (a
-        # second `about`, or `about` after a normal statement) is an
-        # ERROR_PARSE.
-        try:
-            decl_tokens = tokenize(line)
-        except LexError:
-            decl_tokens = []
-        if decl_tokens and decl_tokens[0].type is TokenType.DECLARATION:
-            if first_eligible_seen or session.topic is not None:
-                err = LiminateResult(
-                    status=ResultStatus.ERROR_PARSE,
-                    message=(
-                        "'about' is a declaration that must be the first "
-                        "line of the program (after any comments). Only one "
-                        "'about' declaration is allowed."
-                    ),
-                    executed=False,
-                )
-            else:
-                try:
-                    node = parse_about(decl_tokens)
-                    session.topic = node.topic
-                    err = None
-                except _ParseError as e:
-                    err = LiminateResult(
-                        status=ResultStatus.ERROR_PARSE,
-                        message=e.message,
-                        executed=False,
-                    )
-            first_eligible_seen = True
-            if err is not None:
-                display_result(
-                    err, session,
-                    auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
-                )
-                session.record_result(err)
-                if verbose:
-                    ts = datetime.now(timezone.utc).isoformat()
-                    _emit_verbose_metadata(
-                        i + 1, ts, 0.0, verbose_out=verbose_out,
-                    )
-            i += 1
-            continue
-        first_eligible_seen = True
-
-        # Tab-in-leading-whitespace is a v3a §110 lex error — surface it
-        # as ERROR_PARSE and skip this line.
-        try:
-            indent = leading_indent(line)
-        except LexError as e:
-            err = LiminateResult(
-                status=ResultStatus.ERROR_PARSE,
-                message=e.message,
-                executed=False,
-            )
-            display_result(
-                err, session,
-                auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
-            )
-            session.record_result(err)
-            if verbose:
-                ts = datetime.now(timezone.utc).isoformat()
-                _emit_verbose_metadata(i + 1, ts, 0.0, verbose_out=verbose_out)
-            i += 1
-            continue
-
-        # Detect a `when` block at indent 0. A line is a `when` header
-        # iff its first token is the `when` CONNECTIVE — we use the
-        # lexer rather than a string prefix check so quoted `"when"` or
-        # similar edge cases don't trip the detector.
-        is_when_header = False
-        if indent == 0:
-            try:
-                header_tokens = tokenize(line)
-            except LexError:
-                header_tokens = []
-            if (
-                header_tokens
-                and header_tokens[0].type is TokenType.CONNECTIVE
-                and header_tokens[0].value == "when"
-            ):
-                is_when_header = True
-
-        if is_when_header:
-            i = _consume_when_block(
-                lines, i, session,
-                auto_confirm_amber=auto_confirm_amber,
-                quiet=quiet,
-                out=out,
-                write=write,
-                verbose=verbose,
-                verbose_out=verbose_out,
-            )
-            continue
-
-        # Regular Phase 1 sequential statement.
-        ts = datetime.now(timezone.utc).isoformat()
-        t0 = time.monotonic()
-        result = session.run_line(line)
-        dur = round((time.monotonic() - t0) * 1000, 3)
-        if result is not None:
-            result.timestamp = ts
-            result.duration_ms = dur
+    def on_result(result, session, line_num, ts, dur):
         display_result(
             result, session,
             auto_confirm_amber=auto_confirm_amber,
             quiet=quiet,
             out=out,
         )
-        session.record_result(result)
-        if verbose and result is not None:
+        if verbose and line_num is not None and result is not None:
             _emit_verbose_metadata(
-                i + 1, ts, dur, result=result, verbose_out=verbose_out,
+                line_num, ts, dur, result=result, verbose_out=verbose_out,
             )
-        i += 1
 
-    # v3a §107 — Phase 2 gate: only enter listener mode if Phase 1 had
-    # zero errors AND at least one handler registered. Otherwise the
-    # source executed as a regular v2d program (or reported Phase 1
-    # errors that the user must fix before listening can begin).
-    if session.handler_table.is_empty():
-        return session.had_any_error
-    if session.phase1_had_error:
-        # Don't even yield a SHUTDOWN — the existing error stream is the
-        # user's signal that Phase 2 didn't start. The condition is
-        # rare in practice: most programs that contain `when` blocks are
-        # error-free Phase 1 setup.
-        return session.had_any_error
+    on_blank = (lambda: write("\n")) if quiet else None
 
-    # Phase 2 streams results from the listener generator. v3a §122
-    # data (HANDLER_FIRE output, SHUTDOWN message, errors) is always
-    # rendered regardless of --quiet — display_result itself only gates
-    # the "I understand this as: ..." canonical echo on `quiet`, which
-    # we honor consistently here for Phase 2 too (canonical echo would
-    # be noise for HANDLER_FIRE — the user already confirmed the source
-    # at registration time).
-    adapters = session.adapters()
-    for result in listen(
-        session.symtab,
-        session.handler_table,
-        session.live_value_registry,
-        adapters,
-    ):
-        display_result(
-            result, session,
-            auto_confirm_amber=auto_confirm_amber,
-            quiet=quiet,
-            out=out,
-        )
-        session.record_result(result)
-
-    return session.had_any_error
+    result = run_program(
+        content,
+        domain_packs=domain_packs,
+        auto_confirm_amber=auto_confirm_amber,
+        on_result=on_result,
+        on_blank=on_blank,
+    )
+    return result.had_error
 
 
 def _consume_when_block(
@@ -733,101 +397,29 @@ def _consume_when_block(
     verbose: bool = False,
     verbose_out=None,
 ) -> int:
-    """Buffer the indented action block starting at line index
-    `start_idx + 1` and dispatch the full when-block to the session.
+    """Display-driving adapter over `run._consume_when_block`.
 
-    Returns the next index to process. On indentation errors (tabs in
-    a continuation line, indent deeper than the established depth)
-    emits ERROR_PARSE; on empty blocks the parser surfaces the
-    canonical §110 wording.
+    Retained at this signature for callers (and tests) that drive a single
+    when-block through the CLI display path directly. The when-block
+    buffering + execution logic lives once in `run`; this shim only injects
+    the display sink (so there is no duplicated loop logic in `cli`).
     """
-    header_line = lines[start_idx]
-    action_lines: list[str] = []
-    block_depth: int | None = None
-    block_error: str | None = None
-    consumed_through = start_idx  # last index we've "claimed"
-    j = start_idx + 1
-
-    while j < len(lines):
-        next_line = lines[j]
-        # Blank lines inside the block are skipped (v1c §48 / v3a §110).
-        # Comment lines (`--` prefix) are treated the same way — they do
-        # not establish or violate the block's indentation depth.
-        next_stripped = next_line.lstrip()
-        if not next_stripped or next_stripped.startswith("--"):
-            if quiet:
-                write("\n")
-            consumed_through = j
-            j += 1
-            continue
-        try:
-            next_indent = leading_indent(next_line)
-        except LexError as e:
-            block_error = e.message
-            consumed_through = j  # claim the bad line so the outer loop skips it
-            j += 1
-            break
-        if next_indent == 0:
-            # Block ends at a top-level line — leave it for the outer loop.
-            break
-        # First indented line sets the block's depth.
-        if block_depth is None:
-            block_depth = next_indent
-        elif next_indent > block_depth:
-            block_error = (
-                f"This line is indented {next_indent} spaces, deeper than "
-                f"the action block's first indented line ({block_depth} "
-                f"spaces). v3a §110 — all action lines in a 'when' block "
-                f"must use the same indentation depth."
-            )
-            consumed_through = j
-            j += 1
-            break
-        elif next_indent < block_depth:
-            # Shallower-but-non-zero ends the block; leave the line for
-            # the outer loop to process as a top-level statement.
-            break
-        action_lines.append(next_line.lstrip(" "))
-        consumed_through = j
-        j += 1
-
-    if block_error is not None:
-        err = LiminateResult(
-            status=ResultStatus.ERROR_PARSE,
-            message=block_error,
-            executed=False,
-        )
+    def emit(result, line_num, ts, dur):
         display_result(
-            err, session,
+            result, session,
             auto_confirm_amber=auto_confirm_amber, quiet=quiet, out=out,
         )
-        session.record_result(err)
-        if verbose:
-            ts = datetime.now(timezone.utc).isoformat()
+        session.record_result(result)
+        if verbose and result is not None:
             _emit_verbose_metadata(
-                start_idx + 1, ts, 0.0, verbose_out=verbose_out,
+                line_num, ts, dur, result=result, verbose_out=verbose_out,
             )
-        return consumed_through + 1
 
-    ts = datetime.now(timezone.utc).isoformat()
-    t0 = time.monotonic()
-    result = session.run_when_block(header_line, action_lines)
-    dur = round((time.monotonic() - t0) * 1000, 3)
-    if result is not None:
-        result.timestamp = ts
-        result.duration_ms = dur
-    display_result(
-        result, session,
-        auto_confirm_amber=auto_confirm_amber,
-        quiet=quiet,
-        out=out,
+    return _run_consume_when_block(
+        lines, start_idx, session,
+        emit=emit,
+        on_blank=(lambda: write("\n")) if quiet else None,
     )
-    session.record_result(result)
-    if verbose and result is not None:
-        _emit_verbose_metadata(
-            start_idx + 1, ts, dur, result=result, verbose_out=verbose_out,
-        )
-    return j  # j points to the first un-consumed line
 
 
 def repl() -> None:
