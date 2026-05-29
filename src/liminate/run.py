@@ -371,6 +371,10 @@ def _consume_when_block(
             executed=False,
         )
         ts = datetime.now(timezone.utc).isoformat()
+        err.line = start_idx + 1
+        err.source = header_line
+        err.timestamp = ts
+        err.duration_ms = 0.0
         emit(err, start_idx + 1, ts, 0.0)
         return next_index
 
@@ -381,6 +385,8 @@ def _consume_when_block(
     if result is not None:
         result.timestamp = ts
         result.duration_ms = dur
+        result.line = start_idx + 1
+        result.source = header_line
     emit(result, start_idx + 1, ts, dur)
     return next_index
 
@@ -395,6 +401,7 @@ def run(
     *,
     domain_packs: list[DomainPack] | None = None,
     auto_confirm_amber: bool = False,
+    enter_phase2: bool = True,
     on_result: ResultSink | None = None,
     on_blank: Callable[[], None] | None = None,
 ) -> ContractResult:
@@ -412,6 +419,14 @@ def run(
       mirroring the historic `--test` / runner `_confirm_amber` behavior —
       with no `input()` call. When False, amber results are left in
       `results` unresolved for the caller to handle.
+    - `enter_phase2`: when True (default — the CLI's behavior), the
+      event-driven listener runs after Phase 1 if any `when` handler
+      registered and Phase 1 had no errors. When False, Phase 2 is skipped
+      entirely: handlers are still registered during Phase 1 (so the
+      registration result appears in `results`) but never fire, and no
+      LISTENING/HANDLER_FIRE/SHUTDOWN results are produced. Static
+      inspectors (e.g. Receipts) that treat a contract as text — not a live
+      reactive program — pass `enter_phase2=False`.
     - `on_result`: optional per-result sink (the CLI passes a closure that
       calls `display_result`). When supplied, amber confirmation and
       blank-line rendering are the sink's responsibility (it runs inline at
@@ -419,6 +434,10 @@ def run(
       amber itself in that case.
     - `on_blank`: optional callback invoked for each blank/comment line
       skipped at top level (CLI uses it for quiet-mode blank mirroring).
+
+    Each produced `LiminateResult` carries `line` (1-based source line) and
+    `source` (raw line text) so embedders can serialize per-line without
+    re-running the loop.
     """
     session = Session(domain_packs=domain_packs)
     results: list[LiminateResult] = []
@@ -435,15 +454,13 @@ def run(
         dur: float | None,
     ) -> None:
         """Single funnel for every produced result (Phase 1 + Phase 2)."""
-        if result is not None:
-            results.append(result)
-        if on_result is not None:
-            on_result(result, session, line_num, ts, dur)
-        session.record_result(result)
-        # Embedder mode (no display sink): resolve amber non-interactively
-        # so the returned `results` reflect confirmation. With a sink, the
-        # sink (display_result) already resolves amber inline — resolving
-        # here too would double-execute the pending AST.
+        # Embedder mode (no display sink): resolve amber non-interactively so
+        # the returned `results` reflect confirmation, *replacing* the amber
+        # result with its executed form — matching the historic runner
+        # `_confirm_amber` semantics (one result per line, not two). The
+        # source-position/timing metadata carries onto the resolved result.
+        # With a display sink, the sink (display_result) resolves amber inline
+        # instead — resolving here too would double-execute the pending AST.
         if (
             on_result is None
             and auto_confirm_amber
@@ -452,8 +469,16 @@ def run(
             and result.pending_ast is not None
         ):
             resolved = execute(result.pending_ast, session.symtab)
-            results.append(resolved)
-            session.record_result(resolved)
+            resolved.line = result.line
+            resolved.source = result.source
+            resolved.timestamp = result.timestamp
+            resolved.duration_ms = result.duration_ms
+            result = resolved
+        if result is not None:
+            results.append(result)
+        if on_result is not None:
+            on_result(result, session, line_num, ts, dur)
+        session.record_result(result)
 
     lines = source.splitlines()
 
@@ -511,6 +536,10 @@ def run(
             first_eligible_seen = True
             if err is not None:
                 ts = datetime.now(timezone.utc).isoformat()
+                err.line = i + 1
+                err.source = line
+                err.timestamp = ts
+                err.duration_ms = 0.0
                 _emit(err, i + 1, ts, 0.0)
             i += 1
             continue
@@ -527,6 +556,10 @@ def run(
                 executed=False,
             )
             ts = datetime.now(timezone.utc).isoformat()
+            err.line = i + 1
+            err.source = line
+            err.timestamp = ts
+            err.duration_ms = 0.0
             _emit(err, i + 1, ts, 0.0)
             i += 1
             continue
@@ -564,14 +597,20 @@ def run(
         if result is not None:
             result.timestamp = ts
             result.duration_ms = dur
+            result.line = i + 1
+            result.source = line
         _emit(result, i + 1, ts, dur)
         i += 1
 
-    # v3a §107 — Phase 2 gate: only enter listener mode if Phase 1 had
-    # zero errors AND at least one handler registered. Otherwise the
-    # source executed as a regular v2d program (or reported Phase 1
-    # errors that the user must fix before listening can begin).
-    if session.handler_table.is_empty() or session.phase1_had_error:
+    # v3a §107 — Phase 2 gate: only enter listener mode if the caller opted
+    # in (enter_phase2), Phase 1 had zero errors, AND at least one handler
+    # registered. Otherwise the source executed as a regular v2d program (or
+    # the caller — e.g. a static inspector — asked to stop after Phase 1).
+    if (
+        not enter_phase2
+        or session.handler_table.is_empty()
+        or session.phase1_had_error
+    ):
         return ContractResult(
             results=results,
             symbol_table=session.symtab,
