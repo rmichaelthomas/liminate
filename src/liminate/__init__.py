@@ -13,7 +13,6 @@ from .adapter import (
     TestDomainPack,
 )
 from .analyzer import SymbolEntry, analyze
-from .cli import Session
 from .interpreter import execute
 from .listener import listen
 from .lexer import leading_indent, tokenize
@@ -21,12 +20,14 @@ from .parser import parse, parse_when_block
 from .renderer import render
 from .reorderer import reorder
 from .result import LiminateResult, ResultStatus
+from .run import ContractResult, Session, run
 
 __all__ = [
     "Adapter",
     "AdapterDone",
     "AdapterFailure",
     "AdapterUpdate",
+    "ContractResult",
     "DomainPack",
     "LiminateResult",
     "LiveValueDeclaration",
@@ -45,5 +46,6 @@ __all__ = [
     "parse_when_block",
     "render",
     "reorder",
+    "run",
     "tokenize",
 ]
