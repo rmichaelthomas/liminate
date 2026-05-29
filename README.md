@@ -71,7 +71,7 @@ pytest tests/
 
 ## How it works
 
-The current build is **v0.8.0**: 21 verbs, 22 connectives, 8 operators, 1 declaration, 58 base reserved words, **1303 tests passing**.
+The current build is **v0.11.0**: 21 verbs, 22 connectives, 8 operators, 1 declaration, 58 base reserved words, **1339 tests passing**.
 
 ### The pipeline
 
@@ -147,8 +147,8 @@ liminate --pack examples/pack_ui.json --quiet \
 ```
 liminate/
 ├── src/liminate/        Pipeline (lexer, reorderer, parser, renderer,
-│                        analyzer, interpreter, listener, adapter, packs/)
-├── tests/               1160 tests
+│                        analyzer, interpreter, listener, adapter, run, packs/)
+├── tests/               1339 tests
 ├── examples/            Runnable .limn programs + reference packs
 ├── docs/spec/           Locked specification documents
 └── docs/                Quickstart, syntax tour, pipeline walkthrough

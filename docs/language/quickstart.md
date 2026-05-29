@@ -20,7 +20,7 @@ pip install -e ".[dev]"
 
 ## Run the test suite
 
-There are 641 tests. They run in well under a second.
+There are 1339 tests. They run in well under a minute.
 
 ```bash
 pytest tests/
