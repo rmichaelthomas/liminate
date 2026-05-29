@@ -34,7 +34,7 @@ liminate==0.10.0
 dependencies = ["liminate==0.10.0"]
 ```
 
-The Receipts server at `receipts.liminate.dev` pins its interpreter dependency and records `liminate_version` and `pack_version` on every saved contract. These values are the replay coordinates — given the same versions and the same source, the result is identical.
+The Receipts server at `liminate.dev` pins its interpreter dependency and records `liminate_version` and `pack_version` on every saved contract. These values are the replay coordinates — given the same versions and the same source, the result is identical.
 
 ## Session pack versioning
 
