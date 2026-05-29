@@ -69,3 +69,11 @@ class LiminateResult:
     #                   ...}
     # None for Phase 1 results (v2d-identical contract preserved).
     metadata: dict | None = None
+    # Source position, set by `run.run()` so embedders (e.g. Receipts'
+    # serialize_result) can attribute each result to its source line without
+    # re-running the loop. `line` is the 1-based source line; `source` is the
+    # raw source line text. None for results not produced by `run()` (e.g. a
+    # bare `execute()` call). Excluded from equality/repr so they stay
+    # non-behavioral metadata and don't affect result comparisons in tests.
+    line: int | None = field(default=None, compare=False, repr=False)
+    source: str | None = field(default=None, compare=False, repr=False)
