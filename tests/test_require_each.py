@@ -146,6 +146,21 @@ def test_one_fails_scalar_list_identifies_element():
     assert "element 2" in (r.message or "")
 
 
+def test_require_each_failure_carries_structured_metadata():
+    # v0.12.0: iterated REQUIREMENT_NOT_MET carries the binding, collection,
+    # and 0-based element index alongside the condition/actual identity.
+    s = _session()
+    s.run_line("remember a list called scores with 80 and 60 and 75")
+    r = s.run_line("require each score in scores is above 70")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.metadata is not None
+    assert r.metadata["verb"] == "require"
+    assert r.metadata["iteration"] == "each"
+    assert r.metadata["binding"] == "score"
+    assert r.metadata["collection"] == "scores"
+    assert r.metadata["element_index"] == 1  # 0-based; element 2 in the message
+
+
 # ---------------------------------------------------------------------------
 # Integration — record lists
 # ---------------------------------------------------------------------------

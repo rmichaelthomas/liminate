@@ -321,10 +321,60 @@ def test_inherited_inside_when_action_block():
     assert node.action.inherited_from == "agent-a"
 
 
-def test_inherited_when_header_is_rejected():
-    # `inherited when` (an inherited reactive handler) is out of scope.
-    # The `when` block parser entry rejects a leading `inherited` operator.
-    result = parse(tokenize("inherited when level is above 50"))
+def test_inherited_when_header_parses():
+    # v0.12.0: `inherited when` (an inherited reactive handler) is now
+    # supported. The `inherited` operator precedes the `when` connective on
+    # the header line; parse_when_block strips it and flags the WhenNode.
+    header = tokenize("inherited when level is above 50")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited is True
+    # Agent attribution on `when` headers is deferred (build §4.2).
+    assert node.inherited_from is None
+
+
+def test_inherited_when_with_unless_guard_parses():
+    # The `inherited` prefix composes with an `unless` guard.
+    header = tokenize("inherited when level is above 50 unless level is above 90")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited is True
+    assert node.unless is not None
+
+
+def test_non_inherited_when_header_not_flagged():
+    # A plain `when` header leaves the flag false (no `inherited` key
+    # should reach downstream trigger metadata).
+    header = tokenize("when level is above 50")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited is False
+    assert node.inherited_from is None
+
+
+def test_inherited_when_renders_with_prefix():
+    # Round-trip fidelity: the canonical rendering prepends `inherited`.
+    header = tokenize("inherited when level is above 50")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    rendered = render(node)
+    assert rendered.startswith("inherited when ")
+    # Re-parsing the rendered header preserves the flag.
+    lines = rendered.split("\n")
+    reparsed = parse_when_block(
+        tokenize(lines[0]),
+        [tokenize(line.strip()) for line in lines[1:] if line.strip()],
+    )
+    assert not hasattr(reparsed, "status"), getattr(reparsed, "message", reparsed)
+    assert reparsed.inherited is True
+
+
+def test_inherited_when_missing_when_is_parse_error():
+    # `inherited` not followed by `when` (in the when-block entry) errors.
+    result = parse_when_block(tokenize("inherited"), [tokenize("show level")])
     assert result.status is ResultStatus.ERROR_PARSE
 
 
