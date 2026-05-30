@@ -357,19 +357,39 @@ class _RequirementNotMet(Exception):
     evaluates false. Surfaced to callers as REQUIREMENT_NOT_MET. The
     exception unwinds through nested sequences, compositions, and
     `choose` branches so prior committed operations stay committed
-    under stepwise semantics (v1d §56)."""
-    def __init__(self, message: str):
+    under stepwise semantics (v1d §56).
+
+    Invariant-readiness: carries optional structured `failure_metadata`
+    (verb, condition, actual values) for machine-readable failure
+    identity on the surfaced result."""
+    def __init__(self, message: str, metadata: dict | None = None):
         super().__init__(message)
         self.message = message
+        self.failure_metadata = metadata or {}
 
 
 class _ProhibitionViolated(Exception):
     """Deontic Era — raised when a `forbid` condition evaluates true.
     Surfaced to callers as PROHIBITION_VIOLATED. Same unwind semantics
-    as _RequirementNotMet: stepwise operations stay committed."""
-    def __init__(self, message: str):
+    as _RequirementNotMet: stepwise operations stay committed.
+
+    Invariant-readiness: carries optional structured `failure_metadata`
+    (verb, condition, actual values) for machine-readable failure
+    identity on the surfaced result."""
+    def __init__(self, message: str, metadata: dict | None = None):
         super().__init__(message)
         self.message = message
+        self.failure_metadata = metadata or {}
+
+
+class _PackVerbFailure(Exception):
+    """Raised when a pack verb's verification check finds a mismatch.
+    Surfaced as PACK_VERB_FAILURE. Carries structured metadata for
+    machine-readable failure identity."""
+    def __init__(self, message: str, metadata: dict):
+        super().__init__(message)
+        self.message = message
+        self.failure_metadata = metadata
 
 
 def _execute_single(
@@ -402,19 +422,39 @@ def _execute_single(
             executed=False,
         )
     except _RequirementNotMet as e:
-        return LiminateResult(
+        result = LiminateResult(
             status=ResultStatus.REQUIREMENT_NOT_MET,
             canonical=render(node),
             message=e.message,
             executed=False,
         )
+        if e.failure_metadata:
+            result.metadata = e.failure_metadata
+        return result
     except _ProhibitionViolated as e:
-        return LiminateResult(
+        result = LiminateResult(
             status=ResultStatus.PROHIBITION_VIOLATED,
             canonical=render(node),
             message=e.message,
             executed=False,
         )
+        if e.failure_metadata:
+            result.metadata = e.failure_metadata
+        return result
+    except _PackVerbFailure as e:
+        result = LiminateResult(
+            status=ResultStatus.PACK_VERB_FAILURE,
+            canonical=render(node),
+            message=e.message,
+            executed=False,
+        )
+        result.metadata = e.failure_metadata
+        # Preserve pack attribution (Receipts v5 §15 dim. 3).
+        if isinstance(node, PackVerbNode):
+            owner = get_pack_verb_owner(node.word)
+            if owner is not None:
+                result.metadata["pack"] = owner
+        return result
     _mark_live_value_active_if_remember(node, live_value_registry)
     result = LiminateResult(
         status=ResultStatus.SUCCESS,
@@ -463,26 +503,37 @@ def _execute_sequence(
                 seq,
             )
         except _RequirementNotMet as e:
+            fail_result = LiminateResult(
+                status=ResultStatus.REQUIREMENT_NOT_MET,
+                message=e.message,
+            )
+            if e.failure_metadata:
+                fail_result.metadata = e.failure_metadata
             return _stepwise_error(
-                op,
-                LiminateResult(
-                    status=ResultStatus.REQUIREMENT_NOT_MET,
-                    message=e.message,
-                ),
-                completed_canonicals,
-                outputs,
-                seq,
+                op, fail_result, completed_canonicals, outputs, seq,
             )
         except _ProhibitionViolated as e:
+            fail_result = LiminateResult(
+                status=ResultStatus.PROHIBITION_VIOLATED,
+                message=e.message,
+            )
+            if e.failure_metadata:
+                fail_result.metadata = e.failure_metadata
             return _stepwise_error(
-                op,
-                LiminateResult(
-                    status=ResultStatus.PROHIBITION_VIOLATED,
-                    message=e.message,
-                ),
-                completed_canonicals,
-                outputs,
-                seq,
+                op, fail_result, completed_canonicals, outputs, seq,
+            )
+        except _PackVerbFailure as e:
+            fail_result = LiminateResult(
+                status=ResultStatus.PACK_VERB_FAILURE,
+                message=e.message,
+            )
+            fail_result.metadata = e.failure_metadata
+            if isinstance(op, PackVerbNode):
+                owner = get_pack_verb_owner(op.word)
+                if owner is not None:
+                    fail_result.metadata["pack"] = owner
+            return _stepwise_error(
+                op, fail_result, completed_canonicals, outputs, seq,
             )
         _mark_live_value_active_if_remember(op, live_value_registry)
         completed_canonicals.append(render(op))
@@ -541,13 +592,20 @@ def _stepwise_error(
             msg += " The filter has already been applied."
     else:
         msg = failure.message
-    return LiminateResult(
+    result = LiminateResult(
         status=failure.status,
         canonical=render(seq),
         output=outputs if outputs else None,
         message=msg,
         executed=False,
     )
+    # Invariant-readiness: carry the structured failure identity
+    # (verb / condition / actual / pack) through the stepwise wrapper so
+    # downstream consumers see the same metadata on a sequence failure as
+    # on a single-statement failure.
+    if failure.metadata:
+        result.metadata = failure.metadata
+    return result
 
 
 def _is_filter_canonical(canonical: str) -> bool:
@@ -810,9 +868,15 @@ def _exec_pack_substring_check(
         )
         preview = against_value[:80]
         suffix = "..." if len(against_value) > 80 else ""
-        raise _RuntimeError(
+        raise _PackVerbFailure(
             f"The text '{check_value}' was not found in '{against_name}'. "
-            f"The source begins: '{preview}{suffix}'"
+            f"The source begins: '{preview}{suffix}'",
+            metadata={
+                "verb": node.word,
+                "failure_type": "substring_not_found",
+                "check_value": check_value,
+                "against_name": against_name,
+            },
         )
     return []
 
@@ -913,37 +977,28 @@ def _exec_pack_compare_values(
             status = "type_mismatch"
             details = []
 
+    # Symbol table writes stay for handler visibility — a `when` handler
+    # watching `verification-status`/`verification-divergences` needs the
+    # value committed before the failure exception unwinds (§8 mode 1).
     _store(symtab, execution.status_target, status)
     if execution.details_target is not None:
         _store(symtab, execution.details_target, list(details))
 
-    if execution.on_mismatch == "error" and status != "match":
-        if execution.comparison == "equality":
-            raise _RuntimeError(
-                f"'{left_name}' does not match '{right_name}'."
-            )
-        if status == "length_mismatch":
-            raise _RuntimeError(
-                f"'{left_name}' and '{right_name}' have different lengths."
-            )
-        if status == "type_mismatch":
-            raise _RuntimeError(
-                f"'{left_name}' and '{right_name}' have different shapes."
-            )
-        if details and all(isinstance(d, str) for d in details):
-            fields_str = ", ".join(f"'{d}'" for d in details)
-            raise _RuntimeError(
-                f"'{left_name}' and '{right_name}' diverge on fields: "
-                f"{fields_str}."
-            )
-        if details:
-            idx_str = ", ".join(str(d) for d in details)
-            raise _RuntimeError(
-                f"'{left_name}' and '{right_name}' differ at positions: "
-                f"{idx_str}."
-            )
-        raise _RuntimeError(
-            f"'{left_name}' does not match '{right_name}'."
+    # Invariant-readiness: any non-match outcome surfaces as
+    # PACK_VERB_FAILURE, regardless of the pack's on_mismatch mode. This
+    # subsumes the former on_mismatch == "error" raise block — the result
+    # stream, not the symbol table, is now the source of truth for failure.
+    if status != "match":
+        raise _PackVerbFailure(
+            f"'{left_name}' does not match '{right_name}'. Status: {status}.",
+            metadata={
+                "verb": node.word,
+                "failure_type": f"comparison_{status}",
+                "left_name": left_name,
+                "right_name": right_name,
+                "status": status,
+                "divergences": list(details) if details else [],
+            },
         )
     return []
 
@@ -977,14 +1032,18 @@ def _exec_pack_numeric_extract_compare(
             against_node.name if isinstance(against_node, NameRef)
             else execution.against_slot
         )
-        if execution.on_mismatch == "error":
-            raise _RuntimeError(
-                f"No numbers found in '{against_name}'."
-            )
+        # Symbol table writes stay for handler visibility before the raise.
         _store(symtab, execution.status_target, "no_numbers_found")
         _store(symtab, execution.matched_target, "none")
         _store(symtab, execution.delta_target, "none")
-        return []
+        raise _PackVerbFailure(
+            f"No numbers found in '{against_name}'.",
+            metadata={
+                "verb": node.word,
+                "failure_type": "no_numbers_found",
+                "against_name": against_name,
+            },
+        )
 
     closest = min(numbers, key=lambda n: abs(n - claimed))
     delta = abs(claimed - closest)
@@ -1000,16 +1059,27 @@ def _exec_pack_numeric_extract_compare(
     _store(symtab, execution.matched_target, closest)
     _store(symtab, execution.delta_target, delta)
 
-    if not within and execution.on_mismatch == "error":
+    # Invariant-readiness: outside-tolerance surfaces as PACK_VERB_FAILURE
+    # regardless of on_mismatch mode. Writes above stay committed.
+    if not within:
         against_name = (
             against_node.name if isinstance(against_node, NameRef)
             else execution.against_slot
         )
-        raise _RuntimeError(
+        raise _PackVerbFailure(
             f"Claimed {_format_scalar(claimed)} but closest value in "
             f"'{against_name}' is {_format_scalar(closest)} "
             f"(delta: {_format_scalar(delta)}, tolerance: "
-            f"{_format_scalar(tolerance)})."
+            f"{_format_scalar(tolerance)}).",
+            metadata={
+                "verb": node.word,
+                "failure_type": "outside_tolerance",
+                "claimed": claimed,
+                "closest": closest,
+                "delta": delta,
+                "tolerance": tolerance,
+                "against_name": against_name,
+            },
         )
     return []
 
@@ -1382,7 +1452,11 @@ def _exec_require(
     msg = f"Requirement not met: {condition_text}."
     if actual:
         msg += f" {actual}"
-    raise _RequirementNotMet(msg)
+    raise _RequirementNotMet(msg, metadata={
+        "verb": "require",
+        "condition": condition_text,
+        "actual": actual,
+    })
 
 
 def _exec_require_each(
@@ -1424,7 +1498,15 @@ def _exec_require_each(
                 )
                 if actual:
                     msg += f" {actual}"
-                raise _RequirementNotMet(msg)
+                raise _RequirementNotMet(msg, metadata={
+                    "verb": "require",
+                    "iteration": "each",
+                    "binding": node.binding_name,
+                    "collection": node.collection.name,
+                    "element_index": i,
+                    "condition": condition_text,
+                    "actual": actual,
+                })
     finally:
         if saved is not None:
             symtab[node.binding_name] = saved
@@ -1451,7 +1533,11 @@ def _exec_forbid(
     msg = f"Prohibition violated: {condition_text}."
     if actual:
         msg += f" {actual}"
-    raise _ProhibitionViolated(msg)
+    raise _ProhibitionViolated(msg, metadata={
+        "verb": "forbid",
+        "condition": condition_text,
+        "actual": actual,
+    })
 
 
 def _exec_permit(

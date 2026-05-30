@@ -200,6 +200,18 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
                 and header_tokens[0].value == "when"
             ):
                 is_when_header = True
+            # Meta-Structural Era batch 3 — detect `inherited when` so
+            # `liminate build` accepts every program `liminate run` does
+            # (§7 invariant 4). Detection mirrors run.py exactly.
+            elif (
+                header_tokens
+                and header_tokens[0].type is TokenType.OPERATOR
+                and header_tokens[0].value == "inherited"
+                and len(header_tokens) > 1
+                and header_tokens[1].type is TokenType.CONNECTIVE
+                and header_tokens[1].value == "when"
+            ):
+                is_when_header = True
 
         if is_when_header:
             action_lines, next_i = _collect_when_block(lines, i)

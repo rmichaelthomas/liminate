@@ -72,6 +72,12 @@ Sources:
   total) — `starting` connective (effective date) and `until`
   connective (sunset clause). Statement-initial modifiers with quoted
   ISO 8601 dates as inert AST metadata. Hard termination (DT-Q5).
+- v0.12.0 (Invariant-readiness) — NO vocabulary change; the count holds
+  at 58 reserved words. `inherited when` reuses the existing `inherited`
+  operator + `when` connective. The new `ResultStatus.PACK_VERB_FAILURE`
+  (see result.py) is a result-stream status, not a reserved word: pack
+  verb verification failures (cite/verify/measure) surface there with
+  structured failure metadata instead of mutating only the symbol table.
 """
 
 from dataclasses import dataclass
