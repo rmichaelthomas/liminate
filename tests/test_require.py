@@ -192,6 +192,19 @@ def test_require_fails_with_message_and_actual():
     assert "amount is 30000" in (r.message or "")
 
 
+def test_require_failure_carries_structured_metadata():
+    # v0.12.0: REQUIREMENT_NOT_MET results carry machine-readable failure
+    # identity (verb / condition / actual) for downstream comparison.
+    s = _session()
+    s.run_line("remember a value called amount with 30000")
+    r = s.run_line("require amount is above 50000")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.metadata is not None
+    assert r.metadata["verb"] == "require"
+    assert r.metadata["condition"] == "amount is above 50000"
+    assert "amount is 30000" in r.metadata["actual"]
+
+
 def test_require_includes_fails():
     s = _session()
     s.run_line('remember a list called roles with "user"')

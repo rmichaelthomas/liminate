@@ -113,8 +113,12 @@ def test_check_multiple_fields_in_one_release():
 # ---------------------------------------------------------------------------
 
 
-def test_check_identifier_not_found_is_semantic_error():
-    """check fails when the identifier is NOT in the release string."""
+def test_check_identifier_not_found_is_pack_verb_failure():
+    """check fails when the identifier is NOT in the release string.
+
+    v0.12.0: a substring miss surfaces as PACK_VERB_FAILURE (was
+    ERROR_SEMANTIC) — the data didn't satisfy the check, not a program bug.
+    """
     _, results = run_v3a(
         """
         remember a release called bls-release with "USDL-26-0684 | ages 18 to 38"
@@ -122,14 +126,17 @@ def test_check_identifier_not_found_is_semantic_error():
         """,
         pack=_load_research_pack(),
     )
-    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    errors = [r for r in results if r.status is ResultStatus.PACK_VERB_FAILURE]
     assert errors, results
     assert "USDL-24-0626" in errors[0].message
     assert "bls-release" in errors[0].message
 
 
-def test_check_wrong_coverage_is_semantic_error():
-    """check fails when the coverage window doesn't match."""
+def test_check_wrong_coverage_is_pack_verb_failure():
+    """check fails when the coverage window doesn't match.
+
+    v0.12.0: surfaces as PACK_VERB_FAILURE (was ERROR_SEMANTIC).
+    """
     _, results = run_v3a(
         """
         remember a release called bls-release with "USDL-26-0684 | ages 18 to 38"
@@ -137,7 +144,7 @@ def test_check_wrong_coverage_is_semantic_error():
         """,
         pack=_load_research_pack(),
     )
-    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    errors = [r for r in results if r.status is ResultStatus.PACK_VERB_FAILURE]
     assert errors, results
     assert "ages 18 to 36" in errors[0].message
 
@@ -253,7 +260,11 @@ def test_cite_measure_and_check_together():
 
 
 def test_check_fails_while_cite_passes():
-    """Model cited correct text but wrong release — the NLSY97 experiment case."""
+    """Model cited correct text but wrong release — the NLSY97 experiment case.
+
+    v0.12.0: the failing `check` surfaces as PACK_VERB_FAILURE (was
+    ERROR_SEMANTIC); the passing `cite` is SUCCESS.
+    """
     _, results = run_v3a(
         """
         remember a source called bls with "9.4 jobs from age 18 through age 38"
@@ -263,7 +274,7 @@ def test_check_fails_while_cite_passes():
         """,
         pack=_load_merged_pack(),
     )
-    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    errors = [r for r in results if r.status is ResultStatus.PACK_VERB_FAILURE]
     assert len(errors) == 1, results
     assert "USDL-24-0626" in errors[0].message
     assert "meta" in errors[0].message

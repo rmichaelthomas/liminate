@@ -490,6 +490,14 @@ class WhenNode(ASTNode):
     condition: ASTNode
     unless: ASTNode | None
     action: ASTNode
+    # Meta-Structural Era batch 3 — `inherited` operator + `from`
+    # attribution, extended to `when` blocks. Inert provenance metadata
+    # (compare=False). When a `when` handler is marked `inherited`, its
+    # HANDLER_FIRE results carry the flag in their trigger metadata so
+    # downstream consumers (Invariant) can distinguish pre-flight
+    # checklist handlers from session-authored handlers.
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
 
 
 @dataclass
@@ -1101,6 +1109,27 @@ def parse_when_block(
             executed=False,
         )
 
+    # Meta-Structural Era batch 3 — `inherited when` support. A
+    # statement-initial `inherited` operator precedes the `when`
+    # connective; strip it here and flag the resulting WhenNode so the
+    # rest of the header parses exactly as a plain `when` block.
+    is_inherited = False
+    if (
+        header_tokens[0].type is TokenType.OPERATOR
+        and header_tokens[0].value == "inherited"
+    ):
+        is_inherited = True
+        header_tokens = header_tokens[1:]
+
+    if not header_tokens:
+        return LiminateResult(
+            status=ResultStatus.ERROR_PARSE,
+            message=(
+                "'inherited' must be followed by a 'when' statement here."
+            ),
+            executed=False,
+        )
+
     if not (
         header_tokens[0].type is TokenType.CONNECTIVE
         and header_tokens[0].value == "when"
@@ -1189,6 +1218,14 @@ def parse_when_block(
     )
 
     when_node = WhenNode(condition=condition, unless=unless_guard, action=action)
+    if is_inherited:
+        when_node.inherited = True
+        # Agent attribution (`from <agent>`) on `inherited when` blocks is
+        # deferred: a trailing `from` on a `when` header belongs to
+        # condition slot resolution (e.g. `cite "x" from source`), not
+        # attribution. The `inherited` flag alone is sufficient for
+        # Invariant; `inherited_from` on `when` awaits a designed grammar.
+        when_node.inherited_from = None
 
     # v3a §123: condition or guard mixed and/or — amber. Action sub-
     # statements were already amber-checked individually by `parse()`,

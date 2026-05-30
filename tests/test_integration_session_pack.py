@@ -92,8 +92,12 @@ def test_cite_multiple_facts_from_same_source():
 # ---------------------------------------------------------------------------
 
 
-def test_cite_text_not_found_is_semantic_error():
-    """cite fails with ERROR_SEMANTIC when text is absent from source."""
+def test_cite_text_not_found_is_pack_verb_failure():
+    """cite fails with PACK_VERB_FAILURE when text is absent from source.
+
+    v0.12.0: a substring miss is a data-verification failure, not a
+    program bug — it surfaces as PACK_VERB_FAILURE (was ERROR_SEMANTIC).
+    """
     _, results = run_v3a(
         """
         remember a source called readme with "Liminate has 11 verbs."
@@ -101,10 +105,15 @@ def test_cite_text_not_found_is_semantic_error():
         """,
         pack=_load_session_pack(),
     )
-    errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    errors = [r for r in results if r.status is ResultStatus.PACK_VERB_FAILURE]
     assert errors, results
     assert "35 reserved words" in errors[0].message
     assert "readme" in errors[0].message
+    # Structured failure identity (v0.12.0).
+    assert errors[0].metadata["verb"] == "cite"
+    assert errors[0].metadata["failure_type"] == "substring_not_found"
+    assert errors[0].metadata["check_value"] == "35 reserved words"
+    assert errors[0].metadata["against_name"] == "readme"
 
 
 def test_cite_from_non_source_typed_symbol_is_semantic_error():
@@ -439,7 +448,11 @@ def test_cite_fails_but_measure_passes():
         """,
         pack=_load_session_pack(),
     )
-    cite_errors = [r for r in results if r.status is ResultStatus.ERROR_SEMANTIC]
+    # v0.12.0: cite's substring miss surfaces as PACK_VERB_FAILURE; the
+    # measure passes (within tolerance) so it does not.
+    cite_errors = [
+        r for r in results if r.status is ResultStatus.PACK_VERB_FAILURE
+    ]
     assert len(cite_errors) == 1
     assert "76.3 percent" in cite_errors[0].message
 

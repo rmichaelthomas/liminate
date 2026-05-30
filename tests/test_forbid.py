@@ -183,6 +183,19 @@ def test_forbid_reports_actual_value():
     assert "total is 15000" in (r.message or "")
 
 
+def test_forbid_violation_carries_structured_metadata():
+    # v0.12.0: PROHIBITION_VIOLATED results carry machine-readable failure
+    # identity (verb / condition / actual) for downstream comparison.
+    s = _session()
+    s.run_line("remember a value called total with 15000")
+    r = s.run_line("forbid total is above 10000")
+    assert r.status is ResultStatus.PROHIBITION_VIOLATED
+    assert r.metadata is not None
+    assert r.metadata["verb"] == "forbid"
+    assert r.metadata["condition"] == "total is above 10000"
+    assert "total is 15000" in r.metadata["actual"]
+
+
 def test_forbid_compound_true_violates():
     s = _session()
     s.run_line("remember a value called total with 20000")

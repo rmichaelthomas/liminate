@@ -217,12 +217,14 @@ class Session:
             ResultStatus.ERROR_SEMANTIC,
             ResultStatus.AMBER_PRECEDENCE,
             ResultStatus.AMBER_AMBIGUITY,
+            ResultStatus.PACK_VERB_FAILURE,
         ):
             self.phase1_had_error = True
         if result.status in (
             ResultStatus.ERROR_PARSE,
             ResultStatus.ERROR_SEMANTIC,
             ResultStatus.ERROR_RUNTIME,
+            ResultStatus.PACK_VERB_FAILURE,
         ):
             self.had_any_error = True
 
@@ -578,6 +580,18 @@ def run(
                 header_tokens
                 and header_tokens[0].type is TokenType.CONNECTIVE
                 and header_tokens[0].value == "when"
+            ):
+                is_when_header = True
+            # Meta-Structural Era batch 3 — detect `inherited when`: the
+            # `inherited` operator precedes the `when` connective. Must
+            # match build.py's detection exactly (§7 invariant 4).
+            elif (
+                header_tokens
+                and header_tokens[0].type is TokenType.OPERATOR
+                and header_tokens[0].value == "inherited"
+                and len(header_tokens) > 1
+                and header_tokens[1].type is TokenType.CONNECTIVE
+                and header_tokens[1].value == "when"
             ):
                 is_when_header = True
 
