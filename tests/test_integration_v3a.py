@@ -1190,3 +1190,60 @@ def test_u3_watching_list_in_registration_order():
     )
     assert expected in text
 
+
+
+# ---------------------------------------------------------------------------
+# v0.12.0 — `inherited when` HANDLER_FIRE metadata propagation
+# ---------------------------------------------------------------------------
+
+
+def test_inherited_when_fire_carries_inherited_metadata():
+    # v0.12.0: a handler declared with `inherited when` propagates the
+    # provenance flag into every HANDLER_FIRE result's trigger metadata so
+    # downstream consumers (Invariant) can distinguish pre-flight checklist
+    # handlers from session-authored handlers.
+    pack = TestDomainPack(
+        declarations=[],
+        script=[("temperature", 105), "[done]"],
+        name="test",
+    )
+    session, results = run_v3a(
+        """
+        remember a number called temperature with 50
+        inherited when temperature is above 100
+          show "high alert"
+        """,
+        pack=pack,
+    )
+    handler_fires = fires(results)
+    assert len(handler_fires) == 1
+    assert handler_fires[0].output == ["high alert"]
+    trigger = handler_fires[0].metadata["trigger"]
+    assert trigger["inherited"] is True
+    # Agent attribution on `when` headers is deferred — no inherited_from key.
+    assert "inherited_from" not in trigger
+    # The base trigger envelope is preserved alongside the inherited flag.
+    assert trigger["source"] == "adapter_update"
+
+
+def test_non_inherited_when_fire_omits_inherited_metadata():
+    # A plain `when` handler's HANDLER_FIRE metadata must NOT carry the
+    # `inherited` key — its absence is how consumers read "session-authored."
+    pack = TestDomainPack(
+        declarations=[],
+        script=[("temperature", 105), "[done]"],
+        name="test",
+    )
+    session, results = run_v3a(
+        """
+        remember a number called temperature with 50
+        when temperature is above 100
+          show "high alert"
+        """,
+        pack=pack,
+    )
+    handler_fires = fires(results)
+    assert len(handler_fires) == 1
+    trigger = handler_fires[0].metadata["trigger"]
+    assert "inherited" not in trigger
+    assert "inherited_from" not in trigger

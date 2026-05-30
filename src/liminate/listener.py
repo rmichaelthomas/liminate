@@ -42,6 +42,7 @@ from .interpreter import (
     HandlerTable,
     _exec_op,
     _FinishRequested,
+    _PackVerbFailure,
     _RequirementNotMet,
     _RuntimeError,
     _in_action_block,
@@ -443,6 +444,24 @@ class _Runner:
                     source, handler, values_changed, new_values,
                 )
                 continue
+            except _PackVerbFailure as e:
+                # Invariant-readiness — a pack verb (cite/verify/measure)
+                # inside an action block failed its check. Report on this
+                # statement and continue with the rest of the block; the
+                # structured failure_metadata is preserved alongside the
+                # trigger envelope by _wrap_with_trigger.
+                fail_result = LiminateResult(
+                    status=ResultStatus.PACK_VERB_FAILURE,
+                    canonical=render(stmt),
+                    message=e.message,
+                    executed=False,
+                )
+                fail_result.metadata = e.failure_metadata
+                yield self._wrap_with_trigger(
+                    fail_result,
+                    source, handler, values_changed, new_values,
+                )
+                continue
 
             # §122 — successful action statements are HANDLER_FIRE.
             yield self._wrap_with_trigger(
@@ -583,14 +602,23 @@ class _Runner:
         """v3a §122 — attach the trigger envelope to an action-statement
         result. Successful results were already created with
         HANDLER_FIRE status; error results keep their original status."""
-        base.metadata = {
-            "trigger": {
-                "source": source,
-                "handler_index": handler.index,
-                "values_changed": list(values_changed),
-                "new_values": dict(new_values),
-            },
+        trigger_meta = {
+            "source": source,
+            "handler_index": handler.index,
+            "values_changed": list(values_changed),
+            "new_values": dict(new_values),
         }
+        # Meta-Structural Era batch 3 — propagate inherited provenance from
+        # the WhenNode to the HANDLER_FIRE metadata so downstream consumers
+        # (Invariant) can distinguish pre-flight checklist handlers from
+        # session-authored handlers.
+        if handler.when_node.inherited:
+            trigger_meta["inherited"] = True
+            if handler.when_node.inherited_from is not None:
+                trigger_meta["inherited_from"] = handler.when_node.inherited_from
+        # Merge rather than clobber (§8 mode 2): a failure result may already
+        # carry structured failure_metadata that must survive the wrap.
+        base.metadata = {**(base.metadata or {}), "trigger": trigger_meta}
         return base
 
     def _cycle_error(

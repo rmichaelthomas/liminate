@@ -4,7 +4,7 @@
 from liminate.result import LiminateResult, ResultStatus
 
 
-def test_all_ten_statuses_present():
+def test_all_statuses_present():
     # v3a §122: the five-outcome taxonomy is extended by four
     # listener-mode statuses (LISTENING, HANDLER_FIRE, SHUTDOWN,
     # ERROR_RUNTIME) for Phase 2 execution. Normative Era batch 2
@@ -15,12 +15,16 @@ def test_all_ten_statuses_present():
     # a prohibited condition evaluates true. Deontic Era batch 2 adds
     # PERMITTED — informational, for the receipt's deontic_mode envelope
     # (the interpreter returns SUCCESS for `permit`, not PERMITTED).
+    # v0.12.0 adds PACK_VERB_FAILURE — a pack verb's verification check
+    # (cite/verify/measure) found a mismatch; distinct from ERROR_SEMANTIC
+    # ("the program has a bug") — the data didn't satisfy the check.
     names = {s.name for s in ResultStatus}
     assert names == {
         "SUCCESS", "AMBER_PRECEDENCE", "AMBER_AMBIGUITY",
         "ERROR_PARSE", "ERROR_SEMANTIC",
         "LISTENING", "HANDLER_FIRE", "SHUTDOWN", "ERROR_RUNTIME",
         "REQUIREMENT_NOT_MET", "PROHIBITION_VIOLATED", "PERMITTED",
+        "PACK_VERB_FAILURE",
     }
 
 

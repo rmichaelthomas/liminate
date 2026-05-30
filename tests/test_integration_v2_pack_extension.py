@@ -98,9 +98,10 @@ def test_cite_substring_check_failure():
     cite "Einstein" from doc
     '''
     _, results = run_v3a(src, pack=_test_pack())
+    # v0.12.0: substring miss surfaces as PACK_VERB_FAILURE.
     errors = [
         r for r in results
-        if r.status in (ResultStatus.ERROR_RUNTIME, ResultStatus.ERROR_SEMANTIC)
+        if r.status is ResultStatus.PACK_VERB_FAILURE
     ]
     assert errors
     assert "Einstein" in errors[0].message

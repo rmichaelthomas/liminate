@@ -43,6 +43,14 @@ class ResultStatus(Enum):
     # The deontic triple: require (obligation), forbid (prohibition),
     # permit (permission).
     PERMITTED = "permitted"
+    # Invariant-readiness: a pack verb's verification check found a
+    # mismatch. Distinct from ERROR_SEMANTIC ("the program has a bug")
+    # — PACK_VERB_FAILURE means "the data did not satisfy the verb's
+    # check." Covers cite (substring not found), verify (structural
+    # mismatch), and measure (outside tolerance). The result's metadata
+    # carries the pack name, verb, failure type, and slot values for
+    # machine-readable failure identity.
+    PACK_VERB_FAILURE = "pack_verb_failure"
 
 
 @dataclass

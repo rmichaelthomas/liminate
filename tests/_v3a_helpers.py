@@ -71,6 +71,15 @@ def run_v3a(
                 toks = []
             if toks and toks[0].type is TokenType.CONNECTIVE and toks[0].value == "when":
                 is_when = True
+            # v0.12.0 — `inherited when` header (mirrors run.py / build.py).
+            elif (
+                len(toks) > 1
+                and toks[0].type is TokenType.OPERATOR
+                and toks[0].value == "inherited"
+                and toks[1].type is TokenType.CONNECTIVE
+                and toks[1].value == "when"
+            ):
+                is_when = True
 
         if is_when:
             action_lines: list[str] = []
