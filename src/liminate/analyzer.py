@@ -1254,15 +1254,12 @@ def _check_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> None:
 
 
 def _check_gather(node: GatherNode) -> None:
-    if node.from_val > node.to_val:
-        raise _SemanticError(
-            f"The 'from' value ({_fmt_number(node.from_val)}) must be less "
-            f"than or equal to the 'to' value ({_fmt_number(node.to_val)}). "
-            f"Try: gather the {node.name} from {_fmt_number(node.to_val)} "
-            f"to {_fmt_number(node.from_val)}."
-        )
-    # Range size = to - from + 1 (inclusive).
-    size = node.to_val - node.from_val + 1
+    # D-6: descending ranges (from > to) are valid. Direction is derived
+    # from the endpoints; the step is always positive (enforced at parse
+    # time). Range size counts inclusive endpoints stepped by `step`.
+    step = node.step_val if node.step_val is not None else 1
+    span = abs(node.to_val - node.from_val)
+    size = int(span // step) + 1
     if size > GATHER_RANGE_CAP:
         raise _SemanticError(
             f"That range is too large. The maximum is "

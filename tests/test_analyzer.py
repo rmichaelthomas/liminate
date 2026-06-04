@@ -257,12 +257,10 @@ def test_mixed_type_list_is_semantic_error():
 # Sentence 42 — descending range
 # ---------------------------------------------------------------------------
 
-def test_descending_range_is_semantic_error():
+def test_descending_range_is_allowed():
+    # D-6: descending ranges are valid; the analyzer no longer rejects them.
     result = _analyze("gather the numbers from 10 to 1")
-    assert isinstance(result, LiminateResult)
-    assert result.status is ResultStatus.ERROR_SEMANTIC
-    assert "less than or equal to" in result.message
-    assert "10" in result.message and "1" in result.message
+    assert not isinstance(result, LiminateResult)
 
 
 def test_equal_endpoints_are_allowed():

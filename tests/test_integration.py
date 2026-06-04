@@ -422,10 +422,11 @@ def test_sentence_41_mixed_type_list():
 
 
 def test_sentence_42_descending_range():
+    # D-6: descending ranges are now valid and count down inclusively.
     session = make_session()
     r = session.run_line("gather the numbers from 10 to 1")
-    assert r.status is ResultStatus.ERROR_SEMANTIC
-    assert "less than or equal" in r.message
+    assert r.status is ResultStatus.SUCCESS
+    assert session.symtab["numbers"].value == [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 
 
 # ---------------------------------------------------------------------------
