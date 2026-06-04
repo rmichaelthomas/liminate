@@ -1,6 +1,6 @@
 [project]
 name = "liminate"
-version = "0.12.0"
+version = "0.13.0"
 description = "A prose-as-syntax language designed from the human end."
 requires-python = ">=3.10"
 license = "Apache-2.0"
