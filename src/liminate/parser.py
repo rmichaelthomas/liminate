@@ -317,6 +317,10 @@ class GatherNode(ASTNode):
     name: str
     from_val: int | float
     to_val: int | float
+    # D-6 — optional step value. None means the default step (1). The step
+    # is always stored positive; the direction (ascending vs descending) is
+    # derived from comparing from_val and to_val, never from the step sign.
+    step_val: int | float | None = None
     rationale: str | None = field(default=None, compare=False)
     # Meta-Structural Era batch 3 — `inherited` operator + `from`
     # attribution. Both are inert provenance metadata (compare=False),
@@ -2668,7 +2672,23 @@ def _parse_gather(stream: TokenStream) -> GatherNode:
         raise _ParseError("I expected a number after 'to'.")
     to_val = _parse_number(to_val_tok.value)
 
-    return GatherNode(name=name, from_val=from_val, to_val=to_val)
+    # D-6 — optional `by <number>` step value after `to <number>`. `by` is
+    # already a connective (used by `sort`); its tail here is non-overlapping.
+    step_val: int | float | None = None
+    peek = stream.peek()
+    if peek and peek.type is TokenType.CONNECTIVE and peek.value == "by":
+        stream.consume()  # eat `by`
+        step_tok = stream.consume()
+        if not step_tok or step_tok.type is not TokenType.NUMBER:
+            raise _ParseError("I expected a number after 'by' — the step value.")
+        step_val = _parse_number(step_tok.value)
+        if step_val <= 0:
+            raise _ParseError(
+                f"The step value must be positive — got {step_val}. "
+                f"The direction is determined by the range (from/to), not the step."
+            )
+
+    return GatherNode(name=name, from_val=from_val, to_val=to_val, step_val=step_val)
 
 
 # ---------------------------------------------------------------------------

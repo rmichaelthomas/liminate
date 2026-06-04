@@ -599,9 +599,11 @@ def test_sentence_41_mixed_list():
 
 
 def test_sentence_42_descending_range():
-    r = run("gather the numbers from 10 to 1")
-    assert r.status is ResultStatus.ERROR_SEMANTIC
-    assert "less than or equal" in r.message
+    # D-6: descending ranges are now valid and count down inclusively.
+    symtab = {}
+    r = run("gather the numbers from 10 to 1", symtab)
+    assert r.status is ResultStatus.SUCCESS
+    assert symtab["numbers"].value == [10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 
 
 def test_sentence_43_range_cap_exceeded():

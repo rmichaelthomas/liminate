@@ -1326,10 +1326,23 @@ def _exec_count(node: CountNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     return [str(len(entry.value))]
 
 
-def _exec_gather(node: GatherNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+def _gather_items(node: GatherNode) -> list[int]:
+    """Materialize a gather range.
+
+    D-6: the step is always positive in the AST; the direction is derived
+    from comparing from_val and to_val. Ascending uses +step, descending
+    negates it for the Python range. Both endpoints are inclusive.
+    """
     start = int(node.from_val)
     stop = int(node.to_val)
-    items = list(range(start, stop + 1))
+    step = int(node.step_val) if node.step_val is not None else 1
+    if start <= stop:
+        return list(range(start, stop + 1, step))
+    return list(range(start, stop - 1, -step))
+
+
+def _exec_gather(node: GatherNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+    items = _gather_items(node)
     _store(symtab, node.name, items)
     # v1b §40: gather both stores AND auto-shows.
     return _display_lines(items)
@@ -1900,9 +1913,7 @@ def _value_of_op(op: ASTNode, symtab: dict[str, SymbolEntry]) -> Any:
     if isinstance(op, CountNode):
         return len(symtab[op.target.name].value)
     if isinstance(op, GatherNode):
-        start = int(op.from_val)
-        stop = int(op.to_val)
-        items = list(range(start, stop + 1))
+        items = _gather_items(op)
         _store(symtab, op.name, items)
         return items
     if isinstance(op, RememberValueNode):
