@@ -222,10 +222,14 @@ def _render_node(node: ASTNode) -> str:
     if isinstance(node, CountNode):
         return f"count the {render(node.target)}"
     if isinstance(node, GatherNode):
-        return (
+        out = (
             f"gather the {node.name} "
             f"from {_fmt_number(node.from_val)} to {_fmt_number(node.to_val)}"
         )
+        # D-6: render the step value back when present.
+        if node.step_val is not None:
+            out += f" by {_fmt_number(node.step_val)}"
+        return out
     if isinstance(node, CombineNode):
         return f"combine the {render(node.target)}"
     if isinstance(node, EachNode):
