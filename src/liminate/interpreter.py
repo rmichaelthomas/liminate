@@ -41,6 +41,7 @@ from .analyzer import SymbolEntry, analyze
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    ConformanceCheckExecution,
     DecayingValue,
     NumericExtractCompareExecution,
     RangeCheckExecution,
@@ -657,7 +658,7 @@ def _exec_op(
     if isinstance(node, CompositionCallNode):
         return _exec_composition_call(node, symtab)
     if isinstance(node, PackVerbNode):
-        return _exec_pack_verb(node, symtab)
+        return _exec_pack_verb(node, symtab, current_item)
     if isinstance(node, AddNode):
         return _exec_add(node, symtab, current_item)
     if isinstance(node, RemoveNode):
@@ -781,23 +782,34 @@ def _exec_remember_record(
 def _exec_pack_verb(
     node: PackVerbNode,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
-    """v2 — dispatch by execution type via isinstance."""
+    """v2 — dispatch by execution type via isinstance.
+
+    `current_item` carries the per-element value when this pack verb runs
+    under an enclosing `each` (Phase 3 Spec 2 iterable pack verbs). It
+    defaults to None, so the non-`each` path is byte-identical to before —
+    an `each` slot resolves to `current_item` only via the EachPronoun
+    branch of `_evaluate_expression`."""
     execution = node.signature.execution
     if isinstance(execution, SetValueExecution):
-        return _exec_pack_set_value(node, execution, symtab)
+        return _exec_pack_set_value(node, execution, symtab, current_item)
     if isinstance(execution, SubstringCheckExecution):
-        return _exec_pack_substring_check(node, execution, symtab)
+        return _exec_pack_substring_check(node, execution, symtab, current_item)
     if isinstance(execution, AppendToListExecution):
-        return _exec_pack_append_to_list(node, execution, symtab)
+        return _exec_pack_append_to_list(node, execution, symtab, current_item)
     if isinstance(execution, SetFieldExecution):
-        return _exec_pack_set_field(node, execution, symtab)
+        return _exec_pack_set_field(node, execution, symtab, current_item)
     if isinstance(execution, CompareValuesExecution):
-        return _exec_pack_compare_values(node, execution, symtab)
+        return _exec_pack_compare_values(node, execution, symtab, current_item)
     if isinstance(execution, NumericExtractCompareExecution):
-        return _exec_pack_numeric_extract_compare(node, execution, symtab)
+        return _exec_pack_numeric_extract_compare(
+            node, execution, symtab, current_item
+        )
     if isinstance(execution, RangeCheckExecution):
-        return _exec_pack_range_check(node, execution, symtab)
+        return _exec_pack_range_check(node, execution, symtab, current_item)
+    if isinstance(execution, ConformanceCheckExecution):
+        return _exec_pack_fit(node, execution, symtab, current_item)
     raise _RuntimeError(
         f"Pack verb '{node.word}' has an unrecognized execution type."
     )
@@ -820,12 +832,13 @@ def _resolve_target(execution, node: PackVerbNode, symtab) -> str:
     return execution.target_name
 
 
-def _resolve_source(execution, node: PackVerbNode, symtab) -> Any:
+def _resolve_source(execution, node: PackVerbNode, symtab, current_item=None) -> Any:
     """v2 §8 — resolve the value to write. `source_slot` is evaluated via
-    `_evaluate_expression`; `literal_value` is returned as-is."""
+    `_evaluate_expression`; `literal_value` is returned as-is. `current_item`
+    is threaded so an `each` source slot resolves to the per-element value."""
     if execution.source_slot is not None:
         value_node = node.slot_values.get(execution.source_slot)
-        return _evaluate_expression(value_node, symtab, None)
+        return _evaluate_expression(value_node, symtab, current_item)
     return execution.literal_value
 
 
@@ -833,6 +846,7 @@ def _exec_pack_set_value(
     node: PackVerbNode,
     execution: SetValueExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """v2 §8 — set_value with name-vs-value special case preserved:
     when source_slot resolves to a NameRef, store the *name string* (so
@@ -844,7 +858,7 @@ def _exec_pack_set_value(
         if isinstance(value_node, NameRef):
             value: Any = value_node.name
         else:
-            value = _evaluate_expression(value_node, symtab, None)
+            value = _evaluate_expression(value_node, symtab, current_item)
     else:
         value = execution.literal_value
     _store(symtab, target_name, value)
@@ -855,13 +869,14 @@ def _exec_pack_substring_check(
     node: PackVerbNode,
     execution: SubstringCheckExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """v2 §4 — case-sensitive substring containment."""
     check_node = node.slot_values.get(execution.check_slot)
     against_node = node.slot_values.get(execution.against_slot)
-    check_raw = _evaluate_expression(check_node, symtab, None)
+    check_raw = _evaluate_expression(check_node, symtab, current_item)
     check_value = _format_scalar(check_raw)
-    against_value = _evaluate_expression(against_node, symtab, None)
+    against_value = _evaluate_expression(against_node, symtab, current_item)
     if not isinstance(against_value, str):
         against_value = _format_scalar(against_value)
     if check_value not in against_value:
@@ -888,10 +903,11 @@ def _exec_pack_append_to_list(
     node: PackVerbNode,
     execution: AppendToListExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """v2 §5 — deep-copy append to a list."""
     target_name = _resolve_target(execution, node, symtab)
-    resolved_value = _resolve_source(execution, node, symtab)
+    resolved_value = _resolve_source(execution, node, symtab, current_item)
     entry = symtab[target_name]
     # v1 §7 `none` placeholder seed pattern — clear the sentinel on first add.
     if (
@@ -911,10 +927,11 @@ def _exec_pack_set_field(
     node: PackVerbNode,
     execution: SetFieldExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """v2 §6 — set one field on a record. Creates the field if absent."""
     target_name = _resolve_target(execution, node, symtab)
-    resolved_value = _resolve_source(execution, node, symtab)
+    resolved_value = _resolve_source(execution, node, symtab, current_item)
     entry = symtab[target_name]
     entry.value[execution.field_name] = copy.deepcopy(resolved_value)
     if entry.schema is None:
@@ -927,13 +944,14 @@ def _exec_pack_compare_values(
     node: PackVerbNode,
     execution: CompareValuesExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """v2 §7 — compare two slot values; store status (and details for
     structural mode); raise on mismatch when on_mismatch == 'error'."""
     left_node = node.slot_values.get(execution.left_slot)
     right_node = node.slot_values.get(execution.right_slot)
-    left_value = _evaluate_expression(left_node, symtab, None)
-    right_value = _evaluate_expression(right_node, symtab, None)
+    left_value = _evaluate_expression(left_node, symtab, current_item)
+    right_value = _evaluate_expression(right_node, symtab, current_item)
     left_name = (
         left_node.name if isinstance(left_node, NameRef)
         else execution.left_slot
@@ -1010,6 +1028,7 @@ def _exec_pack_numeric_extract_compare(
     node: PackVerbNode,
     execution: NumericExtractCompareExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """Sixth execution type: extract all numbers from a source string,
     find the closest to the claimed value, check tolerance."""
@@ -1017,9 +1036,9 @@ def _exec_pack_numeric_extract_compare(
     against_node = node.slot_values.get(execution.against_slot)
     tolerance_node = node.slot_values.get(execution.tolerance_slot)
 
-    claimed = _evaluate_expression(check_node, symtab, None)
-    source_text = _evaluate_expression(against_node, symtab, None)
-    tolerance = _evaluate_expression(tolerance_node, symtab, None)
+    claimed = _evaluate_expression(check_node, symtab, current_item)
+    source_text = _evaluate_expression(against_node, symtab, current_item)
+    tolerance = _evaluate_expression(tolerance_node, symtab, current_item)
 
     if not isinstance(claimed, (int, float)):
         claimed = float(_format_scalar(claimed))
@@ -1107,6 +1126,7 @@ def _exec_pack_range_check(
     node: PackVerbNode,
     execution: RangeCheckExecution,
     symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
 ) -> list[str]:
     """Seventh execution type (D-8): extract a (low, high) pair from a claimed
     range string and a reference window string, compare them exactly, and
@@ -1115,8 +1135,8 @@ def _exec_pack_range_check(
     check_node = node.slot_values.get(execution.check_slot)
     against_node = node.slot_values.get(execution.against_slot)
 
-    claimed_text = _evaluate_expression(check_node, symtab, None)
-    reference_text = _evaluate_expression(against_node, symtab, None)
+    claimed_text = _evaluate_expression(check_node, symtab, current_item)
+    reference_text = _evaluate_expression(against_node, symtab, current_item)
     if not isinstance(claimed_text, str):
         claimed_text = _format_scalar(claimed_text)
     if not isinstance(reference_text, str):
@@ -1188,6 +1208,93 @@ def _exec_pack_range_check(
                 "reference": reference_str,
                 "divergence": divergence,
                 "against_name": against_name,
+            },
+        )
+    return []
+
+
+def _pack_slot_display_name(value_node, slot_name: str) -> str:
+    """Friendly name for a pack-verb slot value in failure messages."""
+    if isinstance(value_node, NameRef):
+        return value_node.name
+    if isinstance(value_node, BareWord):
+        return value_node.word
+    if isinstance(value_node, EachPronoun):
+        return "each item"
+    return slot_name
+
+
+def _exec_pack_fit(
+    node: PackVerbNode,
+    execution: ConformanceCheckExecution,
+    symtab: dict[str, SymbolEntry],
+    current_item: Any = None,
+) -> list[str]:
+    """Eighth execution type (Phase 3 Spec 2): Level 2 conformance check —
+    `fit <record> to <shape>`. The shape is a template record; its field
+    names and inferred scalar types are the declared schema. A record
+    *fits* when every declared field is present with the matching scalar
+    type. Extra fields are collected but do NOT fail under Level 2.
+
+    All four outputs are stored to the symbol table BEFORE any raise
+    (handler-visibility pattern, matching range_check). A mismatch (a
+    missing field or a type mismatch) surfaces as PACK_VERB_FAILURE with
+    failure_type 'conformance_mismatch' — the load-bearing string the Spec 3
+    directive resolver keys on to emit `flag` rather than `block`.
+
+    A non-record on either slot is a usage error (ERROR_SEMANTIC via
+    _RuntimeError), NOT a conformance mismatch."""
+    record_node = node.slot_values.get(execution.record_slot)
+    shape_node = node.slot_values.get(execution.shape_slot)
+
+    record_value = _evaluate_expression(record_node, symtab, current_item)
+    shape_value = _evaluate_expression(shape_node, symtab, current_item)
+
+    record_name = _pack_slot_display_name(record_node, execution.record_slot)
+    shape_name = _pack_slot_display_name(shape_node, execution.shape_slot)
+
+    # Type guard: both operands must be records. A non-record is a usage
+    # error (ERROR_SEMANTIC), NOT a conformance mismatch.
+    if not isinstance(record_value, dict):
+        raise _RuntimeError(
+            f"'{node.word}' needs a record for '{record_name}', "
+            f"but it isn't a record."
+        )
+    if not isinstance(shape_value, dict):
+        raise _RuntimeError(
+            f"'{node.word}' needs a record shape for '{shape_name}', "
+            f"but it isn't a record."
+        )
+
+    # Level 2: every declared shape field must be present with the matching
+    # scalar type. Extras are collected but never penalized.
+    missing: list[str] = []
+    type_mismatch: list[str] = []
+    for field, shape_val in shape_value.items():
+        if field not in record_value:
+            missing.append(field)
+        elif _scalar_type(record_value[field]) != _scalar_type(shape_val):
+            type_mismatch.append(field)
+    extra = [f for f in record_value if f not in shape_value]
+
+    status = "mismatch" if (missing or type_mismatch) else "match"
+
+    # Handler-visibility: commit all four outputs before any raise.
+    _store(symtab, execution.status_target, status)
+    _store(symtab, execution.missing_target, list(missing))
+    _store(symtab, execution.type_mismatch_target, list(type_mismatch))
+    _store(symtab, execution.extra_target, list(extra))
+
+    if status == "mismatch":
+        raise _PackVerbFailure(
+            f"'{record_name}' does not fit the shape '{shape_name}'. "
+            f"Missing: {missing}. Type mismatches: {type_mismatch}.",
+            metadata={
+                "verb": node.word,
+                "failure_type": "conformance_mismatch",
+                "missing": list(missing),
+                "type_mismatch": list(type_mismatch),
+                "extra": list(extra),
             },
         )
     return []

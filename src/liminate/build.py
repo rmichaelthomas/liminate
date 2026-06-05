@@ -435,6 +435,9 @@ _EXECUTION_TYPE_NAMES = {
     "AppendToListExecution": "append_to_list",
     "SetFieldExecution": "set_field",
     "CompareValuesExecution": "compare_values",
+    "NumericExtractCompareExecution": "numeric_extract_compare",
+    "RangeCheckExecution": "range_check",
+    "ConformanceCheckExecution": "conformance_check",
 }
 
 
