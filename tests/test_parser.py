@@ -499,10 +499,13 @@ def test_composition_call_without_parameter_argument():
     assert ast.arg is None
 
 
-def test_composition_call_arg_must_be_a_name_not_a_literal():
-    out = parse_line("find-big from 5", comps={"find-big"})
-    assert isinstance(out, LiminateResult)
-    assert out.status is ResultStatus.ERROR_PARSE
+def test_composition_call_arg_accepts_a_numeric_literal():
+    # Phase 2 D-1 supersedes the v2d §96 names-only restriction: composition
+    # parameters now accept numeric literals as a self-contained argument.
+    ast = parse_line("find-big from 5", comps={"find-big"})
+    assert isinstance(ast, CompositionCallNode)
+    assert ast.name == "find-big"
+    assert ast.arg == NumberLiteral(value=5)
 
 
 def test_composition_call_arg_must_be_a_name_not_a_reserved_word():

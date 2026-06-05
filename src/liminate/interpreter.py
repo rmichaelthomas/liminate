@@ -43,6 +43,7 @@ from .vocabulary import (
     CompareValuesExecution,
     DecayingValue,
     NumericExtractCompareExecution,
+    RangeCheckExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -795,6 +796,8 @@ def _exec_pack_verb(
         return _exec_pack_compare_values(node, execution, symtab)
     if isinstance(execution, NumericExtractCompareExecution):
         return _exec_pack_numeric_extract_compare(node, execution, symtab)
+    if isinstance(execution, RangeCheckExecution):
+        return _exec_pack_range_check(node, execution, symtab)
     raise _RuntimeError(
         f"Pack verb '{node.word}' has an unrecognized execution type."
     )
@@ -1078,6 +1081,112 @@ def _exec_pack_numeric_extract_compare(
                 "closest": closest,
                 "delta": delta,
                 "tolerance": tolerance,
+                "against_name": against_name,
+            },
+        )
+    return []
+
+
+def _range_number(text: str) -> int | float:
+    """Convert an extracted numeric token: int when it has no decimal point,
+    float otherwise (D-8)."""
+    return float(text) if "." in text else int(text)
+
+
+def _extract_range(text: str) -> tuple[int | float, int | float] | None:
+    """Extract the first two numbers from `text` as a (low, high) pair, using
+    the same regex `numeric_extract_compare` uses. Returns None when fewer
+    than two numbers are present (a parse error)."""
+    found = re.findall(r'-?\d+\.?\d*', text)
+    if len(found) < 2:
+        return None
+    return (_range_number(found[0]), _range_number(found[1]))
+
+
+def _exec_pack_range_check(
+    node: PackVerbNode,
+    execution: RangeCheckExecution,
+    symtab: dict[str, SymbolEntry],
+) -> list[str]:
+    """Seventh execution type (D-8): extract a (low, high) pair from a claimed
+    range string and a reference window string, compare them exactly, and
+    report which endpoints diverge. Non-match (mismatch or parse_error)
+    surfaces as PACK_VERB_FAILURE, with all four outputs stored first."""
+    check_node = node.slot_values.get(execution.check_slot)
+    against_node = node.slot_values.get(execution.against_slot)
+
+    claimed_text = _evaluate_expression(check_node, symtab, None)
+    reference_text = _evaluate_expression(against_node, symtab, None)
+    if not isinstance(claimed_text, str):
+        claimed_text = _format_scalar(claimed_text)
+    if not isinstance(reference_text, str):
+        reference_text = _format_scalar(reference_text)
+
+    against_name = (
+        against_node.name if isinstance(against_node, NameRef)
+        else execution.against_slot
+    )
+
+    claimed = _extract_range(claimed_text)
+    reference = _extract_range(reference_text)
+
+    def _fmt_range(pair) -> str:
+        if pair is None:
+            return "none"
+        return f"{_format_scalar(pair[0])} to {_format_scalar(pair[1])}"
+
+    # Parse error: fewer than two numbers in either string. Store outputs,
+    # then raise (non-match → PACK_VERB_FAILURE, Invariant-readiness).
+    if claimed is None or reference is None:
+        _store(symtab, execution.status_target, "parse_error")
+        _store(symtab, execution.claimed_target, _fmt_range(claimed))
+        _store(symtab, execution.reference_target, _fmt_range(reference))
+        _store(symtab, execution.divergence_target, "none")
+        which = "the claimed value" if claimed is None else f"'{against_name}'"
+        raise _PackVerbFailure(
+            f"Could not extract a numeric range from {which} — "
+            f"two numbers are required.",
+            metadata={
+                "verb": node.word,
+                "failure_type": "parse_error",
+                "against_name": against_name,
+            },
+        )
+
+    c_low, c_high = claimed
+    r_low, r_high = reference
+    claimed_str = _fmt_range(claimed)
+    reference_str = _fmt_range(reference)
+
+    low_diff = c_low != r_low
+    high_diff = c_high != r_high
+    if low_diff and high_diff:
+        divergence = "both"
+    elif low_diff:
+        divergence = "lower"
+    elif high_diff:
+        divergence = "upper"
+    else:
+        divergence = "none"
+
+    status = "match" if divergence == "none" else "mismatch"
+    _store(symtab, execution.status_target, status)
+    _store(symtab, execution.claimed_target, claimed_str)
+    _store(symtab, execution.reference_target, reference_str)
+    _store(symtab, execution.divergence_target, divergence)
+
+    # Invariant-readiness: a mismatch surfaces as PACK_VERB_FAILURE regardless
+    # of on_mismatch mode (mirrors numeric_extract_compare). Writes stay.
+    if status != "match":
+        raise _PackVerbFailure(
+            f"Claimed range {claimed_str} does not match '{against_name}' "
+            f"({reference_str}) — divergence: {divergence}.",
+            metadata={
+                "verb": node.word,
+                "failure_type": "range_mismatch",
+                "claimed": claimed_str,
+                "reference": reference_str,
+                "divergence": divergence,
                 "against_name": against_name,
             },
         )
@@ -1755,19 +1864,27 @@ def _bind_parameter(
     param = entry.composition_param
     if param is None or node.arg is None:
         return None, None, False
-    arg_entry = symtab[node.arg]
     saved = symtab.get(param)
-    symtab[param] = SymbolEntry(
-        name=param,
-        value=copy.deepcopy(arg_entry.value),
-        type=arg_entry.type,
-        schema=copy.deepcopy(arg_entry.schema),
-        source_names=(
-            list(arg_entry.source_names)
-            if arg_entry.source_names is not None
-            else None
-        ),
-    )
+    # Phase 2 D-1 — a literal argument is self-contained: bind the param
+    # directly to the literal's value. A bare name (str) follows the v2d §96
+    # path: look up, deep-copy, and carry the source entry's metadata.
+    if isinstance(node.arg, NumberLiteral):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.value, type="number")
+    elif isinstance(node.arg, QuotedString):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.content, type="string")
+    else:
+        arg_entry = symtab[node.arg]
+        symtab[param] = SymbolEntry(
+            name=param,
+            value=copy.deepcopy(arg_entry.value),
+            type=arg_entry.type,
+            schema=copy.deepcopy(arg_entry.schema),
+            source_names=(
+                list(arg_entry.source_names)
+                if arg_entry.source_names is not None
+                else None
+            ),
+        )
     return param, saved, saved is not None
 
 

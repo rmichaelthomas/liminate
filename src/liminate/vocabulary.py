@@ -393,6 +393,17 @@ class NumericExtractCompareExecution:
     delta_target: str        # symbol name for the absolute difference
 
 
+@dataclass(frozen=True)
+class RangeCheckExecution:
+    check_slot: str          # slot containing the claimed range (string)
+    against_slot: str        # slot containing the reference window (string)
+    on_mismatch: str         # "error" | "flag"
+    status_target: str       # symbol name for "match" / "mismatch" / "parse_error"
+    claimed_target: str      # symbol name for extracted (low, high) string
+    reference_target: str    # symbol name for extracted (low, high) string
+    divergence_target: str   # symbol name for "lower" / "upper" / "both" / "none"
+
+
 PackVerbExecution = (
     SetValueExecution
     | SubstringCheckExecution
@@ -400,6 +411,7 @@ PackVerbExecution = (
     | SetFieldExecution
     | CompareValuesExecution
     | NumericExtractCompareExecution
+    | RangeCheckExecution
 )
 
 

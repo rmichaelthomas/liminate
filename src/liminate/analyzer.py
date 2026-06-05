@@ -93,6 +93,7 @@ from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
     NumericExtractCompareExecution,
+    RangeCheckExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -227,6 +228,152 @@ def analyze(
             executed=False,
         )
     return node
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 D-4 — deontic contradiction detection
+# ---------------------------------------------------------------------------
+#
+# A static, warning-only analysis pass that runs once over the whole program
+# (before execution) and reports direct, same-field logical conflicts between
+# `require` and `forbid` statements. It never blocks execution and never
+# changes a result status — it only produces informational warning strings.
+#
+# Scope (locked decisions DT-Q2/DT-Q3 + the §3 design):
+#   - Only RequireNode and ForbidNode participate. PermitNode is purely
+#     informational and never contradicts anything (DT-Q3).
+#   - Only *simple* conditions are checked — a single leaf ConditionNode with
+#     a NameRef field and a NumberLiteral / BareWord / QuotedString value.
+#     Compound (`and`/`or`) conditions are out of scope and are skipped
+#     entirely (no leaf extraction across statements → no false positives).
+#   - No SAT solving; only the four direct-conflict rules below.
+
+
+# One extracted, checkable deontic statement: its verb, field name, the
+# normalized comparison operator, and the (kind, value) pair. `text` is the
+# human-readable rendering used in the warning message.
+class _Deontic:
+    __slots__ = ("verb", "field", "op", "kind", "value", "text")
+
+    def __init__(self, verb, field, op, kind, value, text):
+        self.verb = verb      # "require" | "forbid"
+        self.field = field    # field name (str)
+        self.op = op          # normalized: "above" | "below" | "is"
+        self.kind = kind      # "num" | "str"
+        self.value = value    # int/float for "num", str for "str"
+        self.text = text      # e.g. "require x is above 50"
+
+
+def _iter_deontic_nodes(statements):
+    """Yield each RequireNode / ForbidNode found in `statements`, descending
+    into SequenceNode operations. PermitNode is skipped — it never
+    contradicts (DT-Q3)."""
+    for stmt in statements:
+        if isinstance(stmt, SequenceNode):
+            yield from _iter_deontic_nodes(stmt.operations)
+        elif isinstance(stmt, (RequireNode, ForbidNode)):
+            yield stmt
+
+
+def _extract_deontic(node) -> "_Deontic | None":
+    """Reduce a RequireNode/ForbidNode to a checkable `_Deontic`, or None if
+    its condition is out of scope (compound, non-name field, or a value that
+    isn't a literal / bareword)."""
+    cond = node.condition
+    # Compound conditions are out of scope — skip entirely (no leaf extraction).
+    if not isinstance(cond, ConditionNode):
+        return None
+    if not isinstance(cond.field, NameRef):
+        return None
+    field = cond.field.name
+
+    val = cond.value
+    if isinstance(val, NumberLiteral):
+        kind, value, value_text = "num", val.value, _fmt_value_num(val.value)
+    elif isinstance(val, BareWord):
+        kind, value, value_text = "str", val.word, val.word
+    elif isinstance(val, QuotedString):
+        kind, value, value_text = "str", val.content, val.content
+    else:
+        # NameRef / EachPronoun / anything symbolic — not statically checkable.
+        return None
+
+    # Normalize equality: bare `is` and `is equal to` both mean equality.
+    raw_op = cond.op
+    if raw_op in ("is", "equal_to"):
+        op = "is"
+    elif raw_op in ("above", "below"):
+        op = raw_op
+    else:
+        # not_above / not_below / within / includes etc. are out of scope.
+        return None
+
+    verb = "require" if isinstance(node, RequireNode) else "forbid"
+    phrase = {"above": "is above", "below": "is below", "is": "is"}[op]
+    text = f"{verb} {field} {phrase} {value_text}"
+    return _Deontic(verb, field, op, kind, value, text)
+
+
+def _fmt_value_num(value) -> str:
+    return str(int(value)) if isinstance(value, int) else str(value)
+
+
+def _values_equal(a: _Deontic, b: _Deontic) -> bool:
+    return a.kind == b.kind and a.value == b.value
+
+
+def _pair_contradicts(a: _Deontic, b: _Deontic) -> bool:
+    """Apply the four direct-conflict rules to a same-field pair."""
+    if a.field != b.field:
+        return False
+    verbs = {a.verb, b.verb}
+
+    # Rule 1 — identical operator AND value, one require + one forbid. Any
+    # value of the field that satisfies one violates the other. Subsumes the
+    # `is`-equality require/forbid case (rule 3 in the design table).
+    if a.op == b.op and _values_equal(a, b) and verbs == {"require", "forbid"}:
+        return True
+
+    # Rules 2 and 4 are require + require only.
+    if a.verb == "require" and b.verb == "require":
+        # Rule 2 — an `above A` requirement and a `below B` requirement with
+        # A >= B leave no satisfying value (empty open interval).
+        ops = {a.op, b.op}
+        if ops == {"above", "below"} and a.kind == "num" and b.kind == "num":
+            above_val = a.value if a.op == "above" else b.value
+            below_val = a.value if a.op == "below" else b.value
+            if above_val >= below_val:
+                return True
+        # Rule 4 — two equality requirements with different values can never
+        # both hold.
+        if a.op == "is" and b.op == "is" and not _values_equal(a, b):
+            return True
+
+    return False
+
+
+def detect_contradictions(statements: list[ASTNode]) -> list[str]:
+    """Walk top-level ASTs, collect simple `require`/`forbid` conditions, and
+    report direct same-field logical conflicts.
+
+    Returns a list of human-readable warning strings (empty when none found).
+    This is advisory only: the caller surfaces the warnings but never halts
+    execution on them (D-4 locked: warning-only).
+    """
+    deontics = [
+        d for node in _iter_deontic_nodes(statements)
+        if (d := _extract_deontic(node)) is not None
+    ]
+    warnings: list[str] = []
+    for i in range(len(deontics)):
+        for j in range(i + 1, len(deontics)):
+            a, b = deontics[i], deontics[j]
+            if _pair_contradicts(a, b):
+                warnings.append(
+                    f"Possible contradiction: '{a.text}' conflicts with "
+                    f"'{b.text}' — no value of {a.field} can satisfy both."
+                )
+    return warnings
 
 
 # ---------------------------------------------------------------------------
@@ -1380,14 +1527,16 @@ def _check_composition_call_shape(
     if param is not None and node.arg is None:
         raise _SemanticError(
             f"'{node.name}' expects an input (from <{param}>). "
-            f"Try: {node.name} from <your-list>."
+            f"Try: {node.name} from <your-list> or {node.name} from 50."
         )
     if param is None and node.arg is not None:
         raise _SemanticError(
             f"'{node.name}' doesn't take an input. "
             f"Call it on its own: {node.name}."
         )
-    if node.arg is not None and node.arg not in symtab:
+    # Phase 2 D-1 — a literal argument is self-contained; only a bare-name
+    # argument (str) needs a symbol-table existence check.
+    if isinstance(node.arg, str) and node.arg not in symtab:
         raise _SemanticError(
             f"I can't find '{node.arg}'. "
             f"You might need to 'remember' it first."
@@ -1424,7 +1573,15 @@ def _analyze_composition_body(
         )
         return
     original = symtab.get(param)
-    symtab[param] = symtab[node.arg]  # alias for analysis only
+    # Phase 2 D-1 — bind the param for analysis. A literal argument
+    # synthesizes a SymbolEntry directly; a bare name aliases the existing
+    # entry (analysis-only, mirroring the runtime bind in _bind_parameter).
+    if isinstance(node.arg, NumberLiteral):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.value, type="number")
+    elif isinstance(node.arg, QuotedString):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.content, type="string")
+    else:
+        symtab[param] = symtab[node.arg]  # alias for analysis only
     try:
         _check(
             body, symtab, iterator=None,
@@ -1596,6 +1753,8 @@ def _check_pack_verb(
         _check_pack_compare(node, execution, symtab)
     elif isinstance(execution, NumericExtractCompareExecution):
         _check_pack_numeric_extract(node, execution, symtab)
+    elif isinstance(execution, RangeCheckExecution):
+        _check_pack_range_check(node, execution, symtab)
     # SetValueExecution: nothing further beyond type_constraint loop.
 
 
@@ -1757,6 +1916,43 @@ def _check_pack_numeric_extract(
             f"'{node.word} from' expects text, but '{name}' is "
             f"{_singular(entry.type)}."
         )
+
+
+def _check_pack_range_check(
+    node: PackVerbNode,
+    execution: RangeCheckExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """D-8 — `range_check` analyzer validation. Mirrors substring_check: the
+    `against_slot` (reference window) must be a name that exists and resolves
+    to a string; the `check_slot` (claimed range) is validated only when it is
+    a name reference (literals and field access are trivially valid)."""
+    against_node = node.slot_values.get(execution.against_slot)
+    if not isinstance(against_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the reference window."
+        )
+    name = against_node.name
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type != "string":
+        raise _SemanticError(
+            f"'{node.word} from' expects text, but '{name}' is "
+            f"{_singular(entry.type)}."
+        )
+    check_node = node.slot_values.get(execution.check_slot)
+    if isinstance(check_node, NameRef):
+        if check_node.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{check_node.name}'. "
+                f"You might need to 'remember' it first."
+            )
+    elif isinstance(check_node, FieldAccessNode):
+        _check_field_access(check_node, symtab)
 
 
 def _check_finish(
