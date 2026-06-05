@@ -1380,14 +1380,16 @@ def _check_composition_call_shape(
     if param is not None and node.arg is None:
         raise _SemanticError(
             f"'{node.name}' expects an input (from <{param}>). "
-            f"Try: {node.name} from <your-list>."
+            f"Try: {node.name} from <your-list> or {node.name} from 50."
         )
     if param is None and node.arg is not None:
         raise _SemanticError(
             f"'{node.name}' doesn't take an input. "
             f"Call it on its own: {node.name}."
         )
-    if node.arg is not None and node.arg not in symtab:
+    # Phase 2 D-1 — a literal argument is self-contained; only a bare-name
+    # argument (str) needs a symbol-table existence check.
+    if isinstance(node.arg, str) and node.arg not in symtab:
         raise _SemanticError(
             f"I can't find '{node.arg}'. "
             f"You might need to 'remember' it first."
@@ -1424,7 +1426,15 @@ def _analyze_composition_body(
         )
         return
     original = symtab.get(param)
-    symtab[param] = symtab[node.arg]  # alias for analysis only
+    # Phase 2 D-1 — bind the param for analysis. A literal argument
+    # synthesizes a SymbolEntry directly; a bare name aliases the existing
+    # entry (analysis-only, mirroring the runtime bind in _bind_parameter).
+    if isinstance(node.arg, NumberLiteral):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.value, type="number")
+    elif isinstance(node.arg, QuotedString):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.content, type="string")
+    else:
+        symtab[param] = symtab[node.arg]  # alias for analysis only
     try:
         _check(
             body, symtab, iterator=None,
