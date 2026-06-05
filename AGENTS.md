@@ -79,19 +79,19 @@ liminate inspect ./demo --json
 ## Modules (src/liminate/)
 
 - `lexer.py` — tokenizer with quote-state and leading-indent reporting.
-- `vocabulary.py` — verb/connective/operator/article tables + the pack-verb dataclasses (`PackVerbSignature`, `PackVerbSlot`, and the discriminated execution-class union: `SetValueExecution`, `SubstringCheckExecution`, `AppendToListExecution`, `SetFieldExecution`, `CompareValuesExecution`).
+- `vocabulary.py` — verb/connective/operator/article tables + the pack-verb dataclasses (`PackVerbSignature`, `PackVerbSlot`, and the discriminated execution-class union: `SetValueExecution`, `SubstringCheckExecution`, `AppendToListExecution`, `SetFieldExecution`, `CompareValuesExecution`, `NumericExtractCompareExecution`, `RangeCheckExecution`, `ConformanceCheckExecution`).
 - `reorderer.py` — small permutation acceptor.
 - `parser.py` — AST + `parse(tokens)` for single statements + `parse_when_block(header, action_lines)` for indented action blocks + `PackVerbNode` AST. Pack-verb dispatch runs after base verbs; slot parsing routes through `_parse_pack_slot_value` based on each slot's `value_type` (`"name"` or `"value"`).
 - `renderer.py` — canonical prose, including multi-line `when` output.
 - `analyzer.py` — semantic checks; `_check_pack_verb` `isinstance`-dispatches to per-execution validators against the entry's `descriptor`.
-- `interpreter.py` — Phase 1 execution + `HandlerTable` + `_FinishRequested` exception + ContextVars for listener context. `_exec_pack_verb` is a five-branch dispatch into the per-execution handlers. Shared helpers `_resolve_target` and `_resolve_source` implement the literal-vs-slot-derived target/source resolution model.
+- `interpreter.py` — Phase 1 execution + `HandlerTable` + `_FinishRequested` exception + ContextVars for listener context. `_exec_pack_verb` is an eight-branch dispatch into the per-execution handlers. Shared helpers `_resolve_target` and `_resolve_source` implement the literal-vs-slot-derived target/source resolution model.
 - `listener.py` — Phase 2 generator (`listen(...)`) — initial evaluation, event-queue drain, cascading, cycle detection, shutdown.
-- `adapter.py` — `DomainPack`, `Adapter`, `TestAdapter`, `TestDomainPack`, `LiveValueRegistry`, optional `verbs()` / `vocabulary()` on `DomainPack`, and `parse_pack_verb_signature` (dispatches on execution `type` to one of the five execution dataclasses; validates the load-time rules).
+- `adapter.py` — `DomainPack`, `Adapter`, `TestAdapter`, `TestDomainPack`, `LiveValueRegistry`, optional `verbs()` / `vocabulary()` on `DomainPack`, and `parse_pack_verb_signature` (dispatches on execution `type` to one of the eight execution dataclasses; validates the load-time rules).
 - `cli.py` — `Session` (owns symtab + handler table + registry + packs), `run_file` (with block buffering and Phase 2 entry), `--pack` flag.
 - `packs/timer.py` — threaded periodic event source.
 - `packs/stdin.py` — daemon-thread line reader.
 - `packs/file_watcher.py` — directory polling source.
-- `result.py` — `LiminateResult` with nine statuses + metadata.
+- `result.py` — `LiminateResult` with thirteen statuses + metadata.
 - `build.py` — compiles a `.limn` file to a standalone PyInstaller binary; embeds source, pack JSON, and an inspection manifest.
 - `inspect_cmd.py` — renders the four inspection sections (source / understood-as / packs / vocabulary-in-use) as text or JSON.
 

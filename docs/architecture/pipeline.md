@@ -52,7 +52,7 @@ source line (or grouped when-block)
    │
    ▼
 ┌─────────────────────┐
-│  structured result  │  (one of five Phase 1 outcomes)
+│  structured result  │  (one of nine Phase 1 outcomes)
 └─────────────────────┘
    │
    ▼
@@ -360,15 +360,19 @@ For v3a, the interpreter also maintains:
 
 ### Structured result
 
-Every Phase 1 statement produces exactly one of five outcomes:
+Every Phase 1 statement produces exactly one of nine outcomes:
 
-| Outcome             | Meaning                                              |
-|---------------------|------------------------------------------------------|
-| `success`           | Parse, analysis, and execution all succeeded.        |
-| `amber_precedence`  | A condition mixes `and` and `or`. Awaiting user confirmation. |
-| `amber_ambiguity`   | The reorderer cannot uniquely resolve slot filling. Awaiting clarification. |
-| `error_parse`       | The AST could not be built (including v3a indentation rule violations). |
-| `error_semantic`    | The AST built, but execution would not make sense.   |
+| Outcome                | Meaning                                              |
+|------------------------|------------------------------------------------------|
+| `success`              | Parse, analysis, and execution all succeeded.        |
+| `amber_precedence`     | A condition mixes `and` and `or`. Awaiting user confirmation. |
+| `amber_ambiguity`      | The reorderer cannot uniquely resolve slot filling. Awaiting clarification. |
+| `error_parse`          | The AST could not be built (including v3a indentation rule violations). |
+| `error_semantic`       | The AST built, but execution would not make sense.   |
+| `requirement_not_met`  | A `require` condition evaluated false at runtime — the data violates a rule (distinct from a program bug). |
+| `prohibition_violated` | A `forbid` condition evaluated true at runtime — the data triggers a prohibition. |
+| `permitted`            | A `permit` condition evaluated true at runtime — informational; execution continues. |
+| `pack_verb_failure`    | A pack verb's verification check (`cite`/`verify`/`measure`) found a mismatch. Metadata carries the pack, verb, failure type, and slot values. |
 
 Phase 2 listener mode adds four more (v3a §122):
 
@@ -473,8 +477,8 @@ And for v3a, two more:
   detection** so the cascade rules are predictable. Same-handler-
   twice in one chain is rejected; the loop doesn't run away.
 
-Five Phase 1 stages, one Phase 2 layer, one boundary for I/O, nine
-possible outcomes per statement (five Phase 1 + four Phase 2).
+Five Phase 1 stages, one Phase 2 layer, one boundary for I/O, thirteen
+possible outcomes per statement (nine Phase 1 + four Phase 2).
 Nothing more.
 
 ## Where to go next
