@@ -315,3 +315,39 @@ def test_arithmetic_renders_canonically():
     rendered = render(ast)
     # Re-parsing the rendered form must produce the same AST.
     assert parse(tokenize(rendered)) == ast
+
+
+# ---------------------------------------------------------------------------
+# Negative number literals (regression: `-3` was lexed as text, so a number
+# remembered as `-3` failed numeric comparisons with "requires numbers, but
+# 't' is text"). The leading minus is now part of the NUMBER token.
+# ---------------------------------------------------------------------------
+
+
+def test_negative_number_literal_compares_as_number():
+    session, results = run_lines([
+        'remember a number called t with -3',
+        'choose if t is below 0: show "neg" otherwise show "pos"',
+    ])
+    for r in results:
+        assert r.status is ResultStatus.SUCCESS, r.message
+    assert results[-1].output == ["neg"]
+
+
+def test_negative_literal_on_condition_right_hand_side():
+    session, results = run_lines([
+        'remember a number called t with 5',
+        'choose if t is above -3: show "above" otherwise show "below"',
+    ])
+    for r in results:
+        assert r.status is ResultStatus.SUCCESS, r.message
+    assert results[-1].output == ["above"]
+
+
+def test_list_of_negative_numbers_is_numeric():
+    session, results = run_lines([
+        'remember a list called xs with -2 and 5 and -8',
+        'show xs',
+    ])
+    for r in results:
+        assert r.status is ResultStatus.SUCCESS, r.message
