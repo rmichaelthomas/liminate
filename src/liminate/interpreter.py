@@ -1755,19 +1755,27 @@ def _bind_parameter(
     param = entry.composition_param
     if param is None or node.arg is None:
         return None, None, False
-    arg_entry = symtab[node.arg]
     saved = symtab.get(param)
-    symtab[param] = SymbolEntry(
-        name=param,
-        value=copy.deepcopy(arg_entry.value),
-        type=arg_entry.type,
-        schema=copy.deepcopy(arg_entry.schema),
-        source_names=(
-            list(arg_entry.source_names)
-            if arg_entry.source_names is not None
-            else None
-        ),
-    )
+    # Phase 2 D-1 — a literal argument is self-contained: bind the param
+    # directly to the literal's value. A bare name (str) follows the v2d §96
+    # path: look up, deep-copy, and carry the source entry's metadata.
+    if isinstance(node.arg, NumberLiteral):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.value, type="number")
+    elif isinstance(node.arg, QuotedString):
+        symtab[param] = SymbolEntry(name=param, value=node.arg.content, type="string")
+    else:
+        arg_entry = symtab[node.arg]
+        symtab[param] = SymbolEntry(
+            name=param,
+            value=copy.deepcopy(arg_entry.value),
+            type=arg_entry.type,
+            schema=copy.deepcopy(arg_entry.schema),
+            source_names=(
+                list(arg_entry.source_names)
+                if arg_entry.source_names is not None
+                else None
+            ),
+        )
     return param, saved, saved is not None
 
 
