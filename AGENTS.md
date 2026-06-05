@@ -91,7 +91,7 @@ liminate inspect ./demo --json
 - `packs/timer.py` — threaded periodic event source.
 - `packs/stdin.py` — daemon-thread line reader.
 - `packs/file_watcher.py` — directory polling source.
-- `result.py` — `LiminateResult` with nine statuses + metadata.
+- `result.py` — `LiminateResult` with thirteen statuses + metadata.
 - `build.py` — compiles a `.limn` file to a standalone PyInstaller binary; embeds source, pack JSON, and an inspection manifest.
 - `inspect_cmd.py` — renders the four inspection sections (source / understood-as / packs / vocabulary-in-use) as text or JSON.
 
