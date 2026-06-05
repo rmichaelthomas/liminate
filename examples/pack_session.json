@@ -1,6 +1,6 @@
 {
   "name": "session",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "vocabulary": [
     { "word": "claim", "category": "noun" },
     { "word": "source", "category": "noun" },
@@ -51,6 +51,23 @@
         "status_target": "measure-status",
         "matched_target": "measure-matched",
         "delta_target": "measure-delta"
+      }
+    },
+    {
+      "word": "fit",
+      "slots": [
+        { "name": "record", "connective": null, "required": true, "value_type": "name" },
+        { "name": "shape", "connective": "to", "required": true, "value_type": "name" }
+      ],
+      "execution": {
+        "type": "conformance_check",
+        "record_slot": "record",
+        "shape_slot": "shape",
+        "on_mismatch": "flag",
+        "status_target": "fit-status",
+        "missing_target": "fit-missing",
+        "type_mismatch_target": "fit-type-mismatch",
+        "extra_target": "fit-extra"
       }
     }
   ],
