@@ -117,11 +117,13 @@ def test_step_zero_is_parse_error():
 
 
 def test_step_negative_is_parse_error():
-    # Negative numbers are not NUMBER tokens, so this surfaces as
-    # "I expected a number after 'by'".
+    # `-2` is now a NUMBER token (negative literals are numbers), so this is
+    # caught by the explicit positivity check on the step, same as `by 0`:
+    # direction comes from from/to, never from a negative step.
     _, results = run_v3a("gather the x from 1 to 10 by -2")
     errors = [r for r in results if r.status is ResultStatus.ERROR_PARSE]
     assert errors, results
+    assert "positive" in errors[0].message
 
 
 def test_step_non_numeric_is_parse_error():
