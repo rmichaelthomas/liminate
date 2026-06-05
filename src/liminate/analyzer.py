@@ -93,6 +93,7 @@ from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
     NumericExtractCompareExecution,
+    RangeCheckExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -1752,6 +1753,8 @@ def _check_pack_verb(
         _check_pack_compare(node, execution, symtab)
     elif isinstance(execution, NumericExtractCompareExecution):
         _check_pack_numeric_extract(node, execution, symtab)
+    elif isinstance(execution, RangeCheckExecution):
+        _check_pack_range_check(node, execution, symtab)
     # SetValueExecution: nothing further beyond type_constraint loop.
 
 
@@ -1913,6 +1916,43 @@ def _check_pack_numeric_extract(
             f"'{node.word} from' expects text, but '{name}' is "
             f"{_singular(entry.type)}."
         )
+
+
+def _check_pack_range_check(
+    node: PackVerbNode,
+    execution: RangeCheckExecution,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """D-8 — `range_check` analyzer validation. Mirrors substring_check: the
+    `against_slot` (reference window) must be a name that exists and resolves
+    to a string; the `check_slot` (claimed range) is validated only when it is
+    a name reference (literals and field access are trivially valid)."""
+    against_node = node.slot_values.get(execution.against_slot)
+    if not isinstance(against_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the reference window."
+        )
+    name = against_node.name
+    if name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{name}'. "
+            f"You might need to 'remember' it first."
+        )
+    entry = symtab[name]
+    if entry.type != "string":
+        raise _SemanticError(
+            f"'{node.word} from' expects text, but '{name}' is "
+            f"{_singular(entry.type)}."
+        )
+    check_node = node.slot_values.get(execution.check_slot)
+    if isinstance(check_node, NameRef):
+        if check_node.name not in symtab:
+            raise _SemanticError(
+                f"I can't find '{check_node.name}'. "
+                f"You might need to 'remember' it first."
+            )
+    elif isinstance(check_node, FieldAccessNode):
+        _check_field_access(check_node, symtab)
 
 
 def _check_finish(
