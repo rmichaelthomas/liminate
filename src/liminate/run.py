@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from .adapter import DomainPack, LiveValueRegistry
-from .analyzer import SymbolEntry
+from .analyzer import SymbolEntry, detect_contradictions
 from .interpreter import HandlerTable, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
@@ -394,6 +394,50 @@ def _consume_when_block(
 
 
 # ---------------------------------------------------------------------------
+# Phase 2 D-4 — contradiction pre-pass
+# ---------------------------------------------------------------------------
+
+
+def _collect_deontic_statements(lines: list[str]) -> list:
+    """Best-effort pre-pass: parse every top-level `require` / `forbid`
+    statement into an AST so contradiction detection can run once over the
+    whole program before execution.
+
+    Only indent-0 lines whose first token is the `require` or `forbid` verb
+    are parsed — this naturally excludes `when`-block action lines (indented)
+    and every non-deontic statement, and means a line that needs runtime
+    context (compositions, packs) is never parsed here. Anything that fails
+    to tokenize/reorder/parse is silently skipped: this pass is advisory and
+    must never introduce an error the main loop wouldn't also produce.
+    """
+    asts: list = []
+    for line in lines:
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("--"):
+            continue
+        try:
+            if leading_indent(line) != 0:
+                continue
+            toks = tokenize(line)
+        except LexError:
+            continue
+        if not (
+            toks
+            and toks[0].type is TokenType.VERB
+            and toks[0].value in ("require", "forbid")
+        ):
+            continue
+        reordered = reorder(toks)
+        if isinstance(reordered, LiminateResult):
+            continue
+        ast = parse(reordered)
+        if isinstance(ast, LiminateResult):
+            continue
+        asts.append(ast)
+    return asts
+
+
+# ---------------------------------------------------------------------------
 # Public entry point
 # ---------------------------------------------------------------------------
 
@@ -483,6 +527,20 @@ def run(
         session.record_result(result)
 
     lines = source.splitlines()
+
+    # Phase 2 D-4 — run contradiction detection once over the whole program
+    # before execution, so a warning surfaces even if a later `require`/`forbid`
+    # halts the run before reaching the conflicting statement. Warning-only:
+    # emitted as an informational SUCCESS result, never blocks execution and
+    # never sets had_error.
+    contradiction_warnings = detect_contradictions(_collect_deontic_statements(lines))
+    if contradiction_warnings:
+        warn_result = LiminateResult(
+            status=ResultStatus.SUCCESS,
+            output=[f"⚠ {w}" for w in contradiction_warnings],
+            executed=False,
+        )
+        _emit(warn_result, None, None, None)
 
     # Meta-Structural Era: track whether the first eligible (non-blank,
     # non-comment) line has been seen, so `about` is recognized only as

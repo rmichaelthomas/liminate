@@ -279,6 +279,17 @@ class _Runner:
             cascade_chain=frozenset(),
         )
 
+        # D-7 — metabolic decay advances once per `tick`-named update. This
+        # runs AFTER the normal cascade for the tick has completed, so
+        # handlers watching `tick` fire on the tick change first, then decay
+        # advances, then any handlers whose conditions changed due to decay
+        # fire in tick_decay's own cascade pass. The exact-name guard means
+        # no other adapter update triggers decay (§6 invariant 4).
+        if update.name == "tick":
+            yield from self.tick_decay()
+            if self.finish_requested:
+                return
+
     # -------------------------------------------------------------------
     # Eligibility, firing, cascade (§113, §114, §115)
     # -------------------------------------------------------------------

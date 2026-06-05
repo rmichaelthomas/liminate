@@ -382,11 +382,13 @@ class EachNode(ASTNode):
 @dataclass
 class CompositionCallNode(ASTNode):
     name: str
-    # v2d §96 — optional parameter-passing argument. None when the call
-    # provided no `from <name>` clause. The argument is always a name
-    # reference (names-only per §96); literal values are rejected at
-    # parse time.
-    arg: str | None = None
+    # v2d §96 / Phase 2 D-1 — optional parameter-passing argument. None when
+    # the call provided no `from <arg>` clause. A `str` is a bare-name
+    # reference resolved against the symbol table at run time (the v2d §96
+    # path). An `ASTNode` is a self-contained literal atom — `NumberLiteral`
+    # or `QuotedString` (D-1). Every reader (parser, analyzer, interpreter,
+    # renderer) must branch on `isinstance(arg, str)` before a symtab lookup.
+    arg: "str | ASTNode | None" = None
     rationale: str | None = field(default=None, compare=False)
     # Meta-Structural Era batch 3 — `inherited` operator + `from`
     # attribution. Both are inert provenance metadata (compare=False),
@@ -3241,11 +3243,17 @@ def _consume_target(stream: TokenStream, *, verb: str) -> NameRef:
     return NameRef(name=tok.value)
 
 
-def _consume_parameter_arg(stream: TokenStream, *, comp_name: str) -> str:
-    """v2d §96 — consume the name token that follows `<comp> from` at a
-    call site. Names-only: NUMBER / QUOTED_STRING / reserved words are
-    rejected here at parse time. The actual symbol lookup happens at run
-    time, consistent with v1's name-resolution timing (inception §23).
+def _consume_parameter_arg(stream: TokenStream, *, comp_name: str) -> str | ASTNode:
+    """Phase 2 D-1 — consume the argument token that follows `<comp> from`
+    at a call site. Atoms only: a bare name (UNKNOWN → symbol-table name,
+    returned as a string for the existing lookup path), a numeric literal
+    (NUMBER → `NumberLiteral`), or a quoted string (QUOTED_STRING →
+    `QuotedString`). Reserved words and end-of-line are rejected. No full
+    value expressions — no arithmetic, no `of` field access.
+
+    Returning `str` preserves the v2d §96 names-only path verbatim; the
+    AST-node returns are the new literal path. Name lookup still happens at
+    run time, consistent with v1's name-resolution timing (inception §23).
     """
     tok = stream.consume()
     if tok is None:
@@ -3253,11 +3261,10 @@ def _consume_parameter_arg(stream: TokenStream, *, comp_name: str) -> str:
             f"I expected a name after '{comp_name} from' — "
             f"compositions take a single name as input."
         )
+    if tok.type is TokenType.NUMBER:
+        return NumberLiteral(value=_parse_number(tok.value))
     if tok.type is TokenType.QUOTED_STRING:
-        raise _ParseError(
-            f"Names can't have spaces. Try a hyphenated name like "
-            f"'{_hyphenate(tok.value)}' instead."
-        )
+        return QuotedString(content=tok.value)
     if tok.type is not TokenType.UNKNOWN:
         cat = reserved_category(tok.value)
         if cat:

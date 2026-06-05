@@ -34,6 +34,7 @@ from .vocabulary import (
     PackVerbExecution,
     PackVerbSignature,
     PackVerbSlot,
+    RangeCheckExecution,
     SetFieldExecution,
     SetValueExecution,
     SubstringCheckExecution,
@@ -250,10 +251,20 @@ def _parse_execution(exec_def: dict) -> PackVerbExecution:
             matched_target=exec_def["matched_target"],
             delta_target=exec_def["delta_target"],
         )
+    if exec_type == "range_check":
+        return RangeCheckExecution(
+            check_slot=exec_def["check_slot"],
+            against_slot=exec_def["against_slot"],
+            on_mismatch=exec_def.get("on_mismatch", "flag"),
+            status_target=exec_def["status_target"],
+            claimed_target=exec_def["claimed_target"],
+            reference_target=exec_def["reference_target"],
+            divergence_target=exec_def["divergence_target"],
+        )
     raise ValueError(
         f"Unknown execution type '{exec_type}'. "
         f"Supported: set_value, substring_check, append_to_list, "
-        f"set_field, compare_values, numeric_extract_compare."
+        f"set_field, compare_values, numeric_extract_compare, range_check."
     )
 
 
@@ -359,6 +370,24 @@ def _validate_pack_verb_signature(sig: PackVerbSignature) -> None:
                 f"'{execution.on_mismatch}'. Use 'error' or 'flag'."
             )
         for field_name in ("status_target", "matched_target", "delta_target"):
+            v = getattr(execution, field_name)
+            if not isinstance(v, str) or not v:
+                raise ValueError(
+                    f"Pack verb '{word}': '{field_name}' must be a "
+                    f"non-empty string."
+                )
+
+    # range_check: extra validation.
+    if isinstance(execution, RangeCheckExecution):
+        if execution.on_mismatch not in ("error", "flag"):
+            raise ValueError(
+                f"Pack verb '{word}' uses unknown on_mismatch "
+                f"'{execution.on_mismatch}'. Use 'error' or 'flag'."
+            )
+        for field_name in (
+            "status_target", "claimed_target",
+            "reference_target", "divergence_target",
+        ):
             v = getattr(execution, field_name)
             if not isinstance(v, str) or not v:
                 raise ValueError(

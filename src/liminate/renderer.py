@@ -236,8 +236,15 @@ def _render_node(node: ASTNode) -> str:
         return f"each the {render(node.collection)} {render(node.action)}"
 
     if isinstance(node, CompositionCallNode):
-        # v2d §96: parameter-passing call form.
+        # v2d §96 / Phase 2 D-1: parameter-passing call form. A bare-name
+        # arg (str) renders verbatim; a NumberLiteral renders as its number;
+        # a QuotedString ALWAYS renders with quotes — rendering it bare would
+        # re-parse as a name reference, not a literal, breaking round-trip.
         if node.arg is not None:
+            if isinstance(node.arg, NumberLiteral):
+                return f"{node.name} from {_fmt_number(node.arg.value)}"
+            if isinstance(node.arg, QuotedString):
+                return f'{node.name} from "{node.arg.content}"'
             return f"{node.name} from {node.arg}"
         return node.name
     if isinstance(node, ChooseNode):
