@@ -30,6 +30,7 @@ from typing import Any
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    ConformanceCheckExecution,
     NumericExtractCompareExecution,
     PackVerbExecution,
     PackVerbSignature,
@@ -261,10 +262,21 @@ def _parse_execution(exec_def: dict) -> PackVerbExecution:
             reference_target=exec_def["reference_target"],
             divergence_target=exec_def["divergence_target"],
         )
+    if exec_type == "conformance_check":
+        return ConformanceCheckExecution(
+            record_slot=exec_def["record_slot"],
+            shape_slot=exec_def["shape_slot"],
+            on_mismatch=exec_def.get("on_mismatch", "flag"),
+            status_target=exec_def["status_target"],
+            missing_target=exec_def["missing_target"],
+            type_mismatch_target=exec_def["type_mismatch_target"],
+            extra_target=exec_def["extra_target"],
+        )
     raise ValueError(
         f"Unknown execution type '{exec_type}'. "
         f"Supported: set_value, substring_check, append_to_list, "
-        f"set_field, compare_values, numeric_extract_compare, range_check."
+        f"set_field, compare_values, numeric_extract_compare, range_check, "
+        f"conformance_check."
     )
 
 
@@ -387,6 +399,24 @@ def _validate_pack_verb_signature(sig: PackVerbSignature) -> None:
         for field_name in (
             "status_target", "claimed_target",
             "reference_target", "divergence_target",
+        ):
+            v = getattr(execution, field_name)
+            if not isinstance(v, str) or not v:
+                raise ValueError(
+                    f"Pack verb '{word}': '{field_name}' must be a "
+                    f"non-empty string."
+                )
+
+    # conformance_check: extra validation.
+    if isinstance(execution, ConformanceCheckExecution):
+        if execution.on_mismatch not in ("error", "flag"):
+            raise ValueError(
+                f"Pack verb '{word}' uses unknown on_mismatch "
+                f"'{execution.on_mismatch}'. Use 'error' or 'flag'."
+            )
+        for field_name in (
+            "status_target", "missing_target",
+            "type_mismatch_target", "extra_target",
         ):
             v = getattr(execution, field_name)
             if not isinstance(v, str) or not v:

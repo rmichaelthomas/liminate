@@ -404,6 +404,17 @@ class RangeCheckExecution:
     divergence_target: str   # symbol name for "lower" / "upper" / "both" / "none"
 
 
+@dataclass(frozen=True)
+class ConformanceCheckExecution:
+    record_slot: str            # positional slot: the record being checked
+    shape_slot: str             # the template record naming the shape
+    on_mismatch: str            # "error" | "flag" — follows the existing pattern
+    status_target: str          # stores "match" | "mismatch"
+    missing_target: str         # stores list of declared field names absent from the record
+    type_mismatch_target: str   # stores list of field names present but wrong-typed
+    extra_target: str           # stores list of field names in record not in shape
+
+
 PackVerbExecution = (
     SetValueExecution
     | SubstringCheckExecution
@@ -412,6 +423,7 @@ PackVerbExecution = (
     | CompareValuesExecution
     | NumericExtractCompareExecution
     | RangeCheckExecution
+    | ConformanceCheckExecution
 )
 
 

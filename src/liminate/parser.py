@@ -1676,6 +1676,20 @@ def _parse_pack_slot_value(
     if slot.value_type == "value":
         return _parse_value(stream)
     # "name" mode — UNKNOWN-only path.
+    # Phase 3 Spec 2 (iterable pack verbs): inside an `each` block, the
+    # `each` pronoun is a valid slot filler — it resolves to the current
+    # element during per-element execution. Mirrors the `transform`
+    # precedent in `_parse_atom`. Without the enclosing `each`, `each`
+    # falls through to the reserved-word rejection below.
+    peek = stream.peek()
+    if (
+        peek is not None
+        and peek.type is TokenType.VERB
+        and peek.value == "each"
+        and stream.in_clause("each")
+    ):
+        stream.consume()  # eat the `each` pronoun
+        return EachPronoun()
     value_tok = stream.consume()
     if value_tok is None:
         raise _ParseError(_pack_verb_missing_slot_error(sig, slot))
@@ -3130,7 +3144,9 @@ def _parse_atom(stream: TokenStream) -> ASTNode:
     # same way it acts as a pronoun inside a `where` condition (v1b §37).
     # It resolves to the current element during per-element evaluation.
     if tok.type is TokenType.VERB and tok.value == "each":
-        if stream.in_clause("transform"):
+        # Phase 3 Spec 2: a pack verb with a "value"-typed slot can also
+        # take `each` inside an enclosing `each` block (iterable pack verbs).
+        if stream.in_clause("transform") or stream.in_clause("each"):
             return EachPronoun()
         raise _ParseError(
             "'each' is a verb in Liminate — it iterates a list, or "
