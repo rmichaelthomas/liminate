@@ -92,6 +92,7 @@ from .result import LiminateResult, ResultStatus
 from .vocabulary import (
     AppendToListExecution,
     CompareValuesExecution,
+    ConformanceCheckExecution,
     NumericExtractCompareExecution,
     RangeCheckExecution,
     SetFieldExecution,
@@ -1703,6 +1704,12 @@ def _check_pack_verb(
         if slot.name not in node.slot_values:
             continue
         value_node = node.slot_values[slot.name]
+        if isinstance(value_node, EachPronoun):
+            # Phase 3 Spec 2 (iterable pack verbs): an `each` slot resolves
+            # to a different element each iteration, so it has no single
+            # static symbol to constrain. Iterator presence and element
+            # type are validated in the execution-specific check below.
+            continue
         if slot.type_constraint is None:
             # No type constraint — anything goes at this layer; execution
             # checks below may still resolve names.
@@ -1755,6 +1762,8 @@ def _check_pack_verb(
         _check_pack_numeric_extract(node, execution, symtab)
     elif isinstance(execution, RangeCheckExecution):
         _check_pack_range_check(node, execution, symtab)
+    elif isinstance(execution, ConformanceCheckExecution):
+        _check_pack_conformance(node, execution, symtab, iterator)
     # SetValueExecution: nothing further beyond type_constraint loop.
 
 
@@ -1953,6 +1962,63 @@ def _check_pack_range_check(
             )
     elif isinstance(check_node, FieldAccessNode):
         _check_field_access(check_node, symtab)
+
+
+def _check_pack_conformance(
+    node: PackVerbNode,
+    execution: ConformanceCheckExecution,
+    symtab: dict[str, SymbolEntry],
+    iterator: IteratorContext | None,
+) -> None:
+    """Phase 3 Spec 2 — `conformance_check` (fit) analyzer validation. The
+    shape slot must name a record (the template). The record slot must name
+    a record, or be the `each` pronoun inside an iterator over records."""
+    shape_node = node.slot_values.get(execution.shape_slot)
+    if not isinstance(shape_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the shape."
+        )
+    if shape_node.name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{shape_node.name}'. "
+            f"You might need to 'remember' it first."
+        )
+    shape_entry = symtab[shape_node.name]
+    if shape_entry.type != "record":
+        raise _SemanticError(
+            f"'{node.word} to' expects a record shape, but "
+            f"'{shape_node.name}' is {_singular(shape_entry.type)}."
+        )
+
+    record_node = node.slot_values.get(execution.record_slot)
+    if isinstance(record_node, EachPronoun):
+        # Iterable form: `each <list> ... fit each to <shape>`. The iterator
+        # must exist and range over records (element type = record).
+        if iterator is None:
+            raise _SemanticError(
+                f"'{node.word} each' can only be used inside an 'each' loop."
+            )
+        if iterator.record_schemas is None:
+            raise _SemanticError(
+                f"'{node.word} each' expects a list of records to check "
+                f"against the shape."
+            )
+        return
+    if not isinstance(record_node, NameRef):
+        raise _SemanticError(
+            f"'{node.word}' expects a name for the record."
+        )
+    if record_node.name not in symtab:
+        raise _SemanticError(
+            f"I can't find '{record_node.name}'. "
+            f"You might need to 'remember' it first."
+        )
+    record_entry = symtab[record_node.name]
+    if record_entry.type != "record":
+        raise _SemanticError(
+            f"'{node.word}' expects a record, but '{record_node.name}' is "
+            f"{_singular(record_entry.type)}."
+        )
 
 
 def _check_finish(
