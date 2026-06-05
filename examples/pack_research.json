@@ -17,6 +17,23 @@
         "check_slot": "text",
         "against_slot": "target"
       }
+    },
+    {
+      "word": "validate",
+      "slots": [
+        { "name": "claimed", "connective": null, "required": true, "value_type": "value" },
+        { "name": "reference", "connective": "from", "required": true, "value_type": "name", "type_constraint": "window" }
+      ],
+      "execution": {
+        "type": "range_check",
+        "check_slot": "claimed",
+        "against_slot": "reference",
+        "on_mismatch": "flag",
+        "status_target": "range-status",
+        "claimed_target": "range-claimed",
+        "reference_target": "range-reference",
+        "divergence_target": "range-divergence"
+      }
     }
   ],
   "declarations": [],
