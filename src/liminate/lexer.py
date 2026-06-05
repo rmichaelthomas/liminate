@@ -65,7 +65,11 @@ from .vocabulary import (
 )
 
 _DECORATIVE = ",.?!"
-_NUMBER_RE = re.compile(r"^\d+(?:\.\d+)?$")
+# A NUMBER token is an optionally-negative integer or decimal. The leading
+# minus is part of the literal (e.g. `-3`, `-3.5`); a lone `-` or an internal
+# hyphen (`total-dollars`) is NOT a number. Subtraction uses the `minus` word
+# operator, not the `-` symbol, so this does not collide with arithmetic.
+_NUMBER_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
 
 
 class LexError(Exception):

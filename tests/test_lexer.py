@@ -103,6 +103,36 @@ def test_malformed_number_is_unknown():
     assert tokenize("3.14.5")[0].type is TokenType.UNKNOWN
 
 
+# ---------- negative number literals ----------
+
+def test_negative_integer_recognized_as_number():
+    tok = tokenize("-3")[0]
+    assert tok.type is TokenType.NUMBER
+    assert tok.value == "-3"
+
+
+def test_negative_decimal_recognized_as_number():
+    tok = tokenize("-3.5")[0]
+    assert tok.type is TokenType.NUMBER
+    assert tok.value == "-3.5"
+
+
+def test_negative_number_inside_sentence():
+    # `remember a number called t with -3` — the value token is NUMBER.
+    assert tokenize("with -3")[1].type is TokenType.NUMBER
+
+
+def test_bare_minus_is_not_a_number():
+    # A lone `-` has no digits — it must NOT be a number (guard against
+    # over-matching the leading-minus rule).
+    assert tokenize("-")[0].type is TokenType.UNKNOWN
+
+
+def test_hyphenated_name_is_not_a_number():
+    # `total-dollars` is a name, not a negative number (the minus is internal).
+    assert tokenize("total-dollars")[0].type is TokenType.UNKNOWN
+
+
 # ---------- decorative punctuation stripping (§22 line 430) ----------
 
 def test_commas_stripped_from_words():
