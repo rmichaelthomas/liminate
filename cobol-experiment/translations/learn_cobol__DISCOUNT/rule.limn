@@ -1,0 +1,7 @@
+about "discount calculation"
+
+remember a value called charge with 199.99
+remember a value called discount with 20.00
+remember a value called discounted-charge with charge minus discount because "COBOL subtracts discount from charge and rounds into display field"
+
+show discounted-charge

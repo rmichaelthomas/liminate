@@ -1,0 +1,7 @@
+about "shopping bill accumulation"
+
+remember a value called total-bill with 25.50
+remember a value called item-cost with 9.99
+remember a value called updated-bill with total-bill plus item-cost because "COBOL ADD item-cost TO total-bill ROUNDED updates the running bill"
+
+show updated-bill

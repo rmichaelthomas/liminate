@@ -1,0 +1,8 @@
+I understand this as: remember a value called category-code with "A"
+I understand this as: remember a list called category-a-values with "A" and 3 and 7
+I understand this as: remember a list called category-b-values with "B" and 9 and "X"
+I understand this as: permit category-a-values includes category-code because "COBOL 88 CATEGORY-A is true for A, 3, or 7"
+Permitted: category-a-values includes category-code. category-a-values is ['A', '3', '7'].
+I understand this as: permit category-b-values includes category-code because "COBOL 88 CATEGORY-B is true for B, 9, or X"
+I understand this as: show "Category membership evaluated."
+Category membership evaluated.

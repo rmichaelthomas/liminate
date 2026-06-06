@@ -1,0 +1,14 @@
+about "mortgage payment input validation"
+
+remember a value called principal-amount with 250000
+remember a value called maximum-principal with 100000000.01
+remember a value called quoted-interest-rate with 5.75
+remember a value called year-month-indicator with "Y"
+remember a value called number-of-years with 30
+remember a value called number-of-months with number-of-years multiplied by 12 because "COBOL converts years to months when the year-month indicator is Y"
+
+require principal-amount is above 0 because "COBOL error 1 is principal amount not greater than zero"
+forbid principal-amount is above maximum-principal because "COBOL error 2 is principal exceeding static maximum"
+require quoted-interest-rate is above 0 because "COBOL error 3 is quoted interest rate <= 0"
+
+show number-of-months

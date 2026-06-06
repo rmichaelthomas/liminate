@@ -1,0 +1,16 @@
+about "pseudo boolean flag conventions"
+
+remember a value called ex-two-flag with "T"
+remember a value called ex-three-flag with "Y"
+remember a value called ex-four-flag with "1"
+remember a value called ex-five-field with "T"
+remember a value called ex-six-field with "T"
+
+permit ex-two-flag is "T" because "COBOL convention treats T as true"
+permit ex-three-flag is "Y" because "COBOL convention treats Y as yes"
+permit ex-four-flag is "1" because "COBOL convention treats 1 as true"
+permit ex-five-field is "T" because "COBOL 88 EX5-FLAG is true when the field is T"
+permit ex-six-field is "T" because "COBOL 88 EX6-FLAG is true when the field is T and false when F"
+forbid ex-six-field is "F" because "COBOL 88 FALSE value for EX6-FLAG is F"
+
+show "Pseudo boolean conventions evaluated."

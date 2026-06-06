@@ -1,0 +1,857 @@
+{
+  "run_header": {
+    "date": "2026-06-06",
+    "interpreter_version": "Liminate 0.14.1",
+    "corpus_commit_shas": {
+      "learn_cobol": "2f9d6b3a747454a427489419d6cf1f5806861829",
+      "cobol-samples": "11ad5f8c9fc80d0f3fd913ea30afc48bd506541d",
+      "mortgagesample": "dd650c4d701bff7a12026e69530b87ca663c0037"
+    },
+    "total_programs_scanned": 61,
+    "total_with_isolable_rules": 32,
+    "total_attempted": 32
+  },
+  "expressibility": {
+    "base": 18,
+    "pack-needed": 13,
+    "untranslatable": 1
+  },
+  "pack_demand": {
+    "collation and string-order comparison pack": 1,
+    "packed-decimal currency rounding and signed display-size pack": 1,
+    "financial exponentiation plus rounded currency overflow pack": 1,
+    "packed-decimal rounded currency and size-error pack": 1,
+    "decimal division with divide-by-zero and size-error pack": 1,
+    "rounded numeric target and size-error pack": 1,
+    "numeric conformance predicate pack": 1,
+    "substring/prefix predicate and multi-axis evaluate pack": 1,
+    "invoice line aggregation with currency scale and numeric conformance pack": 1,
+    "mortgage amortization formula pack with exponentiation and decimal precision": 1,
+    "numeric text parsing and decimal-point validation pack": 1,
+    "CICS screen-event routing pack": 1,
+    "CICS mortgage screen-flow and DB2 state pack": 1
+  },
+  "fidelity_events": {
+    "boundary": 22,
+    "precedence": 5,
+    "rounding": 11,
+    "sign": 2,
+    "truncation": 3,
+    "none": 5,
+    "type-coercion": 9
+  },
+  "verb_frequency": {
+    "permit": 10,
+    "remember": 16,
+    "forbid": 3,
+    "require": 2
+  },
+  "rules": [
+    {
+      "source_repo": "learn_cobol",
+      "program": "AGE-CHECK",
+      "rule_summary": "classifies whether a person is over 21",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "age <= 21",
+          "limn": "age is below 22",
+          "risk": "else branch made explicit; faithful for integer PIC 999 ages",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "RETIREMENT-AGE",
+      "rule_summary": "women retire at 60, men at 65",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "age >= 60",
+          "limn": "age is above 59",
+          "risk": "inclusive-vs-exclusive; faithful for integer ages only",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "age >= 65",
+          "limn": "age is above 64",
+          "risk": "inclusive-vs-exclusive; faithful for integer ages only",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "precedence",
+          "cobol": "female AND age >= 60 OR male AND age >= 65",
+          "limn": "two permit lines",
+          "risk": "COBOL AND/OR grouping made explicit",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "PAY-CALCULATION",
+      "rule_summary": "overtime pay applies above 37.5 hours at 1.5 times rate",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE pay ROUNDED",
+          "limn": "remember total-pay with standard-pay plus overtime-pay",
+          "risk": "base Liminate arithmetic does not declare COBOL rounding mode",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "PAY-MODULAR-VERSION",
+      "rule_summary": "modular version of overtime pay above 37.5 hours",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "hours-worked <= 37.5",
+          "limn": "hours-worked is below 37.51",
+          "risk": "inclusive decimal boundary assumes PIC 99V99 centesimal precision",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE pay ROUNDED",
+          "limn": "remember regular-pay with hours-worked multiplied by rate-of-pay",
+          "risk": "target-picture rounding not represented in base vocabulary",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "ELECTRICITY-BILL",
+      "rule_summary": "reject negative usage and calculate tiered electricity charge",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "forbid",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "sign",
+          "cobol": "IF units NEGATIVE",
+          "limn": "forbid units is below 0",
+          "risk": "negative usage is treated as rejection",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE charge ROUNDED",
+          "limn": "remember charge with basic-charge plus extra-charge",
+          "risk": "COBOL target rounding is not represented",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "PROCESS-MARKS",
+      "rule_summary": "classifies average marks into four bands",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "40 THRU 49.9",
+          "limn": "average-mark is above 39.9 and average-mark is below 50",
+          "risk": "inclusive range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "50 THRU 59.9",
+          "limn": "average-mark is above 49.9 and average-mark is below 60",
+          "risk": "inclusive range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "60 THRU 69.9",
+          "limn": "average-mark is above 59.9 and average-mark is below 70",
+          "risk": "inclusive range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "70 THRU 100",
+          "limn": "average-mark is above 69.9 and average-mark is below 100.1",
+          "risk": "upper boundary assumes one decimal place for the average",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "precedence",
+          "cobol": "(english-marks + math-marks) /2",
+          "limn": "total-marks with english-marks plus math-marks; average-mark with total-marks divided by 2",
+          "risk": "COBOL parentheses made explicit through an intermediate value",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "MORTGAGE",
+      "rule_summary": "computes yearly mortgage interest and ending balance",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "truncation",
+          "cobol": "PIC 9(6)V99 targets",
+          "limn": "unbounded base values",
+          "risk": "base Liminate does not enforce COBOL target picture size or decimal scale",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "TIME-AND-DATE",
+      "rule_summary": "uses a 96 pivot to choose century for two-digit years",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "date-in-yy < 96",
+          "limn": "date-year is below 96",
+          "risk": "strict less-than is direct",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "date-in-yy >= 96",
+          "limn": "date-year is above 95",
+          "risk": "else branch inclusive boundary made explicit for integer YY",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "DISCOUNT",
+      "rule_summary": "subtracts discount from charge",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "GIVING discounted-charge ROUNDED",
+          "limn": "discounted-charge with charge minus discount",
+          "risk": "base Liminate does not declare COBOL rounded target-picture behavior",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "BALANCE",
+      "rule_summary": "adds transaction amount to old balance",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "ADD amount, old-balance",
+          "limn": "amount plus old-balance",
+          "risk": "no special boundary or rounding decision in the isolated rule",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "COST",
+      "rule_summary": "adds VAT and price to produce cost",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "ADD vat, price GIVING cost-out",
+          "limn": "vat plus price",
+          "risk": "no special fidelity event in the isolated arithmetic",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "ADDAMT",
+      "rule_summary": "sums three input amounts",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "ADD AMT1-IN AMT2-IN AMT3-IN",
+          "limn": "amount-one plus amount-two plus amount-three",
+          "risk": "no special fidelity event in the isolated arithmetic",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "SHOPPING-BILL",
+      "rule_summary": "adds item cost to running shopping bill",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "ADD item-cost TO total-bill ROUNDED",
+          "limn": "total-bill plus item-cost",
+          "risk": "base Liminate does not model rounded accumulation into the target field",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "WORD-ORDER",
+      "rule_summary": "chooses alphabetical order from a lexical comparison",
+      "expressibility": "pack-needed",
+      "pack_needed": "collation and string-order comparison pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "IF word-1 < word-2",
+          "limn": "not expressed",
+          "risk": "COBOL alphanumeric comparison depends on collating sequence",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "NET-PAY",
+      "rule_summary": "subtracts tax and deductions from gross pay",
+      "expressibility": "pack-needed",
+      "pack_needed": "packed-decimal currency rounding and signed display-size pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "GIVING net-pay ROUNDED",
+          "limn": "not expressed",
+          "risk": "rounded signed display target must be preserved",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "sign",
+          "cobol": "PIC +999.99",
+          "limn": "not expressed",
+          "risk": "display sign behavior is part of the financial result",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "COMPOUND-INTEREST",
+      "rule_summary": "computes compound interest with exponentiation and size-error handling",
+      "expressibility": "pack-needed",
+      "pack_needed": "financial exponentiation plus rounded currency overflow pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE amount-at-end ROUNDED",
+          "limn": "not expressed",
+          "risk": "target rounding and overflow are material",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "type-coercion",
+          "cobol": "** years",
+          "limn": "not expressed",
+          "risk": "base arithmetic contract does not include exponentiation",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "INVESTIMENT",
+      "rule_summary": "calculates investment interest and final amount with rounded packed fields",
+      "expressibility": "pack-needed",
+      "pack_needed": "packed-decimal rounded currency and size-error pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "GIVING temp ROUNDED / interest ROUNDED / amount-end-out ROUNDED",
+          "limn": "not expressed",
+          "risk": "multiple rounded targets affect the final amount",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "truncation",
+          "cobol": "ON SIZE ERROR",
+          "limn": "not expressed",
+          "risk": "overflow path cannot be expressed in base vocabulary",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "DIVIDE-NUMBER",
+      "rule_summary": "divides a dividend by divisor and handles size errors",
+      "expressibility": "pack-needed",
+      "pack_needed": "decimal division with divide-by-zero and size-error pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "ON SIZE ERROR",
+          "limn": "not expressed",
+          "risk": "COBOL arithmetic exception path is not a base Liminate concept",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "learn_cobol",
+      "program": "ADD-WITH-SIZE-ERROR",
+      "rule_summary": "adds values with rounded result and size-error branch",
+      "expressibility": "pack-needed",
+      "pack_needed": "rounded numeric target and size-error pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "ADD in-1 TO in-2 GIVING result-1 ROUNDED",
+          "limn": "not expressed",
+          "risk": "rounded target behavior must be explicit",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "truncation",
+          "cobol": "ON SIZE ERROR",
+          "limn": "not expressed",
+          "risk": "target overflow path cannot be modeled by base vocabulary",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "COND88-CATEGORY",
+      "rule_summary": "88-level category names map multiple literal values",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "88 CATEGORY-A VALUE 'A', '3', '7'",
+          "limn": "category-a-values includes category-code",
+          "risk": "membership mapping is direct",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "COND88-AGE-RANGES",
+      "rule_summary": "88-level age names classify child through elderly ranges",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "0 THRU 12",
+          "limn": "person-age is above -1 and person-age is below 13",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "13 THRU 19",
+          "limn": "person-age is above 12 and person-age is below 20",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "20 THRU 35",
+          "limn": "person-age is above 19 and person-age is below 36",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "36 THRU 49",
+          "limn": "person-age is above 35 and person-age is below 50",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "50 THRU 59",
+          "limn": "person-age is above 49 and person-age is below 60",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "60 THRU 74",
+          "limn": "person-age is above 59 and person-age is below 75",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "75 THRU 200",
+          "limn": "person-age is above 74 and person-age is below 201",
+          "risk": "inclusive integer range rewritten through strict operators",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "NOTBOOL-FLAGS",
+      "rule_summary": "pseudo-boolean conventions encode true values as T, Y, 1, or 88-level names",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "permit",
+        "forbid"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "PIC X where T/Y/1/88-level values mean true",
+          "limn": "literal equality permits",
+          "risk": "literal conventions are direct once expanded",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "IFEVAL-DIVIDE-GUARD",
+      "rule_summary": "avoids divide-by-zero by requiring a divisor greater than zero",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "require"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "NUMERIC-1 IS GREATER THAN ZERO",
+          "limn": "divisor is above 0",
+          "risk": "strict positive boundary is direct",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "IFEVAL-NUMERIC-CONFORMANCE",
+      "rule_summary": "checks whether a field is numeric before arithmetic",
+      "expressibility": "pack-needed",
+      "pack_needed": "numeric conformance predicate pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "IF NUMERIC-2 IS NUMERIC",
+          "limn": "not expressed",
+          "risk": "base vocabulary has no numeric-conformance predicate for storage fields",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "IFEVAL-DUAL-EVALUATE",
+      "rule_summary": "EVALUATE TRUE ALSO TRUE combines numeric comparison and string prefix checks",
+      "expressibility": "pack-needed",
+      "pack_needed": "substring/prefix predicate and multi-axis evaluate pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "precedence",
+          "cobol": "EVALUATE TRUE ALSO TRUE",
+          "limn": "not expressed",
+          "risk": "multi-axis EVALUATE branch priority must be preserved",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "type-coercion",
+          "cobol": "ALPHA-1(1:3) EQUAL 'THX'",
+          "limn": "not expressed",
+          "risk": "base vocabulary lacks substring slicing",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "cobol-samples",
+      "program": "INVCALC",
+      "rule_summary": "calculates invoice line totals, taxable line tax, and cumulative invoice totals",
+      "expressibility": "pack-needed",
+      "pack_needed": "invoice line aggregation with currency scale and numeric conformance pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "INV-LINE-QUANTITY IS NUMERIC",
+          "limn": "not expressed",
+          "risk": "numeric conformance guard is missing",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "rounding",
+          "cobol": "packed decimal line totals and tax fields",
+          "limn": "not expressed",
+          "risk": "currency scale and tax precision affect totals",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSMPMT-VALIDATION",
+      "rule_summary": "validates mortgage principal and interest before calculating monthly payment",
+      "expressibility": "base",
+      "pack_needed": null,
+      "verbs_used": [
+        "remember",
+        "require",
+        "forbid"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "EPSPDATA-PRINCIPLE-DATA > 0",
+          "limn": "principal-amount is above 0",
+          "risk": "strict positive boundary is direct",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "EPSPDATA-PRINCIPLE-DATA > STATIC-MAXIMUM-PRINCIPLE",
+          "limn": "forbid principal-amount is above maximum-principal",
+          "risk": "strict maximum boundary is direct",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "EPSPDATA-QUOTED-INTEREST-RATE <= 0",
+          "limn": "require quoted-interest-rate is above 0",
+          "risk": "negative/zero interest rejection restated as positive requirement",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSMPMT-PAYMENT-FORMULA",
+      "rule_summary": "calculates amortized monthly payment using exponentiation",
+      "expressibility": "pack-needed",
+      "pack_needed": "mortgage amortization formula pack with exponentiation and decimal precision",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "EPSPDATA-RETURN-MONTH-PAYMENT target",
+          "limn": "not expressed",
+          "risk": "payment precision is financially material",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "type-coercion",
+          "cobol": "** WS-NUMBER-OF-MONTHS",
+          "limn": "not expressed",
+          "risk": "base vocabulary lacks exponentiation and amortization primitive",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSNBRVL-NUMBER-PARSER",
+      "rule_summary": "validates numeric text by trimming spaces, allowing commas, and detecting decimal errors",
+      "expressibility": "pack-needed",
+      "pack_needed": "numeric text parsing and decimal-point validation pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "EPSPARM-VALIDATE-DATA(WS-IDX:1) IS NOT NUMERIC",
+          "limn": "not expressed",
+          "risk": "character-by-character numeric validation is outside base vocabulary",
+          "recorded_in_because": false
+        },
+        {
+          "kind": "boundary",
+          "cobol": "UNTIL WS-IDX > WS-END-SPACE / < WS-LEADING-SPACES",
+          "limn": "not expressed",
+          "risk": "loop boundaries govern which characters are accepted",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSMLIST-CICS-NAVIGATION",
+      "rule_summary": "routes CICS screen behavior by AID key and communication state",
+      "expressibility": "pack-needed",
+      "pack_needed": "CICS screen-event routing pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "precedence",
+          "cobol": "EIBAID = DFHPF3 OR DFHPF12",
+          "limn": "not expressed",
+          "risk": "event-key routing semantics must preserve CICS constants",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSCMORT-SCREEN-FLOW",
+      "rule_summary": "routes mortgage CICS screen flow by aid key and process indicator",
+      "expressibility": "pack-needed",
+      "pack_needed": "CICS mortgage screen-flow and DB2 state pack",
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "precedence",
+          "cobol": "EVALUATE TRUE with nested PROCESS-INDICATOR checks",
+          "limn": "not expressed",
+          "risk": "screen flow depends on CICS AID constants and process state",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    },
+    {
+      "source_repo": "mortgagesample",
+      "program": "EPSCSMRD-XML-CONTENT",
+      "rule_summary": "builds XML/content buffers through low-level generated COBOL routines",
+      "expressibility": "untranslatable",
+      "pack_needed": null,
+      "verbs_used": [],
+      "fidelity_events": [
+        {
+          "kind": "type-coercion",
+          "cobol": "generated buffer index and pointer arithmetic",
+          "limn": "not expressed",
+          "risk": "not an isolable business rule in human policy terms",
+          "recorded_in_because": false
+        }
+      ],
+      "interpreter_accepted": false
+    }
+  ],
+  "findings": [
+    "Base Liminate carried the small threshold, membership, guard, and arithmetic rules, but COBOL's financial target semantics pushed many realistic calculations into pack-needed territory.",
+    "The strongest pack-demand signal is not COBOL syntax itself; it is domain fidelity around rounded packed decimals, size-error paths, numeric conformance, string slicing, and amortization.",
+    "The fidelity surface is concentrated in boundaries and rounding: the translations that pass are readable precisely because every inclusive range, else-branch boundary, and rounded target is called out instead of hidden."
+  ],
+  "honesty_boundary": "This run uses a small learning/sample corpus, not production mainframe portfolios; it uses one interpreter version, Liminate 0.14.1; and no human COBOL auditor or bank compliance reviewer certified the translations."
+}

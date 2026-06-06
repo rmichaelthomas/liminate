@@ -1,0 +1,11 @@
+I understand this as: remember a value called hours-worked with 42.5
+I understand this as: remember a value called rate-of-pay with 12
+I understand this as: remember a value called standard-hours with 37.5
+I understand this as: remember a value called overtime-hours from hours-worked minus standard-hours because "COBOL computes overtime only when hours-worked > std-hours"
+I understand this as: remember a value called standard-pay from standard-hours multiplied by rate-of-pay because "standard pay portion is standard-hours times rate"
+I understand this as: remember a value called overtime-pay from 1.5 multiplied by rate-of-pay multiplied by overtime-hours because "overtime premium is 1.5 times rate for hours above 37.5"
+I understand this as: remember a value called total-pay from standard-pay plus overtime-pay because "COBOL COMPUTE pay ROUNDED adds standard and overtime portions"
+I understand this as: permit hours-worked is above standard-hours because "COBOL overtime branch uses strict > 37.5"
+Permitted: hours-worked is above standard-hours. hours-worked is 42.5.
+I understand this as: show total-pay
+540

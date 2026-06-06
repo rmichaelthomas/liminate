@@ -1,0 +1,5 @@
+I understand this as: remember a value called charge with 199.99
+I understand this as: remember a value called discount with 20
+I understand this as: remember a value called discounted-charge from charge minus discount because "COBOL subtracts discount from charge and rounds into display field"
+I understand this as: show discounted-charge
+179.99

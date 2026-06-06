@@ -1,0 +1,7 @@
+about "cost calculation"
+
+remember a value called price with 100.00
+remember a value called vat with 8.00
+remember a value called cost-out with vat plus price because "COBOL ADD vat, price GIVING cost-out"
+
+show cost-out

@@ -1,0 +1,6 @@
+I understand this as: remember a value called amount-one with 10
+I understand this as: remember a value called amount-two with 20
+I understand this as: remember a value called amount-three with 30
+I understand this as: remember a value called amount-total from amount-one plus amount-two plus amount-three because "COBOL ADD AMT1-IN AMT2-IN AMT3-IN computes their sum"
+I understand this as: show amount-total
+60

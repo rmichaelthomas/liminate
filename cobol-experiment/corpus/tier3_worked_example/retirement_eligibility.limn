@@ -1,0 +1,9 @@
+about "retirement eligibility"
+
+remember a value called gender with "F"
+remember a value called age with 62
+
+permit gender is "F" and age is above 59 because "statutory retirement age 60 for women"
+permit gender is "M" and age is above 64 because "statutory retirement age 65 for men"
+
+show "Eligibility evaluated against statutory thresholds."

@@ -1,0 +1,13 @@
+about "88 level age classification"
+
+remember a value called person-age with 37
+
+permit person-age is above -1 and person-age is below 13 because "COBOL PERSON-IS-A-CHILD is VALUE 0 THRU 12 inclusive"
+permit person-age is above 12 and person-age is below 20 because "COBOL PERSON-IS-A-TEEN is VALUE 13 THRU 19 inclusive"
+permit person-age is above 19 and person-age is below 36 because "COBOL PERSON-IS-YOUNG-ADULT is VALUE 20 THRU 35 inclusive"
+permit person-age is above 35 and person-age is below 50 because "COBOL PERSON-IS-AN-ADULT is VALUE 36 THRU 49 inclusive"
+permit person-age is above 49 and person-age is below 60 because "COBOL PERSON-IS-MIDDLE-AGED is VALUE 50 THRU 59 inclusive"
+permit person-age is above 59 and person-age is below 75 because "COBOL PERSON-IS-A-SENIOR is VALUE 60 THRU 74 inclusive"
+permit person-age is above 74 and person-age is below 201 because "COBOL PERSON-IS-ELDERLY is VALUE 75 THRU 200 inclusive"
+
+show "Age range membership evaluated."

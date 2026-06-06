@@ -1,0 +1,6 @@
+I understand this as: remember a value called age with 22
+I understand this as: permit age is above 21 because "COBOL branch says age > 21"
+Permitted: age is above 21. age is 22.
+I understand this as: permit age is below 22 because "else branch is age <= 21 for integer ages"
+I understand this as: show "Age threshold evaluated."
+Age threshold evaluated.

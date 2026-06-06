@@ -1,0 +1,10 @@
+about "88 level category membership"
+
+remember a value called category-code with "A"
+remember a list called category-a-values with "A" and "3" and "7"
+remember a list called category-b-values with "B" and "9" and "X"
+
+permit category-a-values includes category-code because "COBOL 88 CATEGORY-A is true for A, 3, or 7"
+permit category-b-values includes category-code because "COBOL 88 CATEGORY-B is true for B, 9, or X"
+
+show "Category membership evaluated."

@@ -1,0 +1,5 @@
+I understand this as: remember a value called amount with 125.5
+I understand this as: remember a value called old-balance with 1000
+I understand this as: remember a value called new-balance from amount plus old-balance because "COBOL ADD amount, old-balance GIVING new-balance"
+I understand this as: show new-balance
+1125.5

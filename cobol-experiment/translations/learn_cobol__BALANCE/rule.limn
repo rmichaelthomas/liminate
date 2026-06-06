@@ -1,0 +1,7 @@
+about "balance update"
+
+remember a value called amount with 125.50
+remember a value called old-balance with 1000.00
+remember a value called new-balance with amount plus old-balance because "COBOL ADD amount, old-balance GIVING new-balance"
+
+show new-balance

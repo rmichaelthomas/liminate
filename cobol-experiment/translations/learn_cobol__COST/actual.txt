@@ -1,0 +1,5 @@
+I understand this as: remember a value called price with 100
+I understand this as: remember a value called vat with 8
+I understand this as: remember a value called cost-out from vat plus price because "COBOL ADD vat, price GIVING cost-out"
+I understand this as: show cost-out
+108

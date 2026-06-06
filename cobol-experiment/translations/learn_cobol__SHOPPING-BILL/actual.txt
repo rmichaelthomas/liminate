@@ -1,0 +1,5 @@
+I understand this as: remember a value called total-bill with 25.5
+I understand this as: remember a value called item-cost with 9.99
+I understand this as: remember a value called updated-bill from total-bill plus item-cost because "COBOL ADD item-cost TO total-bill ROUNDED updates the running bill"
+I understand this as: show updated-bill
+35.49
