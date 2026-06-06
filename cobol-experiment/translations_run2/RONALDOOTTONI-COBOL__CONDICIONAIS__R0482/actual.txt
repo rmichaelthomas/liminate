@@ -1,0 +1,5 @@
+I understand this as: remember a value called num3 with "NUM4"
+I understand this as: permit num3 is "NUM4" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: num3 is "NUM4". num3 is NUM4.
+I understand this as: show "num3 predicate evaluated."
+num3 predicate evaluated.

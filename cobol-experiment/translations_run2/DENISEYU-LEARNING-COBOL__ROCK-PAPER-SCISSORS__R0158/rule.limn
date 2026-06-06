@@ -1,0 +1,7 @@
+about "player-choice predicate"
+
+remember a value called player-choice with "scissors"
+
+permit player-choice is "scissors" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "player-choice predicate evaluated."

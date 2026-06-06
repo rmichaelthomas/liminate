@@ -1,0 +1,7 @@
+about "ls-symbol predicate"
+
+remember a value called ls-symbol with " "
+
+permit ls-symbol is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-symbol predicate evaluated."

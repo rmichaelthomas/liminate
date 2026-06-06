@@ -1,0 +1,7 @@
+about "visa-mer-resp predicate"
+
+remember a value called visa-mer-resp with "X"
+
+permit visa-mer-resp is "X" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "visa-mer-resp predicate evaluated."

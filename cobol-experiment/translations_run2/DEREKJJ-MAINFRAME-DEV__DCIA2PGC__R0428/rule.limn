@@ -1,0 +1,7 @@
+about "fnamel predicate"
+
+remember a value called fnamel with 0
+
+permit fnamel is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "fnamel predicate evaluated."

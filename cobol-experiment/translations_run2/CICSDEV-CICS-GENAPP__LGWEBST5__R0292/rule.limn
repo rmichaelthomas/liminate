@@ -1,0 +1,8 @@
+about "icountval calculation"
+
+remember a value called ncountval with 2
+remember a value called ocountval with 2
+
+remember a value called icountval with ncountval minus ocountval because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show icountval

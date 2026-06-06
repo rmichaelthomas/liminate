@@ -1,0 +1,5 @@
+I understand this as: remember a value called game-height with 2
+I understand this as: remember a value called player-h with 2
+I understand this as: remember a value called player-pos-y from game-height minus player-h because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show player-pos-y
+0

@@ -1,0 +1,7 @@
+about "fs-comment-is predicate"
+
+remember a value called fs-comment-is with "ALL SPACES"
+
+permit fs-comment-is is "ALL SPACES" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "fs-comment-is predicate evaluated."

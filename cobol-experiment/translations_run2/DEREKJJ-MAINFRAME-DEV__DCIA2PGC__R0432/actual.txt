@@ -1,0 +1,4 @@
+I understand this as: remember a value called stati with __not_equal__
+I understand this as: forbid stati is "A" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "stati predicate evaluated."
+stati predicate evaluated.

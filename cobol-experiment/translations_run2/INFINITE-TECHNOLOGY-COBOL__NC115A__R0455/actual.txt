@@ -1,0 +1,4 @@
+I understand this as: remember a value called correct-x with __not_equal__
+I understand this as: forbid correct-x is "SPACE GO TO FAIL-ROUTINE-WRITE.NC1154.2" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "correct-x predicate evaluated."
+correct-x predicate evaluated.

@@ -1,0 +1,7 @@
+about "tran-type predicate"
+
+remember a value called tran-type with "D"
+
+permit tran-type is "D" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "tran-type predicate evaluated."

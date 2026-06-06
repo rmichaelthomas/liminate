@@ -1,0 +1,11 @@
+      * Source excerpt from X-COBOL.
+      * Attribution: ProGM/COBOL-Engine; file ProGM@COBOL-Engine/UpdatePlayer.CBL.
+      * License: Zenodo X-COBOL dataset, CC-BY-4.0.
+      * Excerpt only; not the complete upstream file.
+      * L54:            IF W-KEY-STATE > 0 THEN
+      * L55:                COMPUTE SPEED-Y = -200
+      * L56:            ELSE
+      * L57:                IF S-KEY-STATE > 0 THEN
+      * L58:                    COMPUTE SPEED-Y = 200
+      * L59:                END-IF
+      * L60:            END-IF

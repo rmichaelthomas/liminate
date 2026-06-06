@@ -1,0 +1,5 @@
+I understand this as: remember a value called player-choice with "COMPUTER-CHOICE"
+I understand this as: permit player-choice is "COMPUTER-CHOICE" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: player-choice is "COMPUTER-CHOICE". player-choice is COMPUTER-CHOICE.
+I understand this as: show "player-choice predicate evaluated."
+player-choice predicate evaluated.

@@ -1,0 +1,5 @@
+I understand this as: remember a value called tcode with "ENO"
+I understand this as: permit tcode is "ENO" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: tcode is "ENO". tcode is ENO.
+I understand this as: show "tcode predicate evaluated."
+tcode predicate evaluated.

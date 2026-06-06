@@ -1,0 +1,7 @@
+about "ws-er-mar-stat-in predicate"
+
+remember a value called ws-er-mar-stat-in with "IT-STATUS-CODE-IN(IT-STATUS-INDEX)"
+
+permit ws-er-mar-stat-in is "IT-STATUS-CODE-IN(IT-STATUS-INDEX)" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-er-mar-stat-in predicate evaluated."

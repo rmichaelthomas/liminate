@@ -1,0 +1,7 @@
+about "actioni predicate"
+
+remember a value called actioni with "__not_equal__"
+
+forbid actioni is "1" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "actioni predicate evaluated."

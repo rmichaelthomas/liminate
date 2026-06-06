@@ -1,0 +1,5 @@
+I understand this as: remember a value called t-file with "O"
+I understand this as: permit t-file is "O" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: t-file is "O". t-file is O.
+I understand this as: show "t-file predicate evaluated."
+t-file predicate evaluated.

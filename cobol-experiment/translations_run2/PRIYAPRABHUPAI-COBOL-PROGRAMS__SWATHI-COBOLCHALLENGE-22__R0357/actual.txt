@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-gender with "F"
+I understand this as: permit ws-gender is "F" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-gender is "F". ws-gender is F.
+I understand this as: show "ws-gender predicate evaluated."
+ws-gender predicate evaluated.

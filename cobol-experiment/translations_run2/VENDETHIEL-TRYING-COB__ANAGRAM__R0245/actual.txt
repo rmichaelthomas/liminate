@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-tally-count with "LS-TALLY-COUNT(2, LS-TALLY-I)"
+I understand this as: permit ls-tally-count is "LS-TALLY-COUNT(2, LS-TALLY-I)" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-tally-count is "LS-TALLY-COUNT(2, LS-TALLY-I)". ls-tally-count is LS-TALLY-COUNT(2, LS-TALLY-I).
+I understand this as: show "ls-tally-count predicate evaluated."
+ls-tally-count predicate evaluated.

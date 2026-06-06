@@ -1,0 +1,25 @@
+```json
+{
+  "source_repo": "bhbandam/AZ-Legacy-Engineering",
+  "program": "BATCHVSAM",
+  "rule_summary": "COBOL substring predicate requires a pack.",
+  "expressibility": "pack-needed",
+  "pack_needed": "substring-predicate",
+  "duplicate_of": null,
+  "verbs_used": [],
+  "fidelity_events": [
+    {
+      "kind": "truncation",
+      "cobol": "STRING BOOKS-TITLE-TEXT(1:76) DELIMITED BY SIZE 02520000",
+      "limn": "not expressed in base vocabulary",
+      "risk": "substring-predicate semantics are material to the COBOL rule",
+      "recorded_in_because": true
+    }
+  ],
+  "interpreter_accepted": false
+}
+```
+
+Source excerpt line: `STRING BOOKS-TITLE-TEXT(1:76) DELIMITED BY SIZE 02520000`
+Duplicate count collapsed into this rule: 0.
+Pack-needed rationale: COBOL substring predicate requires a pack.

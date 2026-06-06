@@ -1,0 +1,5 @@
+I understand this as: remember a value called cont with 0
+I understand this as: permit cont is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: cont is 0. cont is 0.
+I understand this as: show "cont predicate evaluated."
+cont predicate evaluated.

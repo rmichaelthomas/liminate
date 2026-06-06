@@ -1,0 +1,6 @@
+about "speed-y calculation"
+
+
+remember a value called speed-y with 200 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show speed-y

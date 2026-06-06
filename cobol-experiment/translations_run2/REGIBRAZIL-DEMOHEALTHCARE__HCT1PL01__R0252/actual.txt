@@ -1,0 +1,5 @@
+I understand this as: remember a value called hct1hrthi with 0
+I understand this as: permit hct1hrthi is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: hct1hrthi is 0. hct1hrthi is 0.
+I understand this as: show "hct1hrthi predicate evaluated."
+hct1hrthi predicate evaluated.

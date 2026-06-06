@@ -1,0 +1,7 @@
+about "ws-invokeprog predicate"
+
+remember a value called ws-invokeprog with "__not_equal__"
+
+forbid ws-invokeprog is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "ws-invokeprog predicate evaluated."

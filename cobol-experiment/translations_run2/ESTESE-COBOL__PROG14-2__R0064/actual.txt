@@ -1,0 +1,5 @@
+I understand this as: remember a value called master-hold with "TRANS-HOLD"
+I understand this as: permit master-hold is "TRANS-HOLD" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: master-hold is "TRANS-HOLD". master-hold is TRANS-HOLD.
+I understand this as: show "master-hold predicate evaluated."
+master-hold predicate evaluated.

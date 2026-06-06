@@ -1,0 +1,6 @@
+about "aux-total-gral-importe calculation"
+
+
+remember a value called aux-total-gral-importe with aux-total-gral-importe because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show aux-total-gral-importe

@@ -1,0 +1,7 @@
+about "vfx-1-check predicate"
+
+remember a value called vfx-1-check with "R"
+
+permit vfx-1-check is "R" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "vfx-1-check predicate evaluated."

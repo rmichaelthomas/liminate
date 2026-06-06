@@ -1,0 +1,7 @@
+about "ws-status predicate"
+
+remember a value called ws-status with -1
+
+permit ws-status is below 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-status predicate evaluated."

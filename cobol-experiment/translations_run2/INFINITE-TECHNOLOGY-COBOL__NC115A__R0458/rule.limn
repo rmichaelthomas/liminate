@@ -1,0 +1,7 @@
+about "wrk-du-999-1 predicate"
+
+remember a value called wrk-du-999-1 with "83 NC1154.2"
+
+permit wrk-du-999-1 is "83 NC1154.2" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "wrk-du-999-1 predicate evaluated."

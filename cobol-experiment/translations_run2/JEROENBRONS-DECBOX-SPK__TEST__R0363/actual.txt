@@ -1,0 +1,5 @@
+I understand this as: remember a value called command-letter with "SPACE GO TO GET-COMMAND"
+I understand this as: permit command-letter is "SPACE GO TO GET-COMMAND" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: command-letter is "SPACE GO TO GET-COMMAND". command-letter is SPACE GO TO GET-COMMAND.
+I understand this as: show "command-letter predicate evaluated."
+command-letter predicate evaluated.

@@ -1,0 +1,4 @@
+Error: The word 'a' is reserved in Liminate — it's used as a article. Please choose a different name.
+Error: The word 'a' is a article in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: "a".
+I understand this as: show f
+Error: I can't find 'f'. You might need to 'remember' it first.

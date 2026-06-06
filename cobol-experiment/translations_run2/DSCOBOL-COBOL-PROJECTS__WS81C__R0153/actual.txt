@@ -1,0 +1,4 @@
+I understand this as: remember a value called ws-price-guitar with 2
+I understand this as: remember a value called ws-rfp-p1 with ws-price-guitar because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show ws-rfp-p1
+2

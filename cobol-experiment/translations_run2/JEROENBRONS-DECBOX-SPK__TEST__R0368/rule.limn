@@ -1,0 +1,7 @@
+about "file-status-1 predicate"
+
+remember a value called file-status-1 with 10
+
+permit file-status-1 is 10 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "file-status-1 predicate evaluated."

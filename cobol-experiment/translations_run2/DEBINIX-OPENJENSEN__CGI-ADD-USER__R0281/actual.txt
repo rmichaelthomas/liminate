@@ -1,0 +1,5 @@
+I understand this as: remember a value called wn-rtn-code with 0
+I understand this as: permit wn-rtn-code is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: wn-rtn-code is 0. wn-rtn-code is 0.
+I understand this as: show "wn-rtn-code predicate evaluated."
+wn-rtn-code predicate evaluated.

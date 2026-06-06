@@ -1,0 +1,7 @@
+about "addr2l predicate"
+
+remember a value called addr2l with 0
+
+permit addr2l is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "addr2l predicate evaluated."

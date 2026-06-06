@@ -1,0 +1,5 @@
+I understand this as: remember a value called ldm with 2
+I understand this as: remember a value called lnd with 2
+I understand this as: remember a value called npay from lnd multiplied by ldm because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show npay
+4

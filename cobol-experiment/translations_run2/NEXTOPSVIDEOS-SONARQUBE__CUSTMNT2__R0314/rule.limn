@@ -1,0 +1,7 @@
+about "response-code predicate"
+
+remember a value called response-code with "__not_equal__"
+
+forbid response-code is "DFHRESP(NORMAL)" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "response-code predicate evaluated."

@@ -1,0 +1,5 @@
+I understand this as: remember a value called stdin-record with " "
+I understand this as: permit stdin-record is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: stdin-record is " ". stdin-record is  .
+I understand this as: show "stdin-record predicate evaluated."
+stdin-record predicate evaluated.

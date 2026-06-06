@@ -1,0 +1,5 @@
+I understand this as: remember a value called output-write-flag with 1
+I understand this as: permit output-write-flag is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: output-write-flag is 1. output-write-flag is 1.
+I understand this as: show "output-write-flag predicate evaluated."
+output-write-flag predicate evaluated.

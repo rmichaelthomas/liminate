@@ -1,0 +1,7 @@
+about "command-id predicate"
+
+remember a value called command-id with "WS-OLDEST-ID"
+
+permit command-id is "WS-OLDEST-ID" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "command-id predicate evaluated."

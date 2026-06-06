@@ -1,0 +1,8 @@
+about "sort-count calculation"
+
+remember a value called input-record-number with 2
+remember a value called main-index with 2
+
+remember a value called sort-count with input-record-number minus main-index because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show sort-count

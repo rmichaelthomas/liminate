@@ -1,0 +1,7 @@
+about "cc-id predicate"
+
+remember a value called cc-id with "CH-ID"
+
+permit cc-id is "CH-ID" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "cc-id predicate evaluated."

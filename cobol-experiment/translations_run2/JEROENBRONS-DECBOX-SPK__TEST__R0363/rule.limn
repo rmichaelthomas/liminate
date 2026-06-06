@@ -1,0 +1,7 @@
+about "command-letter predicate"
+
+remember a value called command-letter with "SPACE GO TO GET-COMMAND"
+
+permit command-letter is "SPACE GO TO GET-COMMAND" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "command-letter predicate evaluated."

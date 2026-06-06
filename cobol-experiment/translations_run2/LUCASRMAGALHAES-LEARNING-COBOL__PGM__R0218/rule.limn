@@ -1,0 +1,6 @@
+about "ws77-aumento calculation"
+
+
+remember a value called ws77-aumento with 0 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws77-aumento

@@ -1,0 +1,5 @@
+I understand this as: remember a value called addri with " "
+I understand this as: permit addri is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: addri is " ". addri is  .
+I understand this as: show "addri predicate evaluated."
+addri predicate evaluated.

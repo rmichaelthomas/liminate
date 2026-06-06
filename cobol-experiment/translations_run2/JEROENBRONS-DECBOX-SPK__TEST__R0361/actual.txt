@@ -1,0 +1,4 @@
+I understand this as: remember a value called file-status-2-num with __not_equal__
+I understand this as: forbid file-status-2-num is "ERR-FILE-NOT-FOUND" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "file-status-2-num predicate evaluated."
+file-status-2-num predicate evaluated.

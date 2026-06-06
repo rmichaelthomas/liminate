@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-channel-name with " "
+I understand this as: permit ws-channel-name is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-channel-name is " ". ws-channel-name is  .
+I understand this as: show "ws-channel-name predicate evaluated."
+ws-channel-name predicate evaluated.

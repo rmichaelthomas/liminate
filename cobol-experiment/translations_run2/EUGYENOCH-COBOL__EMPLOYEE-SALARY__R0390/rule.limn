@@ -1,0 +1,8 @@
+about "rpay calculation"
+
+remember a value called allw with 2
+remember a value called lob with 2
+
+remember a value called rpay with allw plus lob because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show rpay

@@ -1,0 +1,3 @@
+I understand this as: remember a value called ws77-aumento with 0 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show ws77-aumento
+0

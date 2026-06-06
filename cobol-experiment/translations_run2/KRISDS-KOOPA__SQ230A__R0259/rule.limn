@@ -1,0 +1,7 @@
+about "computed-x predicate"
+
+remember a value called computed-x with "__not_equal__"
+
+forbid computed-x is "SPACE GO TO FAIL-ROUTINE-WRITE. SQ2304.2" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "computed-x predicate evaluated."

@@ -1,0 +1,5 @@
+I understand this as: remember a value called cob-crt-status with "COB-SCR-ESC"
+I understand this as: permit cob-crt-status is "COB-SCR-ESC" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: cob-crt-status is "COB-SCR-ESC". cob-crt-status is COB-SCR-ESC.
+I understand this as: show "cob-crt-status predicate evaluated."
+cob-crt-status predicate evaluated.

@@ -1,0 +1,7 @@
+about "cob-crt-status predicate"
+
+remember a value called cob-crt-status with "COB-SCR-ESC"
+
+permit cob-crt-status is "COB-SCR-ESC" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "cob-crt-status predicate evaluated."

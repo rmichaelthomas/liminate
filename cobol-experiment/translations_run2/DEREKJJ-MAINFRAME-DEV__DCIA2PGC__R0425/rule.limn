@@ -1,0 +1,7 @@
+about "acctnoi predicate"
+
+remember a value called acctnoi with "XXXXX"
+
+permit acctnoi is "XXXXX" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "acctnoi predicate evaluated."

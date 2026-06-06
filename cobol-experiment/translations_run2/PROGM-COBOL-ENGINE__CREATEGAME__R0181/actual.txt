@@ -1,0 +1,4 @@
+I understand this as: remember a value called sdl-status with 1
+I understand this as: forbid sdl-status is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "sdl-status predicate evaluated."
+sdl-status predicate evaluated.

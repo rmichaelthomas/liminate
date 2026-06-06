@@ -1,0 +1,7 @@
+about "io-pcb-status-code predicate"
+
+remember a value called io-pcb-status-code with "__not_equal__"
+
+forbid io-pcb-status-code is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "io-pcb-status-code predicate evaluated."

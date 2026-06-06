@@ -1,0 +1,7 @@
+about "ws-channel-name predicate"
+
+remember a value called ws-channel-name with " "
+
+permit ws-channel-name is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-channel-name predicate evaluated."

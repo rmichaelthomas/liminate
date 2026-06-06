@@ -1,0 +1,5 @@
+I understand this as: remember a value called istruzione with " "
+I understand this as: permit istruzione is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: istruzione is " ". istruzione is  .
+I understand this as: show "istruzione predicate evaluated."
+istruzione predicate evaluated.

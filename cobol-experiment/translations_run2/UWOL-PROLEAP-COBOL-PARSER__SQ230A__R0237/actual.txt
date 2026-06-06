@@ -1,0 +1,5 @@
+I understand this as: remember a value called delete-counter-is with "ZERO SQ2304.2"
+I understand this as: permit delete-counter-is is "ZERO SQ2304.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: delete-counter-is is "ZERO SQ2304.2". delete-counter-is is ZERO SQ2304.2.
+I understand this as: show "delete-counter-is predicate evaluated."
+delete-counter-is predicate evaluated.

@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-ok with 1
+I understand this as: permit ls-ok is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-ok is 1. ls-ok is 1.
+I understand this as: show "ls-ok predicate evaluated."
+ls-ok predicate evaluated.

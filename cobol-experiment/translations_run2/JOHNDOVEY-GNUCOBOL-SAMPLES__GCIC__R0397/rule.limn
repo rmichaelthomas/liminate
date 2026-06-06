@@ -1,0 +1,7 @@
+about "ws-fsm-status-cd predicate"
+
+remember a value called ws-fsm-status-cd with 35
+
+permit ws-fsm-status-cd is 35 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-fsm-status-cd predicate evaluated."

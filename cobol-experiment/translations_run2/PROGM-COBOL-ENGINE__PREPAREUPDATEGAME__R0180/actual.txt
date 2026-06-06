@@ -1,0 +1,5 @@
+I understand this as: remember a value called temp-delta with 2
+I understand this as: remember a value called thousand with 2
+I understand this as: remember a value called delta-time from temp-delta divided by thousand because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show delta-time
+1

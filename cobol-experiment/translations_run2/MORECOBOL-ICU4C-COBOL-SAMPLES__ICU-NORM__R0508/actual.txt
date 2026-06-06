@@ -1,0 +1,4 @@
+I understand this as: remember a value called file-status-flag with __not_equal__
+Error: I see an opening quote mark but no closing one on this line. Each quoted phrase needs both opening and closing marks.
+I understand this as: show "file-status-flag predicate evaluated."
+file-status-flag predicate evaluated.

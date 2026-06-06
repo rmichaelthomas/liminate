@@ -1,0 +1,7 @@
+about "tcode predicate"
+
+remember a value called tcode with "ENO"
+
+permit tcode is "ENO" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "tcode predicate evaluated."

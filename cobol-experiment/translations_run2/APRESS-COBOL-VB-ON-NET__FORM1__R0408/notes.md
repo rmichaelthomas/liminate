@@ -1,0 +1,26 @@
+```json
+{
+  "source_repo": "Apress/cobol-VB-on-.net",
+  "program": "Form1",
+  "rule_summary": "checks the components predicate",
+  "expressibility": "base",
+  "pack_needed": null,
+  "duplicate_of": null,
+  "verbs_used": [
+    "forbid"
+  ],
+  "fidelity_events": [
+    {
+      "kind": "none",
+      "cobol": "direct predicate",
+      "limn": "direct predicate",
+      "risk": "no material fidelity event identified in this isolated rule",
+      "recorded_in_because": true
+    }
+  ],
+  "interpreter_accepted": true
+}
+```
+
+Source excerpt line: `IF components NOT = NULL THEN`
+Duplicate count collapsed into this rule: 0.

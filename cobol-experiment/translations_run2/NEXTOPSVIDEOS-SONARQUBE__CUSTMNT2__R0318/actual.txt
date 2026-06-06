@@ -1,0 +1,5 @@
+I understand this as: remember a value called cityi with " "
+I understand this as: permit cityi is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: cityi is " ". cityi is  .
+I understand this as: show "cityi predicate evaluated."
+cityi predicate evaluated.

@@ -1,0 +1,7 @@
+about "player-choice predicate"
+
+remember a value called player-choice with "COMPUTER-CHOICE"
+
+permit player-choice is "COMPUTER-CHOICE" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "player-choice predicate evaluated."

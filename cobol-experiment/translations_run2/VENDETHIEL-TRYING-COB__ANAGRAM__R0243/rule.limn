@@ -1,0 +1,7 @@
+about "ws-subject predicate"
+
+remember a value called ws-subject with "__not_equal__"
+
+forbid ws-subject is "LS-LC" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "ws-subject predicate evaluated."

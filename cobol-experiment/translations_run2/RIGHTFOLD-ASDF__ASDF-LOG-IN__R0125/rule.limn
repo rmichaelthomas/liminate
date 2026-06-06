@@ -1,0 +1,7 @@
+about "ws-email-address-is predicate"
+
+remember a value called ws-email-address-is with "asdf@example.com"
+
+permit ws-email-address-is is "asdf@example.com" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-email-address-is predicate evaluated."

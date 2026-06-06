@@ -1,0 +1,7 @@
+about "ret-code predicate"
+
+remember a value called ret-code with 0
+
+permit ret-code is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ret-code predicate evaluated."

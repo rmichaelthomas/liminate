@@ -36,7 +36,7 @@ while IFS= read -r -d '' f; do
     echo "  FAIL  ${f#"$ROOT"/}"
     fail=$((fail+1))
   fi
-done < <(find "$ROOT/corpus" "$ROOT/translations" -name '*.limn' -print0 2>/dev/null)
+done < <(find "$ROOT/corpus" "$ROOT/translations" "$ROOT/translations_run2" -name '*.limn' -print0 2>/dev/null)
 
 echo
 if [ "$count" -eq 0 ]; then

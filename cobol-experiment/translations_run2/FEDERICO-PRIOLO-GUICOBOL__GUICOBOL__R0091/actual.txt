@@ -1,0 +1,5 @@
+I understand this as: remember a value called sw-free with "S"
+I understand this as: permit sw-free is "S" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: sw-free is "S". sw-free is S.
+I understand this as: show "sw-free predicate evaluated."
+sw-free predicate evaluated.

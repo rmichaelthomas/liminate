@@ -1,0 +1,5 @@
+I understand this as: remember a value called text-value-1 with "LOW-VALUES"
+I understand this as: permit text-value-1 is "LOW-VALUES" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: text-value-1 is "LOW-VALUES". text-value-1 is LOW-VALUES.
+I understand this as: show "text-value-1 predicate evaluated."
+text-value-1 predicate evaluated.

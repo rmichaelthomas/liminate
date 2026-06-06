@@ -1,0 +1,7 @@
+about "ls-chunks-is predicate"
+
+remember a value called ls-chunks-is with "null"
+
+permit ls-chunks-is is "null" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-chunks-is predicate evaluated."

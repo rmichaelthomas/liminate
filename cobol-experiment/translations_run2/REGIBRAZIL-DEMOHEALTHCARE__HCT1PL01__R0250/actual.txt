@@ -1,0 +1,5 @@
+I understand this as: remember a value called eibtrnid with "INQ-TRANS"
+I understand this as: permit eibtrnid is "INQ-TRANS" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: eibtrnid is "INQ-TRANS". eibtrnid is INQ-TRANS.
+I understand this as: show "eibtrnid predicate evaluated."
+eibtrnid predicate evaluated.

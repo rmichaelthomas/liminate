@@ -1,0 +1,4 @@
+I understand this as: remember a value called input-record-number from input-record-number plus 1 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is input-record-number.
+I understand this as: show input-record-number
+Error: I can't find 'input-record-number'. You might need to 'remember' it first.

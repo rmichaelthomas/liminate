@@ -1,0 +1,5 @@
+I understand this as: remember a value called update-exit-code with 256
+I understand this as: permit update-exit-code is 256 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: update-exit-code is 256. update-exit-code is 256.
+I understand this as: show "update-exit-code predicate evaluated."
+update-exit-code predicate evaluated.

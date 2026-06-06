@@ -1,0 +1,4 @@
+I understand this as: remember a value called sqlstate with 1
+I understand this as: forbid sqlstate is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "sqlstate predicate evaluated."
+sqlstate predicate evaluated.

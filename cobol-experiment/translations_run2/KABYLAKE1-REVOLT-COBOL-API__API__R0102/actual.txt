@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-ws-ctx-is with null
+I understand this as: permit ls-ws-ctx-is is null because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-ws-ctx-is is null. ls-ws-ctx-is is null.
+I understand this as: show "ls-ws-ctx-is predicate evaluated."
+ls-ws-ctx-is predicate evaluated.

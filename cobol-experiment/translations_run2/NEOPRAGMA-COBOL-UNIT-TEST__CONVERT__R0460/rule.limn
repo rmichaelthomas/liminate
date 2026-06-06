@@ -1,0 +1,7 @@
+about "input-filename predicate"
+
+remember a value called input-filename with " "
+
+permit input-filename is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "input-filename predicate evaluated."

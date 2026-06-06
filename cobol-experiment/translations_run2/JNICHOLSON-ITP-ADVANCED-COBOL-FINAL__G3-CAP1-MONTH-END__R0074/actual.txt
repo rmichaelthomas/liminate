@@ -1,0 +1,5 @@
+I understand this as: remember a value called tran-type with "D"
+I understand this as: permit tran-type is "D" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: tran-type is "D". tran-type is D.
+I understand this as: show "tran-type predicate evaluated."
+tran-type predicate evaluated.

@@ -1,0 +1,7 @@
+about "wrk-tecla predicate"
+
+remember a value called wrk-tecla with "S"
+
+permit wrk-tecla is "S" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "wrk-tecla predicate evaluated."

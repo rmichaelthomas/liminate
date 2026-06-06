@@ -1,0 +1,8 @@
+about "drateval calculation"
+
+remember a value called nrateval with 2
+remember a value called orateval with 2
+
+remember a value called drateval with nrateval minus orateval because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show drateval

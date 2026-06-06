@@ -1,0 +1,7 @@
+about "response-code predicate"
+
+remember a value called response-code with "DFHRESP(NOTFND)"
+
+permit response-code is "DFHRESP(NOTFND)" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "response-code predicate evaluated."

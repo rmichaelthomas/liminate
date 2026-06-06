@@ -1,0 +1,5 @@
+I understand this as: remember a value called w-y-in-world-real with " "
+I understand this as: permit w-y-in-world-real is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: w-y-in-world-real is " ". w-y-in-world-real is  .
+I understand this as: show "w-y-in-world-real predicate evaluated."
+w-y-in-world-real predicate evaluated.

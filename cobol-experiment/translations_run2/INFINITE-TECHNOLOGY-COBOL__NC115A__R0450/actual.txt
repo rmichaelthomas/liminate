@@ -1,0 +1,5 @@
+I understand this as: remember a value called rec-ct with "ZERO MOVE SPACE TO PAR-NAME. NC1154.2"
+I understand this as: permit rec-ct is "ZERO MOVE SPACE TO PAR-NAME. NC1154.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: rec-ct is "ZERO MOVE SPACE TO PAR-NAME. NC1154.2". rec-ct is ZERO MOVE SPACE TO PAR-NAME. NC1154.2.
+I understand this as: show "rec-ct predicate evaluated."
+rec-ct predicate evaluated.

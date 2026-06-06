@@ -1,0 +1,7 @@
+about "rec-ct predicate"
+
+remember a value called rec-ct with "ZERO MOVE SPACE TO PAR-NAME. SQ2304.2"
+
+permit rec-ct is "ZERO MOVE SPACE TO PAR-NAME. SQ2304.2" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "rec-ct predicate evaluated."

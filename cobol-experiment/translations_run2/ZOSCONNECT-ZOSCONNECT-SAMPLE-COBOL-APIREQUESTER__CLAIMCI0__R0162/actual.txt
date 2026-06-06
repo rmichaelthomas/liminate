@@ -1,0 +1,4 @@
+I understand this as: remember a value called rsp-claim-cics-resp with __not_equal__
+I understand this as: forbid rsp-claim-cics-resp is "DFHRESP(NORMAL)" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "rsp-claim-cics-resp predicate evaluated."
+rsp-claim-cics-resp predicate evaluated.

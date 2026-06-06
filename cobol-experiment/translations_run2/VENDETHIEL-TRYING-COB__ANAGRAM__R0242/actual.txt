@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-result-list with " "
+I understand this as: permit ws-result-list is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-result-list is " ". ws-result-list is  .
+I understand this as: show "ws-result-list predicate evaluated."
+ws-result-list predicate evaluated.
