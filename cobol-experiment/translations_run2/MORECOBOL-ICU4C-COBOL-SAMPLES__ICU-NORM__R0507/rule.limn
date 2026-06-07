@@ -1,0 +1,7 @@
+about "output-write-flag predicate"
+
+remember a value called output-write-flag with 1
+
+permit output-write-flag is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "output-write-flag predicate evaluated."

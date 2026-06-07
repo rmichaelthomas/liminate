@@ -1,0 +1,7 @@
+about "file-status predicate"
+
+remember a value called file-status with "__not_equal__"
+
+forbid file-status is "00" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "file-status predicate evaluated."

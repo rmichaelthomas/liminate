@@ -1,0 +1,5 @@
+I understand this as: remember a value called visa-m-ctr with 16
+I understand this as: permit visa-m-ctr is above 15 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: visa-m-ctr is above 15. visa-m-ctr is 16.
+I understand this as: show "visa-m-ctr predicate evaluated."
+visa-m-ctr predicate evaluated.

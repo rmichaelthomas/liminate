@@ -1,0 +1,7 @@
+about "master-hold-is predicate"
+
+remember a value called master-hold-is with "__not_equal__"
+
+forbid master-hold-is is "999999999" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "master-hold-is predicate evaluated."

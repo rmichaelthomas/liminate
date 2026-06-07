@@ -1,0 +1,7 @@
+about "ins-lname predicate"
+
+remember a value called ins-lname with " "
+
+permit ins-lname is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ins-lname predicate evaluated."

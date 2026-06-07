@@ -1,0 +1,5 @@
+I understand this as: remember a value called fs-comment-is with "ALL SPACES"
+I understand this as: permit fs-comment-is is "ALL SPACES" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: fs-comment-is is "ALL SPACES". fs-comment-is is ALL SPACES.
+I understand this as: show "fs-comment-is predicate evaluated."
+fs-comment-is predicate evaluated.

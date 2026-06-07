@@ -1,0 +1,7 @@
+about "dll-handle predicate"
+
+remember a value called dll-handle with 0
+
+permit dll-handle is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "dll-handle predicate evaluated."

@@ -1,0 +1,7 @@
+about "fs-type-is predicate"
+
+remember a value called fs-type-is with "__not_equal__"
+
+forbid fs-type-is is "D" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "fs-type-is predicate evaluated."

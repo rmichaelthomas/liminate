@@ -1,0 +1,5 @@
+I understand this as: remember a value called covidid with 1
+I understand this as: permit covidid is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: covidid is 1. covidid is 1.
+I understand this as: show "covidid predicate evaluated."
+covidid predicate evaluated.

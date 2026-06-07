@@ -1,0 +1,7 @@
+about "sqlcode predicate"
+
+remember a value called sqlcode with "__not_equal__"
+
+forbid sqlcode is "ZERO PERFORM ERROR-RTN STOP RUN" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "sqlcode predicate evaluated."

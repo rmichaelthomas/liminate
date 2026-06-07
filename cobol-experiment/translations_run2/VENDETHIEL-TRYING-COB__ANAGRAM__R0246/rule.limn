@@ -1,0 +1,7 @@
+about "ls-eq-count predicate"
+
+remember a value called ls-eq-count with 26
+
+permit ls-eq-count is 26 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-eq-count predicate evaluated."

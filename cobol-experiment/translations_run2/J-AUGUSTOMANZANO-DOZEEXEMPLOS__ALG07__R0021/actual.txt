@@ -1,0 +1,5 @@
+I understand this as: remember a value called x with 2
+I understand this as: remember a value called y with 2
+I understand this as: remember a value called z from x plus y because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show z
+4

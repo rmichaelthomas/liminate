@@ -1,0 +1,7 @@
+about "stdin-record predicate"
+
+remember a value called stdin-record with " "
+
+permit stdin-record is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "stdin-record predicate evaluated."

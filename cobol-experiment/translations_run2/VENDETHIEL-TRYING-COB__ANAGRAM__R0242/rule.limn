@@ -1,0 +1,7 @@
+about "ws-result-list predicate"
+
+remember a value called ws-result-list with " "
+
+permit ws-result-list is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-result-list predicate evaluated."

@@ -1,0 +1,7 @@
+about "serrorcode predicate"
+
+remember a value called serrorcode with 1
+
+forbid serrorcode is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "serrorcode predicate evaluated."

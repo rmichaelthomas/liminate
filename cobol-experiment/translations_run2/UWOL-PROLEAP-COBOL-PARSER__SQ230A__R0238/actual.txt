@@ -1,0 +1,5 @@
+I understand this as: remember a value called inspect-counter with "ZERO SQ2304.2"
+I understand this as: permit inspect-counter is "ZERO SQ2304.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: inspect-counter is "ZERO SQ2304.2". inspect-counter is ZERO SQ2304.2.
+I understand this as: show "inspect-counter predicate evaluated."
+inspect-counter predicate evaluated.

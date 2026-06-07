@@ -1,0 +1,8 @@
+about "ws-idx calculation"
+
+remember a value called tbl-size with 2
+remember a value called ws-uniq-count with 2
+
+remember a value called ws-idx with tbl-size minus ws-uniq-count plus 1 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws-idx

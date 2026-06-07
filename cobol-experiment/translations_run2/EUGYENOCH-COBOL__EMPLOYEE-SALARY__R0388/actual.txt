@@ -1,0 +1,5 @@
+I understand this as: remember a value called lrg with "\u201cY\u201d RO LRG = \u201cy\u201d"
+I understand this as: permit lrg is "\u201cY\u201d RO LRG = \u201cy\u201d" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: lrg is "\u201cY\u201d RO LRG = \u201cy\u201d". lrg is \u201cY\u201d RO LRG = \u201cy\u201d.
+I understand this as: show "lrg predicate evaluated."
+lrg predicate evaluated.

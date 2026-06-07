@@ -1,0 +1,4 @@
+I understand this as: remember a value called ws-subject with __not_equal__
+I understand this as: forbid ws-subject is "LS-LC" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "ws-subject predicate evaluated."
+ws-subject predicate evaluated.

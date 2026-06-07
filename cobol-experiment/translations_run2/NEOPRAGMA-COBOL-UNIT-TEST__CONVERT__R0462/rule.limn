@@ -1,0 +1,7 @@
+about "text-value-2 predicate"
+
+remember a value called text-value-2 with "LOW-VALUES"
+
+permit text-value-2 is "LOW-VALUES" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "text-value-2 predicate evaluated."

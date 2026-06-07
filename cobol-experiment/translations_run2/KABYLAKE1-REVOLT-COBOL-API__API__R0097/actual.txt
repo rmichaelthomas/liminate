@@ -1,0 +1,4 @@
+I understand this as: remember a value called ls-oninit-pgm-is with __not_equal__
+I understand this as: forbid ls-oninit-pgm-is is null because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "ls-oninit-pgm-is predicate evaluated."
+ls-oninit-pgm-is predicate evaluated.

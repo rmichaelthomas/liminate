@@ -1,0 +1,5 @@
+I understand this as: remember a value called correct-a with "SPACE GO TO BAIL-OUT-EX. SQ2304.2"
+I understand this as: permit correct-a is "SPACE GO TO BAIL-OUT-EX. SQ2304.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: correct-a is "SPACE GO TO BAIL-OUT-EX. SQ2304.2". correct-a is SPACE GO TO BAIL-OUT-EX. SQ2304.2.
+I understand this as: show "correct-a predicate evaluated."
+correct-a predicate evaluated.

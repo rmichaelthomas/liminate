@@ -1,0 +1,5 @@
+I understand this as: remember a value called allw with 2
+I understand this as: remember a value called lob with 2
+I understand this as: remember a value called rpay from allw plus lob because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show rpay
+4

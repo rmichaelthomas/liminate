@@ -1,0 +1,7 @@
+about "update-exit-code predicate"
+
+remember a value called update-exit-code with 256
+
+permit update-exit-code is 256 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "update-exit-code predicate evaluated."

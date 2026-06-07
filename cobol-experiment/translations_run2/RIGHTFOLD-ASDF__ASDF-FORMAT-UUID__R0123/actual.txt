@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-ord-a with 2
+I understand this as: remember a value called ws-nibble from ws-nibble minus 10 plus ws-ord-a because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'minus' is ws-nibble.
+I understand this as: show ws-nibble
+Error: I can't find 'ws-nibble'. You might need to 'remember' it first.

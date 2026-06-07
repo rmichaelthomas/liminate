@@ -1,0 +1,5 @@
+I understand this as: remember a value called error-counter-is with "ZERO NC1154.2"
+I understand this as: permit error-counter-is is "ZERO NC1154.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: error-counter-is is "ZERO NC1154.2". error-counter-is is ZERO NC1154.2.
+I understand this as: show "error-counter-is predicate evaluated."
+error-counter-is predicate evaluated.

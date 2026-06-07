@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-count-is with 0
+I understand this as: permit ws-count-is is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-count-is is 0. ws-count-is is 0.
+I understand this as: show "ws-count-is predicate evaluated."
+ws-count-is predicate evaluated.

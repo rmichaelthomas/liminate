@@ -1,0 +1,7 @@
+about "n2 predicate"
+
+remember a value called n2 with 0
+
+permit n2 is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "n2 predicate evaluated."

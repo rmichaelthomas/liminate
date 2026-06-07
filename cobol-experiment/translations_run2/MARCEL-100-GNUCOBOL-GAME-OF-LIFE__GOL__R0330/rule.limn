@@ -1,0 +1,7 @@
+about "x-2 calculation"
+
+remember a value called x with 2
+
+remember a value called x-2 with 2 multiplied by x minus 1 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show x-2

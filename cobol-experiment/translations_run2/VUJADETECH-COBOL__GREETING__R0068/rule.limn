@@ -1,0 +1,7 @@
+about "covidid predicate"
+
+remember a value called covidid with 2
+
+forbid covidid is 1 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "covidid predicate evaluated."

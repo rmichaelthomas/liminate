@@ -1,0 +1,5 @@
+I understand this as: remember a value called salida with salir
+I understand this as: permit salida is salir because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: salida is salir. salida is salir.
+I understand this as: show "salida predicate evaluated."
+salida predicate evaluated.

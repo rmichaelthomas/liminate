@@ -1,0 +1,4 @@
+I understand this as: remember a value called credits-tf with 2
+I understand this as: remember a value called curr-sem-gp from credits-tf multiplied by 4 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show curr-sem-gp
+8

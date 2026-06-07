@@ -1,0 +1,5 @@
+I understand this as: remember a value called command-id with "WS-OLDEST-ID"
+I understand this as: permit command-id is "WS-OLDEST-ID" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: command-id is "WS-OLDEST-ID". command-id is WS-OLDEST-ID.
+I understand this as: show "command-id predicate evaluated."
+command-id predicate evaluated.

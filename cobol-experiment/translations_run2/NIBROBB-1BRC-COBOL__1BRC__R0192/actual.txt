@@ -1,0 +1,4 @@
+I understand this as: remember a value called meas-loc with __not_equal__
+I understand this as: forbid meas-loc is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "meas-loc predicate evaluated."
+meas-loc predicate evaluated.

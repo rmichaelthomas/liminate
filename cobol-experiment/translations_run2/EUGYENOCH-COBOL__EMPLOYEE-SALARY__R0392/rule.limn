@@ -1,0 +1,8 @@
+about "npay calculation"
+
+remember a value called ldm with 2
+remember a value called lnd with 2
+
+remember a value called npay with lnd multiplied by ldm because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show npay

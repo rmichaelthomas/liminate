@@ -1,0 +1,5 @@
+I understand this as: remember a value called snamel with 0
+I understand this as: permit snamel is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: snamel is 0. snamel is 0.
+I understand this as: show "snamel predicate evaluated."
+snamel predicate evaluated.

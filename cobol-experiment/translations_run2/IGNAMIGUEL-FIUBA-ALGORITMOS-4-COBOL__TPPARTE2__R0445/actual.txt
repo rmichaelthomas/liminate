@@ -1,0 +1,3 @@
+I understand this as: remember a value called aux-total-gral-importe with aux-total-gral-importe because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show aux-total-gral-importe
+aux-total-gral-importe

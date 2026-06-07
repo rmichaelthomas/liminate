@@ -1,0 +1,5 @@
+I understand this as: remember a value called pursuers-in-is with zero
+I understand this as: permit pursuers-in-is is zero because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: pursuers-in-is is zero. pursuers-in-is is zero.
+I understand this as: show "pursuers-in-is predicate evaluated."
+pursuers-in-is predicate evaluated.

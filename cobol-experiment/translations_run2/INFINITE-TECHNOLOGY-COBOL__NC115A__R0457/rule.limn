@@ -1,0 +1,7 @@
+about "correct-a predicate"
+
+remember a value called correct-a with "SPACE GO TO BAIL-OUT-EX. NC1154.2"
+
+permit correct-a is "SPACE GO TO BAIL-OUT-EX. NC1154.2" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "correct-a predicate evaluated."

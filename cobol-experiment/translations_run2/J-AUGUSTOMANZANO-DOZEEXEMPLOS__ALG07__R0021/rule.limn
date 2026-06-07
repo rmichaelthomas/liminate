@@ -1,0 +1,8 @@
+about "z calculation"
+
+remember a value called x with 2
+remember a value called y with 2
+
+remember a value called z with x plus y because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show z

@@ -1,0 +1,7 @@
+about "zipcodei predicate"
+
+remember a value called zipcodei with " "
+
+permit zipcodei is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "zipcodei predicate evaluated."

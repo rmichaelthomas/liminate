@@ -1,0 +1,8 @@
+about "ws-final calculation"
+
+remember a value called ws-price with 2
+remember a value called ws-ticket with 2
+
+remember a value called ws-final with ws-price minus ws-ticket because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws-final

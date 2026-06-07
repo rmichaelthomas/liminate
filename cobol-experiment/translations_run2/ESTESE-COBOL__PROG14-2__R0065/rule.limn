@@ -1,0 +1,7 @@
+about "rec-count-tf predicate"
+
+remember a value called rec-count-tf with 1
+
+permit rec-count-tf is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "rec-count-tf predicate evaluated."

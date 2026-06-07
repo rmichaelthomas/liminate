@@ -1,0 +1,9 @@
+about "fs-salbr calculation"
+
+remember a value called fs-dsr with 2
+remember a value called fs-salba with 2
+remember a value called fs-total-he with 2
+
+remember a value called fs-salbr with fs-salba plus fs-total-he plus fs-dsr because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show fs-salbr

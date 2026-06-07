@@ -1,0 +1,5 @@
+I understand this as: remember a value called response-code with "DFHRESP(DUPREC)"
+I understand this as: permit response-code is "DFHRESP(DUPREC)" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: response-code is "DFHRESP(DUPREC)". response-code is DFHRESP(DUPREC).
+I understand this as: show "response-code predicate evaluated."
+response-code predicate evaluated.

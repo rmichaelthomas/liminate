@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-price with 2
+I understand this as: remember a value called ws-ticket with 2
+I understand this as: remember a value called ws-final from ws-price minus ws-ticket because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show ws-final
+0

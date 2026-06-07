@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-fsm-status-cd with 35
+I understand this as: permit ws-fsm-status-cd is 35 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-fsm-status-cd is 35. ws-fsm-status-cd is 35.
+I understand this as: show "ws-fsm-status-cd predicate evaluated."
+ws-fsm-status-cd predicate evaluated.

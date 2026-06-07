@@ -1,0 +1,7 @@
+about "ws-rfp-p1 calculation"
+
+remember a value called ws-price-guitar with 2
+
+remember a value called ws-rfp-p1 with ws-price-guitar because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws-rfp-p1

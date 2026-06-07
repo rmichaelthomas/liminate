@@ -1,0 +1,5 @@
+I understand this as: remember a value called visa-mer-resp with "X"
+I understand this as: permit visa-mer-resp is "X" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: visa-mer-resp is "X". visa-mer-resp is X.
+I understand this as: show "visa-mer-resp predicate evaluated."
+visa-mer-resp predicate evaluated.

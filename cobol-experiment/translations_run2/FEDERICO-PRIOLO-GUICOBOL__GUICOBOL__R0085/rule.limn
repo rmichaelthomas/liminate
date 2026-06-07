@@ -1,0 +1,7 @@
+about "fine-file predicate"
+
+remember a value called fine-file with "__not_equal__"
+
+forbid fine-file is "S" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "fine-file predicate evaluated."

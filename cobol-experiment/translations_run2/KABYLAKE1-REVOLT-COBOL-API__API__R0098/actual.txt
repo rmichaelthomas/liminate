@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-status with -1
+I understand this as: permit ws-status is below 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-status is below 0. ws-status is -1.
+I understand this as: show "ws-status predicate evaluated."
+ws-status predicate evaluated.

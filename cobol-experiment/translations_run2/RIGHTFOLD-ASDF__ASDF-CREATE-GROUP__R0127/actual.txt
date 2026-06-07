@@ -1,0 +1,5 @@
+I understand this as: remember a value called fs-name-is with " "
+I understand this as: permit fs-name-is is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: fs-name-is is " ". fs-name-is is  .
+I understand this as: show "fs-name-is predicate evaluated."
+fs-name-is predicate evaluated.

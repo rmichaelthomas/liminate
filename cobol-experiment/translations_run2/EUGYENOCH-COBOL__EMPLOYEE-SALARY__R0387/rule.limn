@@ -1,0 +1,7 @@
+about "t-file predicate"
+
+remember a value called t-file with "O"
+
+permit t-file is "O" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "t-file predicate evaluated."

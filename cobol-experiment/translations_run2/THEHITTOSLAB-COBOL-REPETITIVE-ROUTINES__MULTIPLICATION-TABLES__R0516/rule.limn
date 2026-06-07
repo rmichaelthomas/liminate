@@ -1,0 +1,7 @@
+about "salida predicate"
+
+remember a value called salida with "salir"
+
+permit salida is "salir" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "salida predicate evaluated."

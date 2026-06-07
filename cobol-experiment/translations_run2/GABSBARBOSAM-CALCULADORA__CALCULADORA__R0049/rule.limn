@@ -1,0 +1,7 @@
+about "ws-valid predicate"
+
+remember a value called ws-valid with "S"
+
+permit ws-valid is "S" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-valid predicate evaluated."

@@ -1,0 +1,4 @@
+I understand this as: remember a value called ignore-flag with 1
+I understand this as: forbid ignore-flag is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "ignore-flag predicate evaluated."
+ignore-flag predicate evaluated.

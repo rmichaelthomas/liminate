@@ -1,0 +1,7 @@
+about "ind predicate"
+
+remember a value called ind with 1
+
+permit ind is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ind predicate evaluated."

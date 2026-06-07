@@ -1,0 +1,4 @@
+I understand this as: remember a value called serrorcode with 1
+I understand this as: forbid serrorcode is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "serrorcode predicate evaluated."
+serrorcode predicate evaluated.

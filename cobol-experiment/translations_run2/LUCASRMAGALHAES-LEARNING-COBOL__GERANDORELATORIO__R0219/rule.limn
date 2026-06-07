@@ -1,0 +1,7 @@
+about "clientes-status predicate"
+
+remember a value called clientes-status with 35
+
+permit clientes-status is 35 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "clientes-status predicate evaluated."

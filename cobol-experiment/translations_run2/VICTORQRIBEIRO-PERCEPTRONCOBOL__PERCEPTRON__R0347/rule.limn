@@ -1,0 +1,8 @@
+about "err calculation"
+
+remember a value called prediction with 2
+remember a value called y with 2
+
+remember a value called err with y minus prediction because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show err

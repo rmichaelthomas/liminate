@@ -1,0 +1,7 @@
+about "meas-loc predicate"
+
+remember a value called meas-loc with "__not_equal__"
+
+forbid meas-loc is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "meas-loc predicate evaluated."

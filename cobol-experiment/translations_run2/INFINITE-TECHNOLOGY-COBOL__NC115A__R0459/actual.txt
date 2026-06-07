@@ -1,0 +1,5 @@
+I understand this as: remember a value called wrk-du-999-1 with "8 NC1154.2"
+I understand this as: permit wrk-du-999-1 is "8 NC1154.2" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: wrk-du-999-1 is "8 NC1154.2". wrk-du-999-1 is 8 NC1154.2.
+I understand this as: show "wrk-du-999-1 predicate evaluated."
+wrk-du-999-1 predicate evaluated.

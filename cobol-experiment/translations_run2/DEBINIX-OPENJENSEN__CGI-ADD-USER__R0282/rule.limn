@@ -1,0 +1,7 @@
+about "sqlstate predicate"
+
+remember a value called sqlstate with 1
+
+forbid sqlstate is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "sqlstate predicate evaluated."

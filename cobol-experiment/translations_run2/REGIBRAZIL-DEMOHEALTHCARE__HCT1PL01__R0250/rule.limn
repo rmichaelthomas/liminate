@@ -1,0 +1,7 @@
+about "eibtrnid predicate"
+
+remember a value called eibtrnid with "INQ-TRANS"
+
+permit eibtrnid is "INQ-TRANS" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "eibtrnid predicate evaluated."

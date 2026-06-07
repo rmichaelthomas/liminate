@@ -1,0 +1,6 @@
+I understand this as: remember a value called err with 2
+I understand this as: remember a value called lr with 2
+I understand this as: remember a value called b from b plus err multiplied by lr because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is b.
+I understand this as: show b
+Error: I can't find 'b'. You might need to 'remember' it first.

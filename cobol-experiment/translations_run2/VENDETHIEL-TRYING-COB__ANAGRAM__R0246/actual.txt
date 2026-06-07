@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-eq-count with 26
+I understand this as: permit ls-eq-count is 26 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-eq-count is 26. ls-eq-count is 26.
+I understand this as: show "ls-eq-count predicate evaluated."
+ls-eq-count predicate evaluated.

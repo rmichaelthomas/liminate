@@ -1,0 +1,5 @@
+I understand this as: remember a value called rec-count-tf with 1
+I understand this as: permit rec-count-tf is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: rec-count-tf is 1. rec-count-tf is 1.
+I understand this as: show "rec-count-tf predicate evaluated."
+rec-count-tf predicate evaluated.

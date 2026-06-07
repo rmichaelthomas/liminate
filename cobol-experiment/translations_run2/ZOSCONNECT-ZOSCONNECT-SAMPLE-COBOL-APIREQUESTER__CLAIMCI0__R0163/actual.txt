@@ -1,0 +1,5 @@
+I understand this as: remember a value called rsp-claim-cics-resp with 3
+I understand this as: permit rsp-claim-cics-resp is 3 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: rsp-claim-cics-resp is 3. rsp-claim-cics-resp is 3.
+I understand this as: show "rsp-claim-cics-resp predicate evaluated."
+rsp-claim-cics-resp predicate evaluated.

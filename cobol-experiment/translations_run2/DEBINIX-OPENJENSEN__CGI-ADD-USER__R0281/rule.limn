@@ -1,0 +1,7 @@
+about "wn-rtn-code predicate"
+
+remember a value called wn-rtn-code with 0
+
+permit wn-rtn-code is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "wn-rtn-code predicate evaluated."

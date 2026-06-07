@@ -1,0 +1,5 @@
+I understand this as: remember a value called dll-handle with 0
+I understand this as: permit dll-handle is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: dll-handle is 0. dll-handle is 0.
+I understand this as: show "dll-handle predicate evaluated."
+dll-handle predicate evaluated.

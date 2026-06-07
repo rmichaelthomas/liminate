@@ -1,0 +1,7 @@
+about "ws-count-is predicate"
+
+remember a value called ws-count-is with 0
+
+permit ws-count-is is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-count-is predicate evaluated."

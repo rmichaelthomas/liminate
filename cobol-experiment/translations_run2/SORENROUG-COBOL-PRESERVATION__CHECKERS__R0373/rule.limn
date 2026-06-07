@@ -1,0 +1,7 @@
+about "s predicate"
+
+remember a value called s with "X-KING"
+
+permit s is "X-KING" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "s predicate evaluated."

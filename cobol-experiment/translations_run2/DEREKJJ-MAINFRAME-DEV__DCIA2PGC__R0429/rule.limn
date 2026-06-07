@@ -1,0 +1,7 @@
+about "snamel predicate"
+
+remember a value called snamel with 0
+
+permit snamel is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "snamel predicate evaluated."

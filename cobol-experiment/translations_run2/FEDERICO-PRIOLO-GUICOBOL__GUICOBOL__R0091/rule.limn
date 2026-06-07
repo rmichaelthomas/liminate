@@ -1,0 +1,7 @@
+about "sw-free predicate"
+
+remember a value called sw-free with "S"
+
+permit sw-free is "S" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "sw-free predicate evaluated."

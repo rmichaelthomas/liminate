@@ -1,0 +1,5 @@
+I understand this as: remember a value called remaining with 0
+I understand this as: permit remaining is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: remaining is 0. remaining is 0.
+I understand this as: show "remaining predicate evaluated."
+remaining predicate evaluated.

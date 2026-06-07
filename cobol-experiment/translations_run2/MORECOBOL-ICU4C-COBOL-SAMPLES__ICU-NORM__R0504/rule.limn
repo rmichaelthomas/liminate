@@ -1,0 +1,7 @@
+about "api-pointer predicate"
+
+remember a value called api-pointer with "NULL"
+
+permit api-pointer is "NULL" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "api-pointer predicate evaluated."

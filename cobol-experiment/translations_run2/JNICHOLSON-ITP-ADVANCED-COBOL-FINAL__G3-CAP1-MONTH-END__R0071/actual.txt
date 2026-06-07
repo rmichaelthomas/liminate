@@ -1,0 +1,5 @@
+I understand this as: remember a value called cc-id with "CH-ID"
+I understand this as: permit cc-id is "CH-ID" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: cc-id is "CH-ID". cc-id is CH-ID.
+I understand this as: show "cc-id predicate evaluated."
+cc-id predicate evaluated.

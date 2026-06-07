@@ -1,0 +1,5 @@
+I understand this as: remember a value called input-record-number with 2
+I understand this as: remember a value called main-index with 2
+I understand this as: remember a value called sort-count from input-record-number minus main-index because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show sort-count
+0

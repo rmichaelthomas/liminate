@@ -1,0 +1,5 @@
+I understand this as: remember a value called ncountval with 2
+I understand this as: remember a value called ocountval with 2
+I understand this as: remember a value called icountval from ncountval minus ocountval because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show icountval
+0

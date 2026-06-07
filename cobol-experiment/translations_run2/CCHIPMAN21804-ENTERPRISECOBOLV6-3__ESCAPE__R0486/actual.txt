@@ -1,0 +1,5 @@
+I understand this as: remember a value called c with robot
+I understand this as: permit c is robot because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: c is robot. c is robot.
+I understand this as: show "c predicate evaluated."
+c predicate evaluated.

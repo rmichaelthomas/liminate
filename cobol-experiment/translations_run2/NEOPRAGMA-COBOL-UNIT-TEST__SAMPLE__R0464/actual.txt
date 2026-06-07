@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-message-type-is with "GREETING"
+I understand this as: permit ws-message-type-is is "GREETING" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-message-type-is is "GREETING". ws-message-type-is is GREETING.
+I understand this as: show "ws-message-type-is predicate evaluated."
+ws-message-type-is predicate evaluated.

@@ -1,0 +1,7 @@
+about "v predicate"
+
+remember a value called v with 1
+
+permit v is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "v predicate evaluated."

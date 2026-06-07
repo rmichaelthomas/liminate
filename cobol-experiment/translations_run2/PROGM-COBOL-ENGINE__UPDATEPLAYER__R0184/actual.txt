@@ -1,0 +1,3 @@
+Error: The word 'minus' is a operator in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: "minus".
+I understand this as: show speed-y
+Error: I can't find 'speed-y'. You might need to 'remember' it first.

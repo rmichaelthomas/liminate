@@ -1,0 +1,4 @@
+I understand this as: remember a value called ws-resp with __not_equal__
+I understand this as: forbid ws-resp is "DFHRESP(NORMAL)" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "ws-resp predicate evaluated."
+ws-resp predicate evaluated.

@@ -1,0 +1,7 @@
+about "rsp-claim-cics-resp predicate"
+
+remember a value called rsp-claim-cics-resp with 3
+
+permit rsp-claim-cics-resp is 3 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "rsp-claim-cics-resp predicate evaluated."

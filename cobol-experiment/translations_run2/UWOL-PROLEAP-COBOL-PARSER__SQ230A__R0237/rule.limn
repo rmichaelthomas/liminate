@@ -1,0 +1,7 @@
+about "delete-counter-is predicate"
+
+remember a value called delete-counter-is with "ZERO SQ2304.2"
+
+permit delete-counter-is is "ZERO SQ2304.2" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "delete-counter-is predicate evaluated."

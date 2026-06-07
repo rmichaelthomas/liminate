@@ -1,0 +1,8 @@
+about "ws-resul calculation"
+
+remember a value called ws-num1 with 2
+remember a value called ws-num2 with 2
+
+remember a value called ws-resul with ws-num1 plus ws-num2 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws-resul
