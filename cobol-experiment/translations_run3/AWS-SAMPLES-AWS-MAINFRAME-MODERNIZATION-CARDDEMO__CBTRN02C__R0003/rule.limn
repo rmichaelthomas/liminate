@@ -1,0 +1,8 @@
+about "credit-or-debit classification by sign (CBTRN02C)"
+
+remember a value called transaction-amount with 50
+
+permit transaction-amount is above -0.01 because "amounts of zero or more post as cycle credit; COBOL DALYTRAN-AMT >= 0 is inclusive of zero, rendered as is-above the next-lower 2-decimal value -0.01"
+permit transaction-amount is below 0 because "negative amounts post as cycle debit"
+
+show "transaction sign classified."

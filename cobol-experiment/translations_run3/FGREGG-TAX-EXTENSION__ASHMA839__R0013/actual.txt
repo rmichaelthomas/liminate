@@ -1,0 +1,4 @@
+I understand this as: remember a value called prior-adjusted-base with 250
+I understand this as: permit prior-adjusted-base is below 0 because "a negative computed base is reset to zero; COBOL IF PREV-ADJ-BASE < 0 is a strict negative-sign test, mapped directly to is-below 0"
+I understand this as: show "negative-base floor check evaluated."
+negative-base floor check evaluated.

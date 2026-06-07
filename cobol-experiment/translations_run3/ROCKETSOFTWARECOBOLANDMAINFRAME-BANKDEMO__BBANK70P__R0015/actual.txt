@@ -1,0 +1,4 @@
+I understand this as: remember a value called interest-rate with 5.5
+I understand this as: require interest-rate is below 100 because "rate of 100% or more is rejected; COBOL IS NOT LESS THAN 100.000 means rate >= 100 is invalid, rendered as require is-below 100"
+I understand this as: show "loan rate ceiling checked."
+loan rate ceiling checked.

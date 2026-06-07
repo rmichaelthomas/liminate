@@ -1,0 +1,6 @@
+I understand this as: remember a value called withdrawal with 50
+I understand this as: remember a value called balance with 1000
+I understand this as: forbid withdrawal is above balance because "withdrawal rejected when it exceeds the balance; first arm of COBOL IF REINTEGRO > SALDO OR REINTEGRO = 0.00"
+I understand this as: forbid withdrawal is 0 because "a zero withdrawal is also rejected; second arm of the same OR condition, split into its own statement to make precedence explicit"
+I understand this as: show "withdrawal guard evaluated."
+withdrawal guard evaluated.

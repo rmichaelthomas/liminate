@@ -1,0 +1,8 @@
+about "available-balance computation (CBTRN02C)"
+
+remember a value called current-cycle-credit with 500
+remember a value called current-cycle-debit with 200
+remember a value called transaction-amount with 50
+remember a value called temp-balance with current-cycle-credit minus current-cycle-debit plus transaction-amount because "WS-TEMP-BAL = credit - debit + amount; plain COMPUTE with NO ROUNDED directive, so no rounding is modelled"
+
+show "available balance computed."

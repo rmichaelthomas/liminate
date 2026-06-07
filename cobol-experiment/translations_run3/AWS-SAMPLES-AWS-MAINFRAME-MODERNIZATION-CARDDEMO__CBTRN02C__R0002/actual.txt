@@ -1,0 +1,6 @@
+I understand this as: remember a value called current-cycle-credit with 500
+I understand this as: remember a value called current-cycle-debit with 200
+I understand this as: remember a value called transaction-amount with 50
+I understand this as: remember a value called temp-balance from current-cycle-credit minus current-cycle-debit plus transaction-amount because "WS-TEMP-BAL = credit - debit + amount; plain COMPUTE with NO ROUNDED directive, so no rounding is modelled"
+I understand this as: show "available balance computed."
+available balance computed.

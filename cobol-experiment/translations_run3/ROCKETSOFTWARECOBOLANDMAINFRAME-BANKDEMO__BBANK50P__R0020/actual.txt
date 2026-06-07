@@ -1,0 +1,5 @@
+I understand this as: remember a value called transfer-amount with 100
+I understand this as: remember a value called from-balance with 500
+I understand this as: forbid transfer-amount is above from-balance because "transfer rejected when the amount exceeds the source balance; COBOL IS GREATER THAN is strict, mapped directly to is-above"
+I understand this as: show "transfer amount checked."
+transfer amount checked.

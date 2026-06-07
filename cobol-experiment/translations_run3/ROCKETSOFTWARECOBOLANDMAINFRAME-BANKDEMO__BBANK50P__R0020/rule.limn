@@ -1,0 +1,8 @@
+about "transfer cannot exceed balance (BBANK50P)"
+
+remember a value called transfer-amount with 100.00
+remember a value called from-balance with 500.00
+
+forbid transfer-amount is above from-balance because "transfer rejected when the amount exceeds the source balance; COBOL IS GREATER THAN is strict, mapped directly to is-above"
+
+show "transfer amount checked."

@@ -1,0 +1,7 @@
+about "municipal property-tax share, rounded (EFITA3B8)"
+
+remember a value called municipal-base with 50000
+remember a value called municipal-rate with 12.5
+remember a value called municipal-tax with municipal-base multiplied by municipal-rate divided by 100 because "COMPUTE COTISB-COTICOM ROUNDED = base * rate / 100; the literal ROUNDED (half-up to the euro) is not expressible in the base vocabulary, so the product is carried unrounded"
+
+show "municipal tax computed."

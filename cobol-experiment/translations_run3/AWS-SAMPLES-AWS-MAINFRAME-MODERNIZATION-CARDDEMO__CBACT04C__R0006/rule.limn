@@ -1,0 +1,7 @@
+about "monthly interest computation (CBACT04C)"
+
+remember a value called category-balance with 1000
+remember a value called annual-rate with 18
+remember a value called monthly-interest with category-balance multiplied by annual-rate divided by 1200 because "monthly interest = balance * annual-rate / 1200; plain COMPUTE with NO ROUNDED, so this is not a rounding rule"
+
+show "monthly interest computed."

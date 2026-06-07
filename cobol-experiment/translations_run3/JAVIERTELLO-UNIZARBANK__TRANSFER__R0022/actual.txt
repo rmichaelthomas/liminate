@@ -1,0 +1,5 @@
+I understand this as: remember a value called amount with 200
+I understand this as: remember a value called balance with 1000
+I understand this as: forbid amount is above balance because "transfer rejected when the amount is greater than the current balance; COBOL IF CANTOT > SALDOACT is strict, mapped directly to is-above"
+I understand this as: show "transfer amount checked."
+transfer amount checked.
