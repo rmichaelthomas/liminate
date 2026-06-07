@@ -1,0 +1,4 @@
+I understand this as: remember a value called account-balance with 250
+I understand this as: forbid account-balance is below 0.01 because "bill payment refused when the balance is zero or less; COBOL ACCT-CURR-BAL <= ZEROS is inclusive of zero, rendered as is-below 0.01 so 0.00 and negatives are caught at 2-decimal scale"
+I understand this as: show "bill-pay balance guard evaluated."
+bill-pay balance guard evaluated.

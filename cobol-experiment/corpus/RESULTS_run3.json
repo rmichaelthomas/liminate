@@ -1,0 +1,576 @@
+{
+  "header": {
+    "run": 3,
+    "date": "2026-06-06",
+    "liminate_version": "0.14.1",
+    "supersedes": "run 2 (retained as record; unverified corpus + broken fidelity classifier)",
+    "execution_mode": "scoped pilot (business/finance-leaning repos) pending decision to scale to full corpus",
+    "corpus": {
+      "dataset": "X-COBOL: A Dataset of COBOL Repositories",
+      "release_year": 2024,
+      "zenodo_record": "14269462",
+      "doi": "10.5281/zenodo.14269462",
+      "cobol_file_count": 5195,
+      "repo_count": 168,
+      "fingerprint_sha256": "ef1c12875dd0bdffa169ccc4cb3143d58090288c7138ae621c7684aeb09304b5",
+      "identity_basis": "stale 2023 zenodo_record.json removed by maintainer; 2024 upload confirmed by maintainer; on-disk corroboration: 168 repos in final_repo_statistics.csv and repo_code_statistics.csv, 5195 .cbl/.cob/.cobol files, COBOL_Files dir dated Dec 2024"
+    },
+    "triage": {
+      "business_leaning_repos_scanned": 13,
+      "repos_read_in_depth": 6,
+      "repos_in_depth_list": [
+        "aws-samples/aws-mainframe-modernization-carddemo",
+        "RocketSoftwareCOBOLandMainframe/BankDemo",
+        "fgregg/tax_extension",
+        "adrianotelesc/crud-payroll",
+        "etalab/taxe-fonciere",
+        "javiertello/UnizarBank"
+      ],
+      "rules_attempted": 22,
+      "duplicates_collapsed": 0
+    },
+    "expressibility": {
+      "base": 19,
+      "pack-needed": 3,
+      "untranslatable": 0
+    },
+    "pack_demand": {
+      "date-arithmetic": 2,
+      "exponentiation": 1
+    },
+    "fidelity_kind_distribution": {
+      "boundary": 11,
+      "none": 6,
+      "precedence": 4,
+      "sign": 3,
+      "rounding": 2
+    },
+    "fidelity_event_total": 26,
+    "verb_frequency": {
+      "remember": 19,
+      "forbid": 8,
+      "permit": 5,
+      "require": 2
+    }
+  },
+  "rules": [
+    {
+      "source_repo": "adrianotelesc/crud-payroll",
+      "program": "payroll",
+      "rule_summary": "INSS social-security is 8/9/11% by salary band, capped above the ceiling.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "permit",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "WHEN (FS-SALBR > 0) AND (FS-SALBR <= 1556,94)",
+          "limn": "permit gross-salary is below 1556.95",
+          "risk": "<= 1556,94 rendered via is-below 1556.95 (0.01 scale shift)",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "WHEN (FS-SALBR > 1556,94) AND (FS-SALBR <= 2594,92)",
+          "limn": "permit gross-salary is below 2594.93",
+          "risk": "<= 2594,92 rendered via is-below 2594.93",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "WHEN (FS-SALBR > 2594,92) AND (FS-SALBR <= 5189,82)",
+          "limn": "permit gross-salary is below 5189.83",
+          "risk": "<= 5189,82 rendered via is-below 5189.83",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "precedence",
+          "cobol": "WHEN (FS-SALBR > 0) AND (FS-SALBR <= 1556,94)",
+          "limn": "permit gross-salary is above 0 and gross-salary is below 1556.95",
+          "risk": "each EVALUATE WHEN was a compound (lower AND upper) bound, made explicit as two and-joined comparisons",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ADRIANOTELESC-CRUD-PAYROLL__PAYROLL__R0008"
+    },
+    {
+      "source_repo": "adrianotelesc/crud-payroll",
+      "program": "payroll",
+      "rule_summary": "Family allowance is paid per child at 41.37 for low salaries and 29.16 for a middle band.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "permit",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "WHEN FS-FILHOS > 0 AND FS-SALBA <= 806,80",
+          "limn": "permit base-salary is below 806.81",
+          "risk": "<= 806,80 rendered via is-below 806.81 (0.01 scale shift)",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "boundary",
+          "cobol": "WHEN FS-SALBA > 806,81 AND FS-SALBA <= 1212,64 AND",
+          "limn": "permit base-salary is below 1212.65",
+          "risk": "<= 1212,64 rendered via is-below 1212.65",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "precedence",
+          "cobol": "WHEN FS-SALBA > 806,81 AND FS-SALBA <= 1212,64 AND",
+          "limn": "permit base-salary is above 806.81 and base-salary is below 1212.65",
+          "risk": "the WHEN combined three conditions with AND across a continuation line, split into explicit and-joined comparisons",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ADRIANOTELESC-CRUD-PAYROLL__PAYROLL__R0010"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBACT04C",
+      "rule_summary": "Monthly interest is the transaction-category balance times the annual rate divided by 1200.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "= ( TRAN-CAT-BAL * DIS-INT-RATE) / 1200",
+          "limn": "remember a value called monthly-interest with category-balance multiplied by annual-rate divided by 1200",
+          "risk": "interest formula has no ROUNDED keyword; generic decimal arithmetic",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBACT04C__R0006"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBTRN02C",
+      "rule_summary": "A transaction is refused as over-limit when the new balance would exceed the credit limit.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF ACCT-CREDIT-LIMIT >= WS-TEMP-BAL",
+          "limn": "forbid temp-balance is above credit-limit",
+          "risk": ">= rendered via swapped strict is-above; equality must remain inside the limit",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBTRN02C__R0001"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBTRN02C",
+      "rule_summary": "The working balance is current cycle credit minus debit plus the new transaction amount.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "COMPUTE WS-TEMP-BAL = ACCT-CURR-CYC-CREDIT",
+          "limn": "remember a value called temp-balance with current-cycle-credit minus current-cycle-debit plus transaction-amount",
+          "risk": "plain COMPUTE without ROUNDED; arithmetic carries across directly",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBTRN02C__R0002"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBTRN02C",
+      "rule_summary": "A transaction of zero or more is posted as a credit; a negative amount is posted as a debit.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "permit",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF DALYTRAN-AMT >= 0",
+          "limn": "permit transaction-amount is above -0.01",
+          "risk": ">= 0 on a 2-decimal amount rendered via is-above -0.01 (scale-unit shift)",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "sign",
+          "cobol": "IF DALYTRAN-AMT >= 0",
+          "limn": "permit transaction-amount is above -0.01 / permit transaction-amount is below 0",
+          "risk": "the rule classifies by sign of the amount",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBTRN02C__R0003"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBTRN02C",
+      "rule_summary": "A transaction received after the account expiration date is refused.",
+      "expressibility": "pack-needed",
+      "pack_needed": "date-arithmetic",
+      "duplicate_of": null,
+      "verbs_used": [],
+      "fidelity_events": [],
+      "interpreter_accepted": false,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBTRN02C__R0005"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "CBTRN03C",
+      "rule_summary": "A transaction is included in the report only if its processing date falls within the start and end dates.",
+      "expressibility": "pack-needed",
+      "pack_needed": "date-arithmetic",
+      "duplicate_of": null,
+      "verbs_used": [],
+      "fidelity_events": [],
+      "interpreter_accepted": false,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__CBTRN03C__R0004"
+    },
+    {
+      "source_repo": "aws-samples/aws-mainframe-modernization-carddemo",
+      "program": "COBIL00C",
+      "rule_summary": "A bill payment is refused when the account balance is zero or less (nothing to pay).",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF ACCT-CURR-BAL <= ZEROS AND",
+          "limn": "forbid account-balance is below 0.01",
+          "risk": "<= 0 on a 2-decimal balance rendered via is-below 0.01 (scale-unit shift)",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "AWS-SAMPLES-AWS-MAINFRAME-MODERNIZATION-CARDDEMO__COBIL00C__R0007"
+    },
+    {
+      "source_repo": "etalab/taxe-fonciere",
+      "program": "EFITA3B8",
+      "rule_summary": "The municipal property-tax share is the municipal base times the municipal rate over 100, rounded.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE COTISB-COTICOM     ROUNDED =",
+          "limn": "remember a value called municipal-tax with municipal-base multiplied by municipal-rate divided by 100",
+          "risk": "COBOL applies ROUNDED to the euro; base arithmetic drops the half-up rounding step",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ETALAB-TAXE-FONCIERE__EFITA3B8__R0021"
+    },
+    {
+      "source_repo": "fgregg/tax_extension",
+      "program": "ASHMA832",
+      "rule_summary": "Records must arrive in non-descending key order; an out-of-order key is a severe error.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF CUR-REC-KEY >= PREV-REC-KEY",
+          "limn": "forbid current-key is below previous-key",
+          "risk": ">= rendered via swapped strict is-below; equal keys must stay valid",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "FGREGG-TAX-EXTENSION__ASHMA832__R0011"
+    },
+    {
+      "source_repo": "fgregg/tax_extension",
+      "program": "ASHMA839",
+      "rule_summary": "The prior adjusted base is the prior base times the prior-year multiplier, rounded.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "rounding",
+          "cobol": "COMPUTE PREV-ADJ-BASE ROUNDED =",
+          "limn": "remember a value called prior-adjusted-base with prior-base multiplied by prior-multiplier",
+          "risk": "COBOL applies ROUNDED (half-up); base arithmetic has no rounding directive, so the rounding step is dropped",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "FGREGG-TAX-EXTENSION__ASHMA839__R0012"
+    },
+    {
+      "source_repo": "fgregg/tax_extension",
+      "program": "ASHMA839",
+      "rule_summary": "A prior adjusted base that comes out negative is floored to zero.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "permit",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "sign",
+          "cobol": "IF PREV-ADJ-BASE < 0",
+          "limn": "permit prior-adjusted-base is below 0",
+          "risk": "strict < 0 negative-sign test mapped directly to is-below 0 (no boundary shift)",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "FGREGG-TAX-EXTENSION__ASHMA839__R0013"
+    },
+    {
+      "source_repo": "javiertello/UnizarBank",
+      "program": "RETIRAREF",
+      "rule_summary": "A cash withdrawal is rejected when it exceeds the balance or is exactly zero.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "precedence",
+          "cobol": "IF REINTEGRO > SALDO OR REINTEGRO = 0.00",
+          "limn": "forbid withdrawal is above balance / forbid withdrawal is 0.00",
+          "risk": "the COBOL OR condition is split into two independent forbid statements so the disjunction is explicit",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "JAVIERTELLO-UNIZARBANK__RETIRAREF__R0023"
+    },
+    {
+      "source_repo": "javiertello/UnizarBank",
+      "program": "TRANSFER",
+      "rule_summary": "A transfer is rejected when the requested amount exceeds the account balance.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "IF CANTOT > SALDOACT",
+          "limn": "forbid amount is above balance",
+          "risk": "strict > between amount and balance maps directly to is-above",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "JAVIERTELLO-UNIZARBANK__TRANSFER__R0022"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK30P",
+      "rule_summary": "The monthly service charge steps down as the balance crosses 100000, 10000, 5000, 1000 and 0.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "permit",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "IF WS-SRV-BAL-N IS GREATER THAN WS-SRV-BAL5",
+          "limn": "permit balance is above 100000",
+          "risk": "strict GREATER THAN comparisons map directly to is-above; no boundary shift",
+          "recorded_in_because": true
+        },
+        {
+          "kind": "precedence",
+          "cobol": "IF WS-SRV-BAL-N IS GREATER THAN WS-SRV-BAL5",
+          "limn": "five ordered permit lines, highest threshold first",
+          "risk": "the cascade of GOTO-on-match IF blocks is order-sensitive; rendered as ordered permits so the first matching tier wins",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK30P__R0018"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK50P",
+      "rule_summary": "Funds cannot be transferred out of an account that is already in negative balance.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "sign",
+          "cobol": "IF WS-XFER-ACCT-FROM-BAL-N IS LESS THAN ZERO",
+          "limn": "forbid from-balance is below 0",
+          "risk": "strict < 0 negative-sign test mapped directly to is-below 0",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK50P__R0019"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK50P",
+      "rule_summary": "A transfer amount may not exceed the available balance in the source account.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "IF WS-XFER-AMT-NUM-N IS GREATER THAN WS-XFER-ACCT-FROM-BAL-N",
+          "limn": "forbid transfer-amount is above from-balance",
+          "risk": "strict > between two variables maps directly to is-above; no boundary shift",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK50P__R0020"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK70P",
+      "rule_summary": "A loan interest rate must be greater than zero.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember",
+        "require"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF WS-CALC-WORK-PERC-N IS NOT GREATER THAN ZERO",
+          "limn": "require interest-rate is above 0",
+          "risk": "inclusive <= 0 (NOT GREATER THAN ZERO) rejection rendered via strict is-above 0",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK70P__R0014"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK70P",
+      "rule_summary": "A loan interest rate of 100% or more is rejected as outrageous.",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "remember",
+        "require"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "boundary",
+          "cobol": "IF WS-CALC-WORK-PERC-N IS NOT LESS THAN 100.000",
+          "limn": "require interest-rate is below 100",
+          "risk": "inclusive >= 100 (NOT LESS THAN 100.000) rejection rendered via strict is-below 100",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK70P__R0015"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK70P",
+      "rule_summary": "A loan term may not exceed 1200 months (100 years).",
+      "expressibility": "base",
+      "pack_needed": null,
+      "duplicate_of": null,
+      "verbs_used": [
+        "forbid",
+        "remember"
+      ],
+      "fidelity_events": [
+        {
+          "kind": "none",
+          "cobol": "IF WS-CALC-WORK-TERM-N IS GREATER THAN 1200",
+          "limn": "forbid loan-term-months is above 1200",
+          "risk": "strict > 1200 maps directly to is-above 1200; no inclusive boundary to shift",
+          "recorded_in_because": true
+        }
+      ],
+      "interpreter_accepted": true,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK70P__R0016"
+    },
+    {
+      "source_repo": "RocketSoftwareCOBOLandMainframe/BankDemo",
+      "program": "BBANK70P",
+      "rule_summary": "The monthly loan payment is the standard amortization formula, rounded.",
+      "expressibility": "pack-needed",
+      "pack_needed": "exponentiation",
+      "duplicate_of": null,
+      "verbs_used": [],
+      "fidelity_events": [],
+      "interpreter_accepted": false,
+      "_dir": "ROCKETSOFTWARECOBOLANDMAINFRAME-BANKDEMO__BBANK70P__R0017"
+    }
+  ]
+}

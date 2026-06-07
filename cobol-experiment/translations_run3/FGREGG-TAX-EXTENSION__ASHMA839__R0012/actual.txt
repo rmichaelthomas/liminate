@@ -1,0 +1,5 @@
+I understand this as: remember a value called prior-base with 1000
+I understand this as: remember a value called prior-multiplier with 1.05
+I understand this as: remember a value called prior-adjusted-base from prior-base multiplied by prior-multiplier because "COMPUTE PREV-ADJ-BASE ROUNDED = PREV-BASE * PREV-MULTIPLY; the literal ROUNDED directive is not expressible in the base vocabulary, so the product is carried without the half-up rounding"
+I understand this as: show "prior adjusted base computed."
+prior adjusted base computed.

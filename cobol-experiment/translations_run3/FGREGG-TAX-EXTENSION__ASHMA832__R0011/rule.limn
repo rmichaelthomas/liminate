@@ -1,0 +1,8 @@
+about "record key ordering check (ASHMA832)"
+
+remember a value called current-key with 200
+remember a value called previous-key with 100
+
+forbid current-key is below previous-key because "records must be in non-descending key order; COBOL CUR-REC-KEY >= PREV-REC-KEY is inclusive, rendered as strict is-below on swapped operands so an equal key is still in order"
+
+show "key ordering check evaluated."

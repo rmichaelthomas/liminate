@@ -1,0 +1,4 @@
+I understand this as: remember a value called from-balance with 500
+I understand this as: forbid from-balance is below 0 because "a source account with a negative balance cannot transfer; COBOL IS LESS THAN ZERO is a strict negative-sign test mapped directly to is-below 0"
+I understand this as: show "source-account sign checked."
+source-account sign checked.

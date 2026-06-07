@@ -1,0 +1,5 @@
+I understand this as: remember a value called temp-balance with 90
+I understand this as: remember a value called credit-limit with 100
+I understand this as: forbid temp-balance is above credit-limit because "transaction rejected OVERLIMIT when the new balance would exceed the limit; COBOL ACCT-CREDIT-LIMIT >= WS-TEMP-BAL is inclusive, rendered as strict is-above on swapped operands so equality stays within the limit"
+I understand this as: show "credit-limit check evaluated."
+credit-limit check evaluated.

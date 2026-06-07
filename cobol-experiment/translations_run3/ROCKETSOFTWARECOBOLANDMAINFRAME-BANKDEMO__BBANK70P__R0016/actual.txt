@@ -1,0 +1,4 @@
+I understand this as: remember a value called loan-term-months with 360
+I understand this as: forbid loan-term-months is above 1200 because "term over 1200 months is rejected; COBOL IS GREATER THAN 1200 is a strict comparison, mapped directly to is-above 1200 with no boundary shift"
+I understand this as: show "loan term cap checked."
+loan term cap checked.

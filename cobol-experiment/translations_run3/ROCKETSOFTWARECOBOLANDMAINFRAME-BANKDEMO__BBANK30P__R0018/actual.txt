@@ -1,0 +1,12 @@
+I understand this as: remember a value called balance with 25000
+I understand this as: permit balance is above 100000 because "balance over 100000 incurs the 0.00 charge; COBOL IS GREATER THAN is strict, mapped directly to is-above"
+I understand this as: permit balance is above 10000 because "over 10000 incurs the 10.00 charge"
+Permitted: balance is above 10000. balance is 25000.
+I understand this as: permit balance is above 5000 because "over 5000 incurs the 15.00 charge"
+Permitted: balance is above 5000. balance is 25000.
+I understand this as: permit balance is above 1000 because "over 1000 incurs the 20.00 charge"
+Permitted: balance is above 1000. balance is 25000.
+I understand this as: permit balance is above 0 because "over 0 incurs the 25.00 charge, otherwise the 50.00 minimum"
+Permitted: balance is above 0. balance is 25000.
+I understand this as: show "service charge tier selected."
+service charge tier selected.

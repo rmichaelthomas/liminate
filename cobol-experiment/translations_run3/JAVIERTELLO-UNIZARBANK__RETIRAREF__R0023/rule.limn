@@ -1,0 +1,9 @@
+about "invalid withdrawal guard (UnizarBank RETIRAREF)"
+
+remember a value called withdrawal with 50.00
+remember a value called balance with 1000.00
+
+forbid withdrawal is above balance because "withdrawal rejected when it exceeds the balance; first arm of COBOL IF REINTEGRO > SALDO OR REINTEGRO = 0.00"
+forbid withdrawal is 0.00 because "a zero withdrawal is also rejected; second arm of the same OR condition, split into its own statement to make precedence explicit"
+
+show "withdrawal guard evaluated."

@@ -1,0 +1,5 @@
+I understand this as: remember a value called current-key with 200
+I understand this as: remember a value called previous-key with 100
+I understand this as: forbid current-key is below previous-key because "records must be in non-descending key order; COBOL CUR-REC-KEY >= PREV-REC-KEY is inclusive, rendered as strict is-below on swapped operands so an equal key is still in order"
+I understand this as: show "key ordering check evaluated."
+key ordering check evaluated.

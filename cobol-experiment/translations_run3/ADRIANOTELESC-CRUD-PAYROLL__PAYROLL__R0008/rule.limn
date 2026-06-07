@@ -1,0 +1,10 @@
+about "INSS social-security bracket (crud-payroll)"
+
+remember a value called gross-salary with 2000.00
+
+permit gross-salary is above 0 and gross-salary is below 1556.95 because "8% band for salary up to 1556.94; COBOL upper bound FS-SALBR <= 1556,94 is inclusive, rendered as is-below 1556.95 at 2-decimal scale (DECIMAL-POINT IS COMMA)"
+permit gross-salary is above 1556.94 and gross-salary is below 2594.93 because "9% band; lower bound strict > 1556,94, upper bound <= 2594,92 rendered as is-below 2594.93"
+permit gross-salary is above 2594.92 and gross-salary is below 5189.83 because "11% band; upper bound <= 5189,82 rendered as is-below 5189.83"
+permit gross-salary is above 5189.82 because "above the ceiling INSS is capped at 11% of 5189,82"
+
+show "INSS bracket selected."

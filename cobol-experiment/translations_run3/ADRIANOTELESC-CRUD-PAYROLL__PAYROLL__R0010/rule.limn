@@ -1,0 +1,9 @@
+about "family-allowance eligibility (crud-payroll)"
+
+remember a value called base-salary with 700.00
+remember a value called children with 2
+
+permit children is above 0 and base-salary is below 806.81 because "41.37 per child when there are children and salary is at most 806,80; COBOL FS-SALBA <= 806,80 inclusive rendered as is-below 806.81"
+permit base-salary is above 806.81 and base-salary is below 1212.65 because "29.16 per child for the 806,81 to 1212,64 band; upper bound <= 1212,64 rendered as is-below 1212.65"
+
+show "family allowance band selected."

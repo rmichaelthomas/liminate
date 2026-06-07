@@ -1,0 +1,4 @@
+I understand this as: remember a value called interest-rate with 5.5
+I understand this as: require interest-rate is above 0 because "rate of zero or less is rejected; COBOL IS NOT GREATER THAN ZERO means rate <= 0 is invalid, rendered as require is-above 0"
+I understand this as: show "loan rate positivity checked."
+loan rate positivity checked.

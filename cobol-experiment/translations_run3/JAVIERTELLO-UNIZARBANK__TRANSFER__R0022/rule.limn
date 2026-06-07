@@ -1,0 +1,8 @@
+about "transfer exceeds balance (UnizarBank TRANSFER)"
+
+remember a value called amount with 200.00
+remember a value called balance with 1000.00
+
+forbid amount is above balance because "transfer rejected when the amount is greater than the current balance; COBOL IF CANTOT > SALDOACT is strict, mapped directly to is-above"
+
+show "transfer amount checked."

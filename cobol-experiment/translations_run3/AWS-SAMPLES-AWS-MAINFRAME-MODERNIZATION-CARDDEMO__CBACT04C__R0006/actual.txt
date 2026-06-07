@@ -1,0 +1,5 @@
+I understand this as: remember a value called category-balance with 1000
+I understand this as: remember a value called annual-rate with 18
+I understand this as: remember a value called monthly-interest from category-balance multiplied by annual-rate divided by 1200 because "monthly interest = balance * annual-rate / 1200; plain COMPUTE with NO ROUNDED, so this is not a rounding rule"
+I understand this as: show "monthly interest computed."
+monthly interest computed.
