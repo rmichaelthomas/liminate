@@ -1,0 +1,18 @@
+I understand this as: remember a value called ex-two-flag with "T"
+I understand this as: remember a value called ex-three-flag with "Y"
+I understand this as: remember a value called ex-four-flag with 1
+I understand this as: remember a value called ex-five-field with "T"
+I understand this as: remember a value called ex-six-field with "T"
+I understand this as: permit ex-two-flag is "T" because "COBOL convention treats T as true"
+Permitted: ex-two-flag is "T". ex-two-flag is T.
+I understand this as: permit ex-three-flag is "Y" because "COBOL convention treats Y as yes"
+Permitted: ex-three-flag is "Y". ex-three-flag is Y.
+I understand this as: permit ex-four-flag is 1 because "COBOL convention treats 1 as true"
+Permitted: ex-four-flag is 1. ex-four-flag is 1.
+I understand this as: permit ex-five-field is "T" because "COBOL 88 EX5-FLAG is true when the field is T"
+Permitted: ex-five-field is "T". ex-five-field is T.
+I understand this as: permit ex-six-field is "T" because "COBOL 88 EX6-FLAG is true when the field is T and false when F"
+Permitted: ex-six-field is "T". ex-six-field is T.
+I understand this as: forbid ex-six-field is "F" because "COBOL 88 FALSE value for EX6-FLAG is F"
+I understand this as: show "Pseudo boolean conventions evaluated."
+Pseudo boolean conventions evaluated.

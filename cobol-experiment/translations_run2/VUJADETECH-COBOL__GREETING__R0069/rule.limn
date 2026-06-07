@@ -1,0 +1,7 @@
+about "covidid predicate"
+
+remember a value called covidid with 1
+
+permit covidid is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "covidid predicate evaluated."

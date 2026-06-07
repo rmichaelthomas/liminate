@@ -1,0 +1,11 @@
+I understand this as: remember a value called english-marks with 68
+I understand this as: remember a value called math-marks with 72
+I understand this as: remember a value called total-marks from english-marks plus math-marks because "COBOL adds English and math marks before dividing"
+I understand this as: remember a value called average-mark from total-marks divided by 2 because "COBOL EVALUATE classifies the average of English and math marks"
+I understand this as: permit average-mark is above 39.9 and average-mark is below 50 because "COBOL WHEN 40 THRU 49.9 is inclusive at both endpoints"
+I understand this as: permit average-mark is above 49.9 and average-mark is below 60 because "COBOL WHEN 50 THRU 59.9 is inclusive at both endpoints"
+I understand this as: permit average-mark is above 59.9 and average-mark is below 70 because "COBOL WHEN 60 THRU 69.9 is inclusive at both endpoints"
+I understand this as: permit average-mark is above 69.9 and average-mark is below 100.1 because "COBOL WHEN 70 THRU 100 is inclusive; 100.1 records the decimal boundary assumption"
+Permitted: average-mark is above 69.9 and average-mark is below 100.1. average-mark is 70.
+I understand this as: show average-mark
+70

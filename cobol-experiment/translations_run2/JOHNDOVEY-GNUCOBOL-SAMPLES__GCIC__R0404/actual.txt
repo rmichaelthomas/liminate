@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-prog-folder-txt with " "
+I understand this as: permit ws-prog-folder-txt is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-prog-folder-txt is " ". ws-prog-folder-txt is  .
+I understand this as: show "ws-prog-folder-txt predicate evaluated."
+ws-prog-folder-txt predicate evaluated.

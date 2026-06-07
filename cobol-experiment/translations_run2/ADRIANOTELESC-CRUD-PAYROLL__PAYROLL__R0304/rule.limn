@@ -1,0 +1,6 @@
+about "fs-vt calculation"
+
+
+remember a value called fs-vt with 0 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show fs-vt

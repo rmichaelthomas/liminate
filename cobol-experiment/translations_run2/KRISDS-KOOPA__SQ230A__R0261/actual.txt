@@ -1,0 +1,4 @@
+I understand this as: remember a value called computed-a with __not_equal__
+I understand this as: forbid computed-a is "SPACE GO TO BAIL-OUT-WRITE. SQ2304.2" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "computed-a predicate evaluated."
+computed-a predicate evaluated.

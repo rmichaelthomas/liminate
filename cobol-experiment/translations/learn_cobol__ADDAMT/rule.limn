@@ -1,0 +1,8 @@
+about "amount sum"
+
+remember a value called amount-one with 10.00
+remember a value called amount-two with 20.00
+remember a value called amount-three with 30.00
+remember a value called amount-total with amount-one plus amount-two plus amount-three because "COBOL ADD AMT1-IN AMT2-IN AMT3-IN computes their sum"
+
+show amount-total

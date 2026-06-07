@@ -1,0 +1,4 @@
+I understand this as: remember a value called i from i plus 1 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is i.
+I understand this as: show i
+Error: I can't find 'i'. You might need to 'remember' it first.

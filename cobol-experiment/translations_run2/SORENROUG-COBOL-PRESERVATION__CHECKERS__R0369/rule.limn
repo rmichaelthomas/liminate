@@ -1,0 +1,7 @@
+about "p predicate"
+
+remember a value called p with "N"
+
+permit p is "N" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "p predicate evaluated."

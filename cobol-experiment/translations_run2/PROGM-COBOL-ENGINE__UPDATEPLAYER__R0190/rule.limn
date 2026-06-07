@@ -1,0 +1,8 @@
+about "player-pos-y calculation"
+
+remember a value called game-height with 2
+remember a value called player-h with 2
+
+remember a value called player-pos-y with game-height minus player-h because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show player-pos-y

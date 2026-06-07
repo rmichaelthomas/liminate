@@ -1,0 +1,8 @@
+I understand this as: remember a value called hours-worked with 36.5
+I understand this as: remember a value called rate-of-pay with 12
+I understand this as: remember a value called standard-hours with 37.5
+I understand this as: remember a value called regular-pay from hours-worked multiplied by rate-of-pay because "COBOL else branch computes hours-worked times rate when hours are not above standard"
+I understand this as: permit hours-worked is below 37.51 because "COBOL else branch means hours-worked <= 37.5; PIC 99V99 makes 37.51 the next centesimal boundary"
+Permitted: hours-worked is below 37.51. hours-worked is 36.5.
+I understand this as: show regular-pay
+438

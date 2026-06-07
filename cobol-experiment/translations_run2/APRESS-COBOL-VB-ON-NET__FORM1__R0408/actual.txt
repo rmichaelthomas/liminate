@@ -1,0 +1,4 @@
+I understand this as: remember a value called components with __not_equal__
+I understand this as: forbid components is "NULL" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "components predicate evaluated."
+components predicate evaluated.

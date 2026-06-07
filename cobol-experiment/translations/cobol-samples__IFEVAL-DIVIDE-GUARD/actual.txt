@@ -1,0 +1,6 @@
+I understand this as: remember a value called divisor with 1
+I understand this as: remember a value called dividend with 100
+I understand this as: require divisor is above 0 because "COBOL divides only when NUMERIC-1 IS GREATER THAN ZERO"
+I understand this as: remember a value called quotient from dividend divided by divisor because "division is permitted only after the positive-divisor guard"
+I understand this as: show quotient
+100

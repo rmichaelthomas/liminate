@@ -1,0 +1,7 @@
+about "result predicate"
+
+remember a value called result with 1
+
+permit result is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "result predicate evaluated."

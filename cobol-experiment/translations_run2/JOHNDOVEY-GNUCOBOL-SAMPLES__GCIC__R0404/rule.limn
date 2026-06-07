@@ -1,0 +1,7 @@
+about "ws-prog-folder-txt predicate"
+
+remember a value called ws-prog-folder-txt with " "
+
+permit ws-prog-folder-txt is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-prog-folder-txt predicate evaluated."

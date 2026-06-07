@@ -1,0 +1,7 @@
+about "resp predicate"
+
+remember a value called resp with "__not_equal__"
+
+forbid resp is "DFHRESP(NORMAL)" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "resp predicate evaluated."

@@ -1,0 +1,7 @@
+about "ws-resp predicate"
+
+remember a value called ws-resp with "__not_equal__"
+
+forbid ws-resp is "DFHRESP(NORMAL)" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "ws-resp predicate evaluated."

@@ -1,0 +1,7 @@
+about "num3 predicate"
+
+remember a value called num3 with "NUM4"
+
+permit num3 is "NUM4" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "num3 predicate evaluated."

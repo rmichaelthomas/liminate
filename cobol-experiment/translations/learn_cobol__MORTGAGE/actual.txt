@@ -1,0 +1,8 @@
+I understand this as: remember a value called balance-start with 100000
+I understand this as: remember a value called interest-rate with 5
+I understand this as: remember a value called repayment with 500
+I understand this as: remember a value called interest from balance-start multiplied by interest-rate divided by 100 because "COBOL computes interest as balance times rate divided by 100"
+I understand this as: remember a value called annual-repayment from 12 multiplied by repayment because "COBOL subtracts twelve monthly repayments"
+I understand this as: remember a value called balance-end from balance-start plus interest minus annual-repayment because "COBOL ending balance adds interest and subtracts annual repayments"
+I understand this as: show balance-end
+99000

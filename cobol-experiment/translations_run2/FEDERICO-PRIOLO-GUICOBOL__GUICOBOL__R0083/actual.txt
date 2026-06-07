@@ -1,0 +1,5 @@
+I understand this as: remember a value called file-in with " "
+I understand this as: permit file-in is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: file-in is " ". file-in is  .
+I understand this as: show "file-in predicate evaluated."
+file-in predicate evaluated.

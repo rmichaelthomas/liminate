@@ -1,0 +1,7 @@
+about "option-4 predicate"
+
+remember a value called option-4 with 1
+
+permit option-4 is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "option-4 predicate evaluated."

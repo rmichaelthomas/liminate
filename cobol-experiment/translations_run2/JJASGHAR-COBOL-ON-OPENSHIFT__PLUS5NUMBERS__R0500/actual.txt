@@ -1,0 +1,4 @@
+I understand this as: remember a value called original-number with 2
+I understand this as: remember a value called result from original-number plus 5 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show result
+7

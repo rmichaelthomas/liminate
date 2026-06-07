@@ -1,0 +1,7 @@
+about "ws-gender predicate"
+
+remember a value called ws-gender with "F"
+
+permit ws-gender is "F" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-gender predicate evaluated."

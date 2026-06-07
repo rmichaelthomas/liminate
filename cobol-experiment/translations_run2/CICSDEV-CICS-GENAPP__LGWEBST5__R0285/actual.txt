@@ -1,0 +1,5 @@
+I understand this as: remember a value called countval with 2
+I understand this as: remember a value called countinq from countinq plus countval because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is countinq.
+I understand this as: show countinq
+Error: I can't find 'countinq'. You might need to 'remember' it first.

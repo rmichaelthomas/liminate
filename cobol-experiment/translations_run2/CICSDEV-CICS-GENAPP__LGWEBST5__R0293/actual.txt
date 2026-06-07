@@ -1,0 +1,5 @@
+I understand this as: remember a value called nrateval with 2
+I understand this as: remember a value called orateval with 2
+I understand this as: remember a value called drateval from nrateval minus orateval because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show drateval
+0

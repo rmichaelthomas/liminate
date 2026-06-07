@@ -1,0 +1,6 @@
+I understand this as: remember a value called fs-dsr with 2
+I understand this as: remember a value called fs-salba with 2
+I understand this as: remember a value called fs-total-he with 2
+I understand this as: remember a value called fs-salbr from fs-salba plus fs-total-he plus fs-dsr because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+I understand this as: show fs-salbr
+6

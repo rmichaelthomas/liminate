@@ -1,0 +1,7 @@
+about "debug-display-sw predicate"
+
+remember a value called debug-display-sw with 1
+
+permit debug-display-sw is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "debug-display-sw predicate evaluated."

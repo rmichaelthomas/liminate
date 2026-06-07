@@ -1,0 +1,10 @@
+about "simple mortgage year calculation"
+
+remember a value called balance-start with 100000
+remember a value called interest-rate with 5
+remember a value called repayment with 500
+remember a value called interest with balance-start multiplied by interest-rate divided by 100 because "COBOL computes interest as balance times rate divided by 100"
+remember a value called annual-repayment with 12 multiplied by repayment because "COBOL subtracts twelve monthly repayments"
+remember a value called balance-end with balance-start plus interest minus annual-repayment because "COBOL ending balance adds interest and subtracts annual repayments"
+
+show balance-end

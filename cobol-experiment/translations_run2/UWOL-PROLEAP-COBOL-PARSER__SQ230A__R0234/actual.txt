@@ -1,0 +1,4 @@
+I understand this as: remember a value called rec-ct with __not_equal__
+I understand this as: forbid rec-ct is "ZERO SQ2304.2" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "rec-ct predicate evaluated."
+rec-ct predicate evaluated.

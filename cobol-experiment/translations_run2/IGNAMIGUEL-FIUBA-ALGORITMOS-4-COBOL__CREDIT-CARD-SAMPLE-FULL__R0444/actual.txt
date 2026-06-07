@@ -1,0 +1,5 @@
+I understand this as: remember a value called saldostatus with 00
+I understand this as: permit saldostatus is 00 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: saldostatus is 00. saldostatus is 00.
+I understand this as: show "saldostatus predicate evaluated."
+saldostatus predicate evaluated.

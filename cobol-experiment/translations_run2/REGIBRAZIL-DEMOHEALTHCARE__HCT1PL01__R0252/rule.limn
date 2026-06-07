@@ -1,0 +1,7 @@
+about "hct1hrthi predicate"
+
+remember a value called hct1hrthi with 0
+
+permit hct1hrthi is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "hct1hrthi predicate evaluated."

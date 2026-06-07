@@ -1,0 +1,5 @@
+I understand this as: remember a value called s with "EMPTY PERFORM LINE0910"
+I understand this as: permit s is "EMPTY PERFORM LINE0910" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: s is "EMPTY PERFORM LINE0910". s is EMPTY PERFORM LINE0910.
+I understand this as: show "s predicate evaluated."
+s predicate evaluated.

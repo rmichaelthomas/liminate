@@ -1,0 +1,10 @@
+about "modular overtime pay calculation"
+
+remember a value called hours-worked with 36.5
+remember a value called rate-of-pay with 12.00
+remember a value called standard-hours with 37.5
+remember a value called regular-pay with hours-worked multiplied by rate-of-pay because "COBOL else branch computes hours-worked times rate when hours are not above standard"
+
+permit hours-worked is below 37.51 because "COBOL else branch means hours-worked <= 37.5; PIC 99V99 makes 37.51 the next centesimal boundary"
+
+show regular-pay

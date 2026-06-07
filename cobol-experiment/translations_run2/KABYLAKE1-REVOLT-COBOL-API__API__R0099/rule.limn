@@ -1,0 +1,7 @@
+about "ls-curl-is predicate"
+
+remember a value called ls-curl-is with "null"
+
+permit ls-curl-is is "null" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-curl-is predicate evaluated."

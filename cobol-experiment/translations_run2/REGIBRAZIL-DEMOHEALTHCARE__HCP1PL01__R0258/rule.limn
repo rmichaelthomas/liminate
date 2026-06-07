@@ -1,0 +1,7 @@
+about "hcp1uidi predicate"
+
+remember a value called hcp1uidi with " "
+
+permit hcp1uidi is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "hcp1uidi predicate evaluated."

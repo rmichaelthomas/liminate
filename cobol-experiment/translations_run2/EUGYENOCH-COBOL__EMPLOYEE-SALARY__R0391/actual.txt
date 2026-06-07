@@ -1,0 +1,5 @@
+I understand this as: remember a value called litax with 2
+I understand this as: remember a value called lpfd from lpfd plus litax because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is lpfd.
+I understand this as: show lpfd
+Error: I can't find 'lpfd'. You might need to 'remember' it first.

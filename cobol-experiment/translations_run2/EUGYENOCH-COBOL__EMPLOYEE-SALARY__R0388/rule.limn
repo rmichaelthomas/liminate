@@ -1,0 +1,7 @@
+about "lrg predicate"
+
+remember a value called lrg with "\u201cY\u201d RO LRG = \u201cy\u201d"
+
+permit lrg is "\u201cY\u201d RO LRG = \u201cy\u201d" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "lrg predicate evaluated."

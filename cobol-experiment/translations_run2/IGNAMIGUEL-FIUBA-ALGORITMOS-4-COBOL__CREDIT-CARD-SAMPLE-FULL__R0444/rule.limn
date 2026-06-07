@@ -1,0 +1,7 @@
+about "saldostatus predicate"
+
+remember a value called saldostatus with "00"
+
+permit saldostatus is "00" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "saldostatus predicate evaluated."

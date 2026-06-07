@@ -1,0 +1,7 @@
+about "ws-file-name-txt predicate"
+
+remember a value called ws-file-name-txt with " "
+
+permit ws-file-name-txt is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-file-name-txt predicate evaluated."

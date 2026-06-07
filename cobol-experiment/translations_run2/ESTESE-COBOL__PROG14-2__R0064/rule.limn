@@ -1,0 +1,7 @@
+about "master-hold predicate"
+
+remember a value called master-hold with "TRANS-HOLD"
+
+permit master-hold is "TRANS-HOLD" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "master-hold predicate evaluated."

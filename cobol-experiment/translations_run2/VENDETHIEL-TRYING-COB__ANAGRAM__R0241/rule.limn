@@ -1,0 +1,7 @@
+about "ls-ok predicate"
+
+remember a value called ls-ok with 1
+
+permit ls-ok is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-ok predicate evaluated."

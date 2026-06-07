@@ -1,0 +1,14 @@
+# Cloned upstream COBOL sources (see docs/PROVENANCE.md — not redistributable)
+corpus/_fetched/
+
+# X-COBOL dataset (fetched locally from Zenodo)
+corpus/_fetched/x-cobol/
+
+# Python / interpreter artifacts
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS noise
+.DS_Store

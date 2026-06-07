@@ -1,0 +1,7 @@
+about "fnamei predicate"
+
+remember a value called fnamei with " "
+
+permit fnamei is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "fnamei predicate evaluated."

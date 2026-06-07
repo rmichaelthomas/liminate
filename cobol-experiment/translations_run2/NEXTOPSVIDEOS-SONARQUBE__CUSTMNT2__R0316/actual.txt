@@ -1,0 +1,5 @@
+I understand this as: remember a value called zipcodei with " "
+I understand this as: permit zipcodei is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: zipcodei is " ". zipcodei is  .
+I understand this as: show "zipcodei predicate evaluated."
+zipcodei predicate evaluated.

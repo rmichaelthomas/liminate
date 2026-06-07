@@ -1,0 +1,7 @@
+about "file-in predicate"
+
+remember a value called file-in with " "
+
+permit file-in is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "file-in predicate evaluated."

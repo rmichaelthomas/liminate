@@ -1,0 +1,4 @@
+I understand this as: remember a value called sqlcode with __not_equal__
+I understand this as: forbid sqlcode is "ZERO PERFORM ERROR-RTN STOP RUN" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "sqlcode predicate evaluated."
+sqlcode predicate evaluated.

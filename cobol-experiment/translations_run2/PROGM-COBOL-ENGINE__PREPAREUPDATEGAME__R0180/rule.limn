@@ -1,0 +1,8 @@
+about "delta-time calculation"
+
+remember a value called temp-delta with 2
+remember a value called thousand with 2
+
+remember a value called delta-time with temp-delta divided by thousand because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show delta-time

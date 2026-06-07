@@ -1,0 +1,4 @@
+I understand this as: remember a value called ws03-ano with 2
+Error: The word 'because' is a connective in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: "because".
+I understand this as: show ws77-tempocasa
+Error: I can't find 'ws77-tempocasa'. You might need to 'remember' it first.

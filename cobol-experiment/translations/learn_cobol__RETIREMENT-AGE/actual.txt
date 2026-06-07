@@ -1,0 +1,7 @@
+I understand this as: remember a value called gender with "F"
+I understand this as: remember a value called age with 62
+I understand this as: permit gender is "F" and age is above 59 because "female condition name means gender F and COBOL age >= 60 is inclusive"
+Permitted: gender is "F" and age is above 59. age is 62.
+I understand this as: permit gender is "M" and age is above 64 because "male condition name means gender M and COBOL age >= 65 is inclusive"
+I understand this as: show "Retirement thresholds evaluated."
+Retirement thresholds evaluated.

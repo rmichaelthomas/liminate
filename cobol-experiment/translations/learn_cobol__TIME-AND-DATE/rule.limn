@@ -1,0 +1,8 @@
+about "two digit year pivot"
+
+remember a value called date-year with 25
+
+permit date-year is below 96 because "COBOL maps YY < 96 to century 20"
+permit date-year is above 95 because "COBOL else branch maps YY >= 96 to century 19"
+
+show "Century pivot evaluated."

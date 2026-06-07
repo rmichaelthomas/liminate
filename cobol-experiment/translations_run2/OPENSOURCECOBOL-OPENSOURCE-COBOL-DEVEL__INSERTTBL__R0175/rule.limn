@@ -1,0 +1,7 @@
+about "sqlcode predicate"
+
+remember a value called sqlcode with 1
+
+forbid sqlcode is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "sqlcode predicate evaluated."

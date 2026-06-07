@@ -1,0 +1,7 @@
+about "sdl-status predicate"
+
+remember a value called sdl-status with 1
+
+forbid sdl-status is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "sdl-status predicate evaluated."

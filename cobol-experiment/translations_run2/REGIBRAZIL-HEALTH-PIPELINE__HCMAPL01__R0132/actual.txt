@@ -1,0 +1,5 @@
+I understand this as: remember a value called hcmadnamo with 0
+I understand this as: permit hcmadnamo is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: hcmadnamo is 0. hcmadnamo is 0.
+I understand this as: show "hcmadnamo predicate evaluated."
+hcmadnamo predicate evaluated.

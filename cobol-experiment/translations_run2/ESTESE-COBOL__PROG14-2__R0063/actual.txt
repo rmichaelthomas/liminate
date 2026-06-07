@@ -1,0 +1,4 @@
+I understand this as: remember a value called master-hold-is with __not_equal__
+I understand this as: forbid master-hold-is is 999999999 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "master-hold-is predicate evaluated."
+master-hold-is predicate evaluated.

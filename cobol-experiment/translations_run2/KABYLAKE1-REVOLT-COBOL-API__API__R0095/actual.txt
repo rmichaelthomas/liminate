@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-onrun-pgm-is with null
+I understand this as: permit ls-onrun-pgm-is is null because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-onrun-pgm-is is null. ls-onrun-pgm-is is null.
+I understand this as: show "ls-onrun-pgm-is predicate evaluated."
+ls-onrun-pgm-is predicate evaluated.

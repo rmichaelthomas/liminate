@@ -1,0 +1,5 @@
+I understand this as: remember a value called api-pointer with "NULL"
+I understand this as: permit api-pointer is "NULL" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: api-pointer is "NULL". api-pointer is NULL.
+I understand this as: show "api-pointer predicate evaluated."
+api-pointer predicate evaluated.

@@ -1,0 +1,7 @@
+about "ls-onrun-pgm-is predicate"
+
+remember a value called ls-onrun-pgm-is with "null"
+
+permit ls-onrun-pgm-is is "null" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-onrun-pgm-is predicate evaluated."

@@ -1,0 +1,7 @@
+about "prediction calculation"
+
+remember a value called b with 2
+
+remember a value called prediction with b because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show prediction

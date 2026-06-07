@@ -1,0 +1,7 @@
+about "s predicate"
+
+remember a value called s with "EMPTY"
+
+permit s is "EMPTY" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "s predicate evaluated."

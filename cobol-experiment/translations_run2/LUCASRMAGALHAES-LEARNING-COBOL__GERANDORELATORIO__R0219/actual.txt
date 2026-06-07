@@ -1,0 +1,5 @@
+I understand this as: remember a value called clientes-status with 35
+I understand this as: permit clientes-status is 35 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: clientes-status is 35. clientes-status is 35.
+I understand this as: show "clientes-status predicate evaluated."
+clientes-status predicate evaluated.

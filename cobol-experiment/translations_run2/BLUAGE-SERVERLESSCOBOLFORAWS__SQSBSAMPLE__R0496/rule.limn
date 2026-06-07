@@ -1,0 +1,7 @@
+about "sqs-op-result predicate"
+
+remember a value called sqs-op-result with 5
+
+forbid sqs-op-result is 4 because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "sqs-op-result predicate evaluated."

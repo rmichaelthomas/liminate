@@ -1,0 +1,22 @@
+about "electricity bill"
+
+remember a value called present-reading with 250
+remember a value called previous-reading with 100
+remember a value called basic-units with 72
+remember a value called basic-rate with 0.035
+remember a value called cheap-rate with 0.009
+remember a value called standing-charge with 2.50
+remember a value called vat with 0.08
+remember a value called units with present-reading minus previous-reading because "COBOL computes units as present reading minus previous reading"
+remember a value called basic-charge with basic-units multiplied by basic-rate because "first 72 units use the basic rate"
+remember a value called extra-units with units minus basic-units because "units above 72 use the cheap rate"
+remember a value called extra-charge with extra-units multiplied by cheap-rate because "COBOL charges excess units at cheap rate"
+remember a value called charge with basic-charge plus extra-charge because "COBOL tiered branch adds basic and excess charges before VAT"
+remember a value called charge-before-vat with charge plus standing-charge because "COBOL adds the standing charge before VAT"
+remember a value called vat-multiplier with 1 plus vat because "COBOL computes charge-out using 1 plus VAT"
+remember a value called charge-out with charge-before-vat multiplied by vat-multiplier because "COBOL applies VAT to charge plus standing charge"
+
+forbid units is below 0 because "COBOL units NEGATIVE branch is an error"
+permit units is above basic-units because "COBOL tiered branch uses strict units > basic-units"
+
+show charge-out

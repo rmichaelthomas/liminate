@@ -1,0 +1,20 @@
+I understand this as: remember a value called present-reading with 250
+I understand this as: remember a value called previous-reading with 100
+I understand this as: remember a value called basic-units with 72
+I understand this as: remember a value called basic-rate with 0.035
+I understand this as: remember a value called cheap-rate with 0.009
+I understand this as: remember a value called standing-charge with 2.5
+I understand this as: remember a value called vat with 0.08
+I understand this as: remember a value called units from present-reading minus previous-reading because "COBOL computes units as present reading minus previous reading"
+I understand this as: remember a value called basic-charge from basic-units multiplied by basic-rate because "first 72 units use the basic rate"
+I understand this as: remember a value called extra-units from units minus basic-units because "units above 72 use the cheap rate"
+I understand this as: remember a value called extra-charge from extra-units multiplied by cheap-rate because "COBOL charges excess units at cheap rate"
+I understand this as: remember a value called charge from basic-charge plus extra-charge because "COBOL tiered branch adds basic and excess charges before VAT"
+I understand this as: remember a value called charge-before-vat from charge plus standing-charge because "COBOL adds the standing charge before VAT"
+I understand this as: remember a value called vat-multiplier from 1 plus vat because "COBOL computes charge-out using 1 plus VAT"
+I understand this as: remember a value called charge-out from charge-before-vat multiplied by vat-multiplier because "COBOL applies VAT to charge plus standing charge"
+I understand this as: forbid units is below 0 because "COBOL units NEGATIVE branch is an error"
+I understand this as: permit units is above basic-units because "COBOL tiered branch uses strict units > basic-units"
+Permitted: units is above basic-units. units is 150.
+I understand this as: show charge-out
+6.179760000000001

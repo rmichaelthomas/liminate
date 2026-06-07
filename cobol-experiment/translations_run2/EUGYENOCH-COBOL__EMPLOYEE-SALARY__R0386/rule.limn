@@ -1,0 +1,7 @@
+about "cont predicate"
+
+remember a value called cont with 0
+
+permit cont is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "cont predicate evaluated."

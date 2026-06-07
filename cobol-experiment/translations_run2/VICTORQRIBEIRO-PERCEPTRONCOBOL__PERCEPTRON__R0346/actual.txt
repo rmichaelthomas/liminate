@@ -1,0 +1,6 @@
+I understand this as: remember a value called feat4 with 2
+I understand this as: remember a value called w4 with 2
+I understand this as: remember a value called prediction from prediction plus w4 multiplied by feat4 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is prediction.
+I understand this as: show prediction
+Error: I can't find 'prediction'. You might need to 'remember' it first.

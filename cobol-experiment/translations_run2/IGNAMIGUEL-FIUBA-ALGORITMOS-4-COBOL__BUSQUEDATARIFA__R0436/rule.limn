@@ -1,0 +1,7 @@
+about "reg-release-importe calculation"
+
+remember a value called reg-release-tim-horas with 2
+
+remember a value called reg-release-importe with reg-release-tim-horas because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show reg-release-importe

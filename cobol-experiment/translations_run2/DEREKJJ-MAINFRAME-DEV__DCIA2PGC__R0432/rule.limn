@@ -1,0 +1,7 @@
+about "stati predicate"
+
+remember a value called stati with "__not_equal__"
+
+forbid stati is "A" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "stati predicate evaluated."

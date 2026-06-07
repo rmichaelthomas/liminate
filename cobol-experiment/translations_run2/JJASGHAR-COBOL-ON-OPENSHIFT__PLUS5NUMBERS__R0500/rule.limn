@@ -1,0 +1,7 @@
+about "result calculation"
+
+remember a value called original-number with 2
+
+remember a value called result with original-number plus 5 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show result

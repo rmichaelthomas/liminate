@@ -1,0 +1,7 @@
+about "input-read-flag predicate"
+
+remember a value called input-read-flag with 1
+
+permit input-read-flag is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "input-read-flag predicate evaluated."

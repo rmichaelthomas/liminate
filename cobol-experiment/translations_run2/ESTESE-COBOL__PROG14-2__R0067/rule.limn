@@ -1,0 +1,7 @@
+about "curr-sem-gp calculation"
+
+remember a value called credits-tf with 2
+
+remember a value called curr-sem-gp with credits-tf multiplied by 4 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show curr-sem-gp

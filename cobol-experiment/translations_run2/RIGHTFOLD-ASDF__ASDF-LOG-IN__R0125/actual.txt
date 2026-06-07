@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-email-address-is with asdf@example.com
+I understand this as: permit ws-email-address-is is asdf@example.com because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-email-address-is is asdf@example.com. ws-email-address-is is asdf@example.com.
+I understand this as: show "ws-email-address-is predicate evaluated."
+ws-email-address-is predicate evaluated.

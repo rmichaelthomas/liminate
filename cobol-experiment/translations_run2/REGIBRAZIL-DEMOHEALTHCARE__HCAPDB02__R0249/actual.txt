@@ -1,0 +1,4 @@
+I understand this as: remember a value called sqlcode with 1
+I understand this as: forbid sqlcode is 0 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "sqlcode predicate evaluated."
+sqlcode predicate evaluated.

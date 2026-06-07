@@ -1,0 +1,5 @@
+I understand this as: remember a value called hcp1uidi with " "
+I understand this as: permit hcp1uidi is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: hcp1uidi is " ". hcp1uidi is  .
+I understand this as: show "hcp1uidi predicate evaluated."
+hcp1uidi predicate evaluated.

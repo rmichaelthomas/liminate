@@ -1,0 +1,5 @@
+I understand this as: remember a value called v with 1
+I understand this as: permit v is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: v is 1. v is 1.
+I understand this as: show "v predicate evaluated."
+v predicate evaluated.

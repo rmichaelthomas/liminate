@@ -1,0 +1,7 @@
+about "w-y-in-world-real predicate"
+
+remember a value called w-y-in-world-real with "__not_equal__"
+
+forbid w-y-in-world-real is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "w-y-in-world-real predicate evaluated."

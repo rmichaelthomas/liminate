@@ -1,0 +1,11 @@
+I understand this as: remember a value called principal-amount with 250000
+I understand this as: remember a value called maximum-principal with 100000000.01
+I understand this as: remember a value called quoted-interest-rate with 5.75
+I understand this as: remember a value called year-month-indicator with "Y"
+I understand this as: remember a value called number-of-years with 30
+I understand this as: remember a value called number-of-months from number-of-years multiplied by 12 because "COBOL converts years to months when the year-month indicator is Y"
+I understand this as: require principal-amount is above 0 because "COBOL error 1 is principal amount not greater than zero"
+I understand this as: forbid principal-amount is above maximum-principal because "COBOL error 2 is principal exceeding static maximum"
+I understand this as: require quoted-interest-rate is above 0 because "COBOL error 3 is quoted interest rate <= 0"
+I understand this as: show number-of-months
+360

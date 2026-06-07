@@ -1,0 +1,6 @@
+I understand this as: remember a value called date-year with 25
+I understand this as: permit date-year is below 96 because "COBOL maps YY < 96 to century 20"
+Permitted: date-year is below 96. date-year is 25.
+I understand this as: permit date-year is above 95 because "COBOL else branch maps YY >= 96 to century 19"
+I understand this as: show "Century pivot evaluated."
+Century pivot evaluated.

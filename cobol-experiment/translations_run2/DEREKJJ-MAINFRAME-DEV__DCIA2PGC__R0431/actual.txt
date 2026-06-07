@@ -1,0 +1,5 @@
+I understand this as: remember a value called addr2l with 0
+I understand this as: permit addr2l is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: addr2l is 0. addr2l is 0.
+I understand this as: show "addr2l predicate evaluated."
+addr2l predicate evaluated.

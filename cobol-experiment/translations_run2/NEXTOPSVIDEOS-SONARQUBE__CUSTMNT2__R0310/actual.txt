@@ -1,0 +1,4 @@
+I understand this as: remember a value called actioni with __not_equal__
+I understand this as: forbid actioni is 1 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "actioni predicate evaluated."
+actioni predicate evaluated.

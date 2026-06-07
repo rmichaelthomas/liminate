@@ -1,0 +1,5 @@
+I understand this as: remember a value called n-2 with 0
+I understand this as: permit n-2 is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: n-2 is 0. n-2 is 0.
+I understand this as: show "n-2 predicate evaluated."
+n-2 predicate evaluated.

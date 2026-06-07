@@ -1,0 +1,7 @@
+about "pursuers-in-is predicate"
+
+remember a value called pursuers-in-is with "zero"
+
+permit pursuers-in-is is "zero" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "pursuers-in-is predicate evaluated."

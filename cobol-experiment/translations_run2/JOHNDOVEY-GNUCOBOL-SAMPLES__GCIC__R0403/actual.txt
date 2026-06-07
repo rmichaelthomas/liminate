@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-i-sub with 0
+I understand this as: permit ws-i-sub is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-i-sub is 0. ws-i-sub is 0.
+I understand this as: show "ws-i-sub predicate evaluated."
+ws-i-sub predicate evaluated.

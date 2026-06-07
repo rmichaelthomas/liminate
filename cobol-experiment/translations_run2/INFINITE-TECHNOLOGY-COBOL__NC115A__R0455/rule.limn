@@ -1,0 +1,7 @@
+about "correct-x predicate"
+
+remember a value called correct-x with "__not_equal__"
+
+forbid correct-x is "SPACE GO TO FAIL-ROUTINE-WRITE.NC1154.2" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "correct-x predicate evaluated."

@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-symbol with " "
+I understand this as: permit ls-symbol is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-symbol is " ". ls-symbol is  .
+I understand this as: show "ls-symbol predicate evaluated."
+ls-symbol predicate evaluated.

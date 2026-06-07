@@ -1,0 +1,7 @@
+about "ws-parsed-is predicate"
+
+remember a value called ws-parsed-is with "__not_equal__"
+
+forbid ws-parsed-is is "ws-uuid" because "COBOL NOT EQUAL branch is represented as a prohibition"
+
+show "ws-parsed-is predicate evaluated."

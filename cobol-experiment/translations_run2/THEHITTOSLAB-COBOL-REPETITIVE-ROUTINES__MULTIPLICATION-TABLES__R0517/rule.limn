@@ -1,0 +1,8 @@
+about "resultado calculation"
+
+remember a value called multiplicador with 2
+remember a value called numero with 2
+
+remember a value called resultado with numero multiplied by multiplicador because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show resultado

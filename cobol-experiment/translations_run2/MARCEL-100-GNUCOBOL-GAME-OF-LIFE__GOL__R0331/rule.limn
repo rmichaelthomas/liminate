@@ -1,0 +1,7 @@
+about "neighbours predicate"
+
+remember a value called neighbours with 3
+
+permit neighbours is 3 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "neighbours predicate evaluated."

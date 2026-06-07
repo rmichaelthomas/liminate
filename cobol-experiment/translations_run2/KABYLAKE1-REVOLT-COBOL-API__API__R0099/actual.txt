@@ -1,0 +1,5 @@
+I understand this as: remember a value called ls-curl-is with null
+I understand this as: permit ls-curl-is is null because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ls-curl-is is null. ls-curl-is is null.
+I understand this as: show "ls-curl-is predicate evaluated."
+ls-curl-is predicate evaluated.

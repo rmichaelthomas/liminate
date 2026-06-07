@@ -1,0 +1,6 @@
+I understand this as: remember a value called delta-time with 2
+I understand this as: remember a value called speed-y with 2
+I understand this as: remember a value called player-pos-y from player-pos-y plus speed-y multiplied by delta-time because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+Error: I can only do arithmetic with numbers, but the left side of 'plus' is player-pos-y.
+I understand this as: show player-pos-y
+Error: I can't find 'player-pos-y'. You might need to 'remember' it first.

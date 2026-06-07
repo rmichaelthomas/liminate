@@ -1,0 +1,6 @@
+about "ws-final calculation"
+
+
+remember a value called ws-final with 0 because "COBOL COMPUTE expression maps to base arithmetic without target rounding in the excerpt"
+
+show ws-final

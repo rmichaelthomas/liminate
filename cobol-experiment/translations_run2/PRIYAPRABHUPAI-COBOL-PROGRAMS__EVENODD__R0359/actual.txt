@@ -1,0 +1,3 @@
+Error: I didn't expect '00034017' here.
+I understand this as: show ws-esum
+Error: I can't find 'ws-esum'. You might need to 'remember' it first.

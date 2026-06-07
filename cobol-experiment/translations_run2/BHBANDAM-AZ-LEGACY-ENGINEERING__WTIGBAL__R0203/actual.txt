@@ -1,0 +1,5 @@
+I understand this as: remember a value called ret-code with 0
+I understand this as: permit ret-code is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ret-code is 0. ret-code is 0.
+I understand this as: show "ret-code predicate evaluated."
+ret-code predicate evaluated.

@@ -1,0 +1,7 @@
+about "eibcalen predicate"
+
+remember a value called eibcalen with 3
+
+permit eibcalen is 3 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "eibcalen predicate evaluated."

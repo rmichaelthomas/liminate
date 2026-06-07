@@ -1,0 +1,5 @@
+I understand this as: remember a value called acctnoi with "XXXXX"
+I understand this as: permit acctnoi is "XXXXX" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: acctnoi is "XXXXX". acctnoi is XXXXX.
+I understand this as: show "acctnoi predicate evaluated."
+acctnoi predicate evaluated.

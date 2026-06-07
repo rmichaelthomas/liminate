@@ -1,0 +1,4 @@
+I understand this as: remember a value called wrk-opcao with __not_equal__
+I understand this as: forbid wrk-opcao is "X" because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "wrk-opcao predicate evaluated."
+wrk-opcao predicate evaluated.

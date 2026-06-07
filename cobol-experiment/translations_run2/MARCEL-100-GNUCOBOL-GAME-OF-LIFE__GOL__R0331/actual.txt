@@ -1,0 +1,5 @@
+I understand this as: remember a value called neighbours with 3
+I understand this as: permit neighbours is 3 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: neighbours is 3. neighbours is 3.
+I understand this as: show "neighbours predicate evaluated."
+neighbours predicate evaluated.

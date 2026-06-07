@@ -1,0 +1,4 @@
+I understand this as: remember a value called covidid with 2
+I understand this as: forbid covidid is 1 because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "covidid predicate evaluated."
+covidid predicate evaluated.

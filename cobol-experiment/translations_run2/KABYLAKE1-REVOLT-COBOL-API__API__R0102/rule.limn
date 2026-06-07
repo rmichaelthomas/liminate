@@ -1,0 +1,7 @@
+about "ls-ws-ctx-is predicate"
+
+remember a value called ls-ws-ctx-is with "null"
+
+permit ls-ws-ctx-is is "null" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ls-ws-ctx-is predicate evaluated."

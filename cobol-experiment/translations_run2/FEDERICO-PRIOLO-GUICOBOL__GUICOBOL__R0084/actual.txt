@@ -1,0 +1,4 @@
+Error: I see an opening quote mark but no closing one on this line. Each quoted phrase needs both opening and closing marks.
+Error: I see an opening quote mark but no closing one on this line. Each quoted phrase needs both opening and closing marks.
+I understand this as: show "fine-file predicate evaluated."
+fine-file predicate evaluated.

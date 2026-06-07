@@ -1,0 +1,5 @@
+I understand this as: remember a value called s with "X-KING"
+I understand this as: permit s is "X-KING" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: s is "X-KING". s is X-KING.
+I understand this as: show "s predicate evaluated."
+s predicate evaluated.

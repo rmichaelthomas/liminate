@@ -1,0 +1,7 @@
+about "ins-fname predicate"
+
+remember a value called ins-fname with " "
+
+permit ins-fname is " " because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ins-fname predicate evaluated."

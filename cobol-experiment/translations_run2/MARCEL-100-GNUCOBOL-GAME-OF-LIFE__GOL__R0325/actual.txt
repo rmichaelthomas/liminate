@@ -1,0 +1,4 @@
+I understand this as: remember a value called w-y-in-world-real with __not_equal__
+I understand this as: forbid w-y-in-world-real is " " because "COBOL NOT EQUAL branch is represented as a prohibition"
+I understand this as: show "w-y-in-world-real predicate evaluated."
+w-y-in-world-real predicate evaluated.

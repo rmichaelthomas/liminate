@@ -1,0 +1,7 @@
+about "c predicate"
+
+remember a value called c with "robot"
+
+permit c is "robot" because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "c predicate evaluated."

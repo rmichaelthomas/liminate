@@ -1,0 +1,5 @@
+I understand this as: remember a value called ws-valid with "S"
+I understand this as: permit ws-valid is "S" because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ws-valid is "S". ws-valid is S.
+I understand this as: show "ws-valid predicate evaluated."
+ws-valid predicate evaluated.

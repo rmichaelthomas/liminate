@@ -1,0 +1,8 @@
+about "age check"
+
+remember a value called age with 22
+
+permit age is above 21 because "COBOL branch says age > 21"
+permit age is below 22 because "else branch is age <= 21 for integer ages"
+
+show "Age threshold evaluated."

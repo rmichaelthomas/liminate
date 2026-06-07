@@ -1,0 +1,7 @@
+about "ws-temp-num predicate"
+
+remember a value called ws-temp-num with 0
+
+permit ws-temp-num is 0 because "COBOL IF predicate is recorded as an eligibility rule"
+
+show "ws-temp-num predicate evaluated."

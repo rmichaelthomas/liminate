@@ -1,0 +1,5 @@
+I understand this as: remember a value called ins-fname with " "
+I understand this as: permit ins-fname is " " because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: ins-fname is " ". ins-fname is  .
+I understand this as: show "ins-fname predicate evaluated."
+ins-fname predicate evaluated.

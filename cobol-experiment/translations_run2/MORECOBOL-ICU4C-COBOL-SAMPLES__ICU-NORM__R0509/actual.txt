@@ -1,0 +1,5 @@
+I understand this as: remember a value called debug-display-sw with 1
+I understand this as: permit debug-display-sw is 1 because "COBOL IF predicate is recorded as an eligibility rule"
+Permitted: debug-display-sw is 1. debug-display-sw is 1.
+I understand this as: show "debug-display-sw predicate evaluated."
+debug-display-sw predicate evaluated.
