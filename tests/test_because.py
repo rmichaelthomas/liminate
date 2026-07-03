@@ -83,7 +83,9 @@ def test_reserved_category_because_is_connective():
 
 def test_all_reserved_count_is_58():
     # Temporal-Boundary Era added `starting`/`until` connectives (56 → 58).
-    assert len(ALL_RESERVED) == 58
+    # v25 added `highest`/`lowest` operators (58 → 60 counted) plus the
+    # tombstoned `combine` (+1 uncounted) → 61 raw ALL_RESERVED entries.
+    assert len(ALL_RESERVED) == 61
 
 
 # ---------------------------------------------------------------------------

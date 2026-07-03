@@ -71,7 +71,6 @@ from .parser import (
     BareWord,
     ChooseBranch,
     ChooseNode,
-    CombineNode,
     CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
@@ -80,6 +79,7 @@ from .parser import (
     EachNode,
     EachPronoun,
     ExpectNode,
+    ExtremaNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -101,6 +101,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    SumNode,
     TransformNode,
     WeakensNode,
     WhenNode,
@@ -240,6 +241,13 @@ def _walk_dependencies(
         if node.record_name not in seen:
             seen.add(node.record_name)
             ordered.append(node.record_name)
+    elif isinstance(node, ExtremaNode):
+        # v25 — a `when` condition watching `highest`/`lowest` depends on
+        # the underlying list, same rule as FieldAccessNode depending on
+        # its record. Re-fires when the list is mutated.
+        if node.target.name not in seen:
+            seen.add(node.target.name)
+            ordered.append(node.target.name)
     # Literals (NumberLiteral, BareWord, QuotedString, EachPronoun)
     # contribute no dependencies — they evaluate to themselves.
 
@@ -642,8 +650,8 @@ def _exec_op(
         return _exec_count(node, symtab)
     if isinstance(node, GatherNode):
         return _exec_gather(node, symtab)
-    if isinstance(node, CombineNode):
-        return _exec_combine(node, symtab)
+    if isinstance(node, SumNode):
+        return _exec_sum(node, symtab)
     if isinstance(node, EachNode):
         return _exec_each(node, symtab)
     if isinstance(node, ChooseNode):
@@ -1333,6 +1341,9 @@ def _exec_show(
         # v2c §88 — literal display: emit the quoted content verbatim,
         # no symbol-table lookup.
         return [node.target.content]
+    if isinstance(node.target, ExtremaNode):
+        # v25 — `show highest of nums` / `show highest total of orders`.
+        return [_format_scalar(_eval_extrema(node.target, symtab))]
     name = node.target.name
     # v2a §68 (D4): `show <field> of <record>` — extract the named field
     # from the named record. Semantic checks (record exists, is a record,
@@ -1360,7 +1371,7 @@ def _exec_show(
 
 
 # ---------------------------------------------------------------------------
-# filter / count / gather / combine
+# filter / count / gather / sum
 # ---------------------------------------------------------------------------
 
 
@@ -1870,10 +1881,12 @@ def decay_tick(symtab: dict[str, SymbolEntry]) -> list[str]:
     return reached_zero
 
 
-def _exec_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+def _exec_sum(node: SumNode, symtab: dict[str, SymbolEntry]) -> list[str]:
     entry = symtab[node.target.name]
     total = sum(entry.value)
-    # Preserve integer-ness if all inputs were integers.
+    # Preserve integer-ness if all inputs were integers. Empty list sums
+    # to 0 — the additive identity (v25: deliberately asymmetric with
+    # highest/lowest, whose empty-list case is a runtime error instead).
     return [_format_scalar(total)]
 
 
@@ -2051,10 +2064,12 @@ def _evaluate_expression(
         # v2b §77: extract <field> of <record> as a value.
         record = symtab[expr.record_name].value
         return copy.deepcopy(record[expr.field])
+    if isinstance(expr, ExtremaNode):
+        return _eval_extrema(expr, symtab)
     if isinstance(expr, ArithmeticNode):
         return _eval_arithmetic(expr, symtab, current_item)
     # Sub-operations that yield a value.
-    if isinstance(expr, CombineNode):
+    if isinstance(expr, SumNode):
         entry = symtab[expr.target.name]
         return sum(entry.value)
     if isinstance(expr, CountNode):
@@ -2132,7 +2147,7 @@ def _value_of_op(op: ASTNode, symtab: dict[str, SymbolEntry]) -> Any:
             for item in entry.value
             if _eval_condition(op.condition, item, symtab)
         ]
-    if isinstance(op, CombineNode):
+    if isinstance(op, SumNode):
         return sum(symtab[op.target.name].value)
     if isinstance(op, CountNode):
         return len(symtab[op.target.name].value)
@@ -2194,6 +2209,37 @@ def _within_tolerance(field_val: Any, tolerance: Any, target: Any) -> bool:
     return abs(field_val - target) <= tolerance
 
 
+def _eval_extrema(node: ExtremaNode, symtab: dict[str, SymbolEntry]) -> int | float:
+    """v25 — evaluate `highest`/`lowest`. Numeric-only; errors on an
+    empty list (deliberately asymmetric with `sum []` == 0 — an empty
+    sum is 0, an empty extremum is undefined). Lists never hold
+    DecayingValue elements (only scalar symbols do), so no decay
+    resolution is needed here."""
+    the_list = symtab[node.target.name].value
+    if not the_list:
+        raise _RuntimeError(
+            f"There's no {node.word} of '{node.target.name}' — the list is empty."
+        )
+    if node.field is not None:
+        values = []
+        for item in the_list:
+            v = item[node.field]
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise _RuntimeError(
+                    f"'{node.word}' needs numbers. Field '{node.field}' in "
+                    f"'{node.target.name}' contains {_format_scalar(v)}."
+                )
+            values.append(v)
+    else:
+        values = list(the_list)
+        for v in values:
+            if isinstance(v, bool) or not isinstance(v, (int, float)):
+                raise _RuntimeError(
+                    f"'{node.word}' needs numbers. '{node.target.name}' contains text."
+                )
+    return max(values) if node.word == "highest" else min(values)
+
+
 def _eval_field(field_node: ASTNode, current_item: Any, symtab) -> Any:
     if isinstance(field_node, EachPronoun):
         return current_item
@@ -2214,6 +2260,10 @@ def _eval_field(field_node: ASTNode, current_item: Any, symtab) -> Any:
         # the analyzer has already verified record existence + field.
         record = symtab[field_node.record_name].value
         return record[field_node.field]
+    if isinstance(field_node, ExtremaNode):
+        # v25 — `highest`/`lowest` on the left side of a condition, e.g.
+        # `require highest total of line-items is below single-item-cap`.
+        return _eval_extrema(field_node, symtab)
     raise _RuntimeError(f"Unexpected field reference {type(field_node).__name__}.")
 
 
@@ -2237,6 +2287,10 @@ def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
         # field's current value from the named record at compare time.
         record = symtab[value_node.record_name].value
         return record[value_node.field]
+    if isinstance(value_node, ExtremaNode):
+        # v25 — `where ... is <op> highest of <list>` on the right side
+        # of a comparison.
+        return _eval_extrema(value_node, symtab)
     if isinstance(value_node, ArithmeticNode):
         # Infrastructure Era — arithmetic on the right-hand side of a
         # comparison evaluates to a number at compare time.

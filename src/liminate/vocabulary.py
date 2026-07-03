@@ -78,6 +78,14 @@ Sources:
   (see result.py) is a result-stream status, not a reserved word: pack
   verb verification failures (cite/verify/measure) surface there with
   structured failure metadata instead of mutating only the symbol table.
+- v0.15.0 (checkpoint v25 vocabulary wave) — `combine` renamed to `sum`
+  (verb count holds at 21; `combine` is tombstoned — reserved, inactive,
+  rejected with a rename-specific error, excluded from the public count).
+  `highest`/`lowest` added to OPERATORS (+2) — value-position list-extrema
+  selectors with two grammar modes (flat-list and record-field), numeric-
+  only, value-returning, erroring on an empty list (VW-Q2/Q3/Q4). Total
+  60 reserved words — 21 verbs, 22 connectives, 10 operators, 3 articles,
+  3 multi-word reserved, 1 declaration; tombstones uncounted.
 """
 
 from dataclasses import dataclass
@@ -114,7 +122,7 @@ class Token:
 # `finish` — exits listener mode immediately and totally.
 VERBS: frozenset[str] = frozenset({
     "remember", "show", "filter", "keep",
-    "count", "gather", "combine", "each",
+    "count", "gather", "sum", "each",
     "choose", "finish", "add", "remove",
     # Metabolic Era batch 1: autonomous linear decay verb. Attaches
     # decay metadata to an existing numeric variable; the value falls
@@ -208,6 +216,12 @@ OPERATORS: frozenset[str] = frozenset({
     # `from` connective (already reserved) gains a new grammatical
     # position for agent attribution on `inherited` statements (MS-Q4).
     "inherited",
+    # v25 VW-Q2: `highest`/`lowest` are value-position list-extrema
+    # selectors (two grammar modes: flat-list and record-field). Live in
+    # OPERATORS, same precedent as `reverse`, so the name-position check
+    # rejects them as variable names while value parsing dispatches on
+    # them explicitly.
+    "highest", "lowest",
 })
 
 # v1 articles. `an` added in v1c §47 (previously the table listed `the`, `a`).
@@ -244,8 +258,17 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # table. Single, first-line-only (MS-Q1).
 DECLARATIONS: frozenset[str] = frozenset({"about"})
 
-# All 58 reserved words. 21 verbs, 22 connectives, 8 operators, 3
+# v25 — tombstoned renamed words. Reserved (in ALL_RESERVED) so old
+# programs fail with a self-explaining error instead of a generic one,
+# and so the name is not reusable as a variable. NOT counted in the
+# public vocabulary total (same accounting as pack words). Freeing a
+# tombstone requires future evidence (checkpoint v25, VW-Q6).
+TOMBSTONES: dict[str, str] = {"combine": "sum"}
+
+# All 60 reserved words. 21 verbs, 22 connectives, 10 operators, 3
 # articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
+# Tombstones (TOMBSTONES) are reserved but uncounted — same accounting
+# as pack words (see reserved_category).
 # v3a §124 was 34
 # (+1 for `finish`). Liminate `add` verb addendum v1 §9: +1 for `add`
 # (appends an item to a list). `includes` connective + `remove` verb
@@ -278,9 +301,12 @@ DECLARATIONS: frozenset[str] = frozenset({"about"})
 # informational). Total 56.
 # Temporal-Boundary Era: +2 — `starting` connective (effective date)
 # and `until` connective (sunset clause). Total 58.
+# v25 vocabulary wave: `combine` renamed to `sum` (net 0 — verb count
+# stays 21; `combine` moves to TOMBSTONES, uncounted). `highest`/`lowest`
+# added to OPERATORS (+2 — list-extrema value selectors, VW-Q2). Total 60.
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
-    | MULTI_WORD_RESERVED | DECLARATIONS
+    | MULTI_WORD_RESERVED | DECLARATIONS | frozenset(TOMBSTONES)
 )
 
 
@@ -294,9 +320,15 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 58 reserved words — 21 verbs, 0 V2-reserved;
+    surface (currently 60 reserved words — 21 verbs, 0 V2-reserved;
     see module docstring).
+
+    v25: tombstoned words (TOMBSTONES) report as "renamed word" — checked
+    before VERBS/etc. since a tombstone is never also live in another
+    table.
     """
+    if word in TOMBSTONES:
+        return "renamed word"
     if word in VERBS:
         return "verb"
     if word in CONNECTIVES:
@@ -512,7 +544,7 @@ VERB_SIGNATURES: dict[str, list[str]] = {
     "keep":     ["target", "condition"],
     "count":    ["target"],
     "gather":   ["name", "from", "to"],
-    "combine":  ["target"],
+    "sum":      ["target"],
     "each":     ["collection", "action"],
     # v2d §99: condition (after `if`), consequence (after `:`), and
     # alternative (after `otherwise`, optional).

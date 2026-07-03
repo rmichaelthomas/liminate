@@ -46,7 +46,9 @@ def _run(tmp_path, src):
 def test_within_still_connective_and_count_unchanged():
     assert reserved_category("within") == "connective"
     assert "within" in ALL_RESERVED
-    assert len(ALL_RESERVED) == 58
+    # v25 added `highest`/`lowest` operators (58 → 60 counted) plus the
+    # tombstoned `combine` (+1 uncounted) → 61 raw ALL_RESERVED entries.
+    assert len(ALL_RESERVED) == 61
 
 
 # ---------------------------------------------------------------------------
