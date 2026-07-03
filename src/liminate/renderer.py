@@ -124,8 +124,11 @@ def render(node: ASTNode) -> str:
     if rationale is not None:
         rendered = f'{rendered} because "{rationale}"'
 
+    # WhenNode attribution renders on the header line inside _render_when
+    # (multi-line output would otherwise land this suffix after the
+    # action block, where it's syntactically dead).
     inherited_from = getattr(node, "inherited_from", None)
-    if inherited_from is not None:
+    if inherited_from is not None and not isinstance(node, WhenNode):
         rendered = f"{rendered} from {inherited_from}"
 
     return rendered
@@ -510,6 +513,9 @@ def _render_when(node: WhenNode, render_fn) -> str:
     header = f"when {render_fn(node.condition)}"
     if node.unless is not None:
         header += f" unless {render_fn(node.unless)}"
+    inherited_from = getattr(node, "inherited_from", None)
+    if inherited_from is not None:
+        header += f" from {inherited_from}"
     if isinstance(node.action, SequenceNode):
         action_lines = [render_fn(op) for op in node.action.operations]
     else:

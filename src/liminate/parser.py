@@ -1183,6 +1183,7 @@ def parse_when_block(
 
     # Parse the header — condition + optional unless guard + optional `:`.
     stream = TokenStream(header_tokens[1:])  # skip the `when` connective
+    inherited_from: str | None = None
     try:
         if stream.at_end():
             raise _ParseError(
@@ -1204,6 +1205,27 @@ def parse_when_block(
                     "I expected a guard condition after 'unless'."
                 )
             unless_guard = _parse_or_condition(stream)
+
+        # Meta-Structural Era — `inherited when ... from <agent>` agent
+        # attribution (Invariant Checkpoint v2 §43). Legal only with the
+        # `inherited` prefix. By this point the condition and optional
+        # guard are fully parsed, and no production in the when-condition
+        # grammar consumes `from`, so a `from` here is unambiguously
+        # attribution.
+        if is_inherited:
+            inherited_from = _try_consume_inherited_from(stream)
+        else:
+            peek = stream.peek()
+            if (
+                peek
+                and peek.type is TokenType.CONNECTIVE
+                and peek.value == "from"
+            ):
+                raise _ParseError(
+                    "'from' attribution on a 'when' header needs the "
+                    "'inherited' prefix — try: inherited when <condition> "
+                    "from <agent-name>."
+                )
 
         # v3a §110: the colon after the `when` line is optional.
         peek = stream.peek()
@@ -1243,12 +1265,10 @@ def parse_when_block(
     when_node = WhenNode(condition=condition, unless=unless_guard, action=action)
     if is_inherited:
         when_node.inherited = True
-        # Agent attribution (`from <agent>`) on `inherited when` blocks is
-        # deferred: a trailing `from` on a `when` header belongs to
-        # condition slot resolution (e.g. `cite "x" from source`), not
-        # attribution. The `inherited` flag alone is sufficient for
-        # Invariant; `inherited_from` on `when` awaits a designed grammar.
-        when_node.inherited_from = None
+        # Invariant Checkpoint v2 §43 — statement-final agent attribution
+        # extended to `inherited when` headers. Flows into HANDLER_FIRE
+        # trigger metadata via listener._wrap_with_trigger.
+        when_node.inherited_from = inherited_from
 
     # v3a §123: condition or guard mixed and/or — amber. Action sub-
     # statements were already amber-checked individually by `parse()`,
