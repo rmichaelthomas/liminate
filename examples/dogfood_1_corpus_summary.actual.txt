@@ -28,10 +28,10 @@ I understand this as: each the domains show words
 4535
 1352
 I understand this as: remember a list called domain-words with 381476 and 30230 and 19438 and 14672 and 5880 and 5057 and 4535 and 1352
-I understand this as: combine the domain-words
+I understand this as: sum the domain-words
 462640
 I understand this as: remember a list called domain-docs with 91 and 6 and 4 and 2 and 1 and 1 and 1 and 1
-I understand this as: combine the domain-docs
+I understand this as: sum the domain-docs
 107
 I understand this as: remember a class called checkpoint with docs as 60 and words as 275542
 I understand this as: remember a class called addendum with docs as 24 and words as 86152
@@ -60,7 +60,7 @@ I understand this as: each the classes show words
 5267
 2802
 I understand this as: remember a list called class-words with 275542 and 86152 and 24145 and 24116 and 13119 and 10399 and 9728 and 5776 and 5594 and 5267 and 2802
-I understand this as: combine the class-words
+I understand this as: sum the class-words
 462640
 I understand this as: remember how to find-major-domains: filter the domains where docs is above 3
 I understand this as: find-major-domains

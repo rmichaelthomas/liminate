@@ -4,11 +4,11 @@ PREDICTED DATA OUTPUTS (excluding canonical prose prefixes):
 count the domains           -> 8
 show domains                -> 8 record lines (one per record): docs: 91, words: 381476 / ...
 each the domains show words -> 381476 / 30230 / 19438 / 14672 / 5880 / 5057 / 4535 / 1352
-combine the domain-words    -> 462640
-combine the domain-docs     -> 107
+sum the domain-words    -> 462640
+sum the domain-docs     -> 107
 count the classes           -> 11
 each the classes show words -> 275542 / 86152 / 24145 / 24116 / 13119 / 10399 / 9728 / 5776 / 5594 / 5267 / 2802
-combine the class-words     -> 462640
+sum the class-words     -> 462640
 
 find-major-domains          -> destructive: domains now = [mobius (91), liminate (6), instrument (4)]
 count the domains           -> 3
@@ -18,4 +18,4 @@ filter the classes where words is above 20000  -> destructive: classes now = [ch
 count the classes                              -> 4
 each the classes show docs                     -> 60 / 24 / 4 / 4
 
-CROSS-CHECK: combine domain-words == combine class-words == 462640. Both should equal corpus total.
+CROSS-CHECK: sum domain-words == sum class-words == 462640. Both should equal corpus total.

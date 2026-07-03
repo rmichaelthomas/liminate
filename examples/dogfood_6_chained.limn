@@ -1,7 +1,7 @@
 remember a list called nums with 10 and 20 and 30 and 40 and 50
 
-remember the total called sum from combine the nums
-show sum
+remember the total called nums-sum from sum the nums
+show nums-sum
 
 remember the howmany called n from count the nums
 show n
@@ -10,8 +10,8 @@ remember the copy called nums-copy from nums
 show nums-copy
 
 gather the numbers from 1 to 5
-combine the numbers
-remember the rangesum called rangesum from combine the numbers
+sum the numbers
+remember the rangesum called rangesum from sum the numbers
 show rangesum
 
 filter the nums where each is above 25
