@@ -1,7 +1,7 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 58 reserved words plus user-provided names and literal
+prose language: 60 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
@@ -14,8 +14,10 @@ the `add`/`remove`/`weakens`/`require`/`assign`/`expect` verb
 additions, the Infrastructure Era (`by`/`plus`/`minus`/`multiplied
 by`/`divided by` arithmetic, `sort`/`reverse`, `compare`, `transform`),
 the Deontic Era (`forbid`/`permit` — completing the
-require/forbid/permit triangle), and the Temporal-Boundary Era
-(`starting`/`until` — effective dates and sunset clauses).
+require/forbid/permit triangle), the Temporal-Boundary Era
+(`starting`/`until` — effective dates and sunset clauses), and the
+v0.15.0 vocabulary wave (`combine` renamed to `sum`; `highest`/`lowest`
+list-extrema selectors).
 See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
 what's intentionally not built.
 
@@ -49,7 +51,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 58 reserved words.
+- Cannot be one of the 60 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -104,7 +106,7 @@ by `and`.
 **Capturing a verb-phrase result:**
 
 ```
-remember the result called total from combine the numbers
+remember the result called total from sum the numbers
 ```
 
 When you use `from <verb-phrase>` instead of `with <value>`, the
@@ -262,23 +264,29 @@ The name after the article (`numbers`) becomes the new symbol. v1
 ranges must be ascending (`from` ≤ `to`) and contain at most 10,000
 items.
 
-### `combine`
+### `sum`
 
-Sums the numbers in a list. The result is shown.
-
-```
-combine the numbers
-```
-
-`combine` does **not** modify the source list. To capture the sum, use
-`remember ... from combine ...`:
+Sums the numbers in a list. The result is shown. An empty list sums to
+`0` — the additive identity.
 
 ```
-remember the result called total from combine the numbers
+sum the numbers
 ```
 
-`combine` is numeric-only in v1: it cannot concatenate strings or
+`sum` does **not** modify the source list. To capture the total, use
+`remember ... from sum ...`:
+
+```
+remember the result called total from sum the numbers
+```
+
+`sum` is numeric-only in v1: it cannot concatenate strings or
 merge records.
+
+> **Renamed in v0.15.0.** `sum` was previously called `combine`. The
+> old word is tombstoned — `combine the numbers` now fails with
+> `The word 'combine' was renamed — use 'sum'.` and `combine` can no
+> longer be used as a name.
 
 ### `each`
 
@@ -657,6 +665,66 @@ Three checks fire at parse/validation time:
 The single-level rule still holds: `a of b of c` is a parse error. v1
 records are flat, so nested field access has no shape to land on yet.
 
+## Extrema (`highest` / `lowest`)
+
+`highest` and `lowest` select the maximum or minimum value from a
+list. Two grammar forms:
+
+```
+highest of nums
+highest total of orders
+```
+
+**Form A — flat lists.** `highest of <list>` / `lowest of <list>`
+returns the largest/smallest number in a list of numbers directly.
+
+**Form B — record-field.** `highest <field> of <list>` /
+`lowest <field> of <list>` returns the largest/smallest value of a
+named field across a list of records — the field must exist on every
+record, following the same homogeneity check as `sort`/`transform`.
+
+Both forms are value expressions, not statements: they work in every
+value position, exactly like `of` field access —
+
+```
+show highest of nums
+show highest total of orders
+remember the top called t from highest of nums
+require price is not above highest of caps
+remember a value called m from lowest of caps plus 1
+```
+
+`highest`/`lowest` are **numeric-only** and **always return a
+scalar**. Using Form A on a list of records (or Form B on a flat list)
+is a semantic error that names the correct form:
+
+> Error: 'highest' on a list of records needs a field — try:
+> highest \<field\> of orders.
+
+**Empty lists are a runtime error** — unlike `sum`, which treats an
+empty list as `0` (the additive identity), an extremum of nothing is
+undefined:
+
+> Error: There's no highest of 'nums' — the list is empty.
+
+**Ties are moot.** If the maximum (or minimum) value appears more than
+once, `highest`/`lowest` simply returns that value — there's no
+"which one" to resolve, since the result is a scalar, not a position.
+
+To retrieve the *record* holding the extremum rather than just the
+value, capture it and filter:
+
+```
+remember the cap called cap from highest total of orders
+keep the orders where total is equal to cap
+```
+
+**Breaking change:** `highest` and `lowest` are now reserved words. A
+record field literally named `highest` or `lowest` can no longer be
+accessed via `show highest of <record>` — that syntax now means
+list-extrema, not field access, and will error because the target
+isn't a list. Rename the field, or access it via a composition.
+
 ## Named compositions
 
 Use `remember how to <name>: <body>` to define a reusable sentence.
@@ -716,7 +784,7 @@ remember the result called captured from find-high from big-orders
 
 A composition's call returns the value of its last operation (v2b §76).
 The return shape depends on the last verb: `keep` returns a list,
-`combine` returns a number, `count` returns a number, `gather` returns
+`sum` returns a number, `count` returns a number, `gather` returns
 the generated list. `remember`-from-verb-phrase returns the captured
 value. Side-effect-only verbs (`show`, `filter`, `each`, `choose`,
 `finish`) make the composition unsuitable for value-capture position —
@@ -890,7 +958,7 @@ state before listener mode begins), but once Phase 2 starts, the
 adapter owns it: `remember` targeting a live-value name from inside
 an action block is a semantic error, and `filter` (destructive)
 targeting a live-value name is a semantic error in *all* contexts.
-The non-destructive verbs (`keep`, `show`, `count`, `combine`, `each`)
+The non-destructive verbs (`keep`, `show`, `count`, `sum`, `each`)
 are fine.
 
 v3a ships only a test adapter (`TestAdapter`) for scripted event
@@ -915,7 +983,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 58 reserved words) cannot be used **unquoted**
+Vocabulary words (the 60 reserved words) cannot be used **unquoted**
 as values:
 
 ```
@@ -953,8 +1021,6 @@ because associativity makes the parse unambiguous to read.
 - **No negative numbers.** All literals are zero or positive.
 - **Range cap.** `gather` produces at most 10,000 items.
 - **Ascending ranges only.** `from` must be less than or equal to `to`.
-- **No `transform`, `compare`.** Reserved-word slots protected; no
-  grammar yet.
 - **Single-level `of` only.** `field-a of field-b of record` is a
   parse error; nested records don't exist yet.
 - **List operations only.** `keep`/`filter` operate on lists.

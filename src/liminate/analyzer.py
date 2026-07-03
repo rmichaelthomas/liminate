@@ -54,7 +54,6 @@ from .parser import (
     BareWord,
     ChooseBranch,
     ChooseNode,
-    CombineNode,
     CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
@@ -63,6 +62,7 @@ from .parser import (
     EachNode,
     EachPronoun,
     ExpectNode,
+    ExtremaNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -84,6 +84,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    SumNode,
     TransformNode,
     WeakensNode,
     WhenNode,
@@ -424,8 +425,8 @@ def _check(
         _check_count(node, symtab)
     elif isinstance(node, GatherNode):
         _check_gather(node)
-    elif isinstance(node, CombineNode):
-        _check_combine(node, symtab)
+    elif isinstance(node, SumNode):
+        _check_sum(node, symtab)
     elif isinstance(node, EachNode):
         _check_each(
             node, symtab,
@@ -587,6 +588,9 @@ def _check_value_expr(
     if isinstance(value_node, FieldAccessNode):
         _check_field_access(value_node, symtab)
         return
+    if isinstance(value_node, ExtremaNode):
+        _check_extrema(value_node, symtab)
+        return
     if isinstance(value_node, ArithmeticNode):
         _check_arithmetic(value_node, symtab, iterator)
         return
@@ -707,14 +711,14 @@ def _side_effect_verb(
         # `remember ... from <verb-phrase>` is value-producing iff the
         # captured inner verb-phrase itself produces a value (§76 table).
         inner = node.value
-        if isinstance(inner, (KeepNode, CombineNode, CountNode, GatherNode)):
+        if isinstance(inner, (KeepNode, SumNode, CountNode, GatherNode)):
             return None
         if isinstance(inner, CompositionCallNode):
             return _composition_void_result_verb(inner.name, symtab, visited)
         return "remember"
     if isinstance(node, CompositionCallNode):
         return _composition_void_result_verb(node.name, symtab, visited)
-    # Bare value-producing verbs: keep, combine, count, gather.
+    # Bare value-producing verbs: keep, sum, count, gather.
     return None
 
 
@@ -760,6 +764,10 @@ def _check_arithmetic_operand(
                 f"'{operand.field} of {operand.record_name}' is "
                 f"{_singular(ftype)}."
             )
+        return
+    if isinstance(operand, ExtremaNode):
+        # v25 — `highest`/`lowest` are always numeric once validated.
+        _check_extrema(operand, symtab)
         return
     if isinstance(operand, NameRef):
         if operand.name not in symtab:
@@ -871,6 +879,15 @@ def _infer_item_type(item: ASTNode, symtab: dict[str, SymbolEntry]) -> tuple[str
         _check_field_access(item, symtab)
         entry = symtab[item.record_name]
         return entry.schema[item.field], f"{item.field} of {item.record_name}"
+    if isinstance(item, ExtremaNode):
+        # v25: same semantic checks at list-item position.
+        _check_extrema(item, symtab)
+        label = (
+            f"{item.word} {item.field} of {item.target.name}"
+            if item.field is not None
+            else f"{item.word} of {item.target.name}"
+        )
+        return "number", label
     if isinstance(item, ArithmeticNode):
         # Infrastructure Era — list items may be arithmetic expressions.
         _check_arithmetic(item, symtab, iterator=None)
@@ -896,6 +913,8 @@ def _check_remember_record(
     for _fname, fexpr in node.fields:
         if isinstance(fexpr, FieldAccessNode):
             _check_field_access(fexpr, symtab)
+        elif isinstance(fexpr, ExtremaNode):
+            _check_extrema(fexpr, symtab)
 
 
 # ---------------------------------------------------------------------------
@@ -914,6 +933,10 @@ def _check_show(
         return
     if isinstance(node.target, QuotedString):
         # v2c §88: literal display — no symbol resolution.
+        return
+    if isinstance(node.target, ExtremaNode):
+        # v25 — `show highest of nums` / `show highest total of orders`.
+        _check_extrema(node.target, symtab)
         return
     if not isinstance(node.target, NameRef):
         raise _SemanticError("Unexpected target for 'show'.")
@@ -1366,6 +1389,16 @@ def _resolve_value(
             entry.schema[value_node.field],
             f"{value_node.field} of {value_node.record_name}",
         )
+    if isinstance(value_node, ExtremaNode):
+        # v25 — `highest`/`lowest` on the right-hand side of a condition,
+        # e.g. `require price is not above highest of caps`. Always numeric.
+        _check_extrema(value_node, symtab)
+        label = (
+            f"{value_node.word} {value_node.field} of {value_node.target.name}"
+            if value_node.field is not None
+            else f"{value_node.word} of {value_node.target.name}"
+        )
+        return "number", label
     if isinstance(value_node, ArithmeticNode):
         # Infrastructure Era — arithmetic on the right-hand side of a
         # condition. Result type is always number.
@@ -1375,7 +1408,7 @@ def _resolve_value(
 
 
 # ---------------------------------------------------------------------------
-# count, combine, gather, each
+# count, sum, gather, each
 # ---------------------------------------------------------------------------
 
 
@@ -1383,7 +1416,7 @@ def _check_count(node: CountNode, symtab: dict[str, SymbolEntry]) -> None:
     _require_list(node.target.name, symtab, verb="count")
 
 
-def _check_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> None:
+def _check_sum(node: SumNode, symtab: dict[str, SymbolEntry]) -> None:
     name = node.target.name
     if name not in symtab:
         raise _SemanticError(
@@ -1393,12 +1426,50 @@ def _check_combine(node: CombineNode, symtab: dict[str, SymbolEntry]) -> None:
     if entry.type == "list_of_numbers":
         return
     if entry.type == "list_of_strings":
-        raise _SemanticError(f"I can only combine numbers. '{name}' contains text.")
+        raise _SemanticError(f"I can only sum numbers. '{name}' contains text.")
     if entry.type == "list_of_records":
-        raise _SemanticError(f"I can only combine numbers. '{name}' contains records.")
+        raise _SemanticError(f"I can only sum numbers. '{name}' contains records.")
     raise _SemanticError(
-        f"I can only combine numbers. '{name}' is {_singular(entry.type)}."
+        f"I can only sum numbers. '{name}' is {_singular(entry.type)}."
     )
+
+
+def _check_extrema(node: ExtremaNode, symtab: dict[str, SymbolEntry]) -> None:
+    """v25 — validate `highest`/`lowest`.
+
+    1. Target must exist and be a list (list_of_numbers/list_of_records/
+       list_of_strings). String lists pass analysis and fail at runtime
+       with the type error — runtime is where element types are
+       authoritative, matching `sort`'s division of labor.
+    2. Form A (field is None) on a list_of_records redirects to Form B.
+    3. Form B (field is set) on a non-record list redirects to Form A.
+    4. Form B: the field must exist on every record's schema (reuses
+       sort/transform's schema-homogeneity check and its error wording).
+    """
+    entry = _require_list(node.target.name, symtab, verb=node.word)
+    if node.field is None:
+        if entry.type == "list_of_records":
+            raise _SemanticError(
+                f"'{node.word}' on a list of records needs a field — "
+                f"try: {node.word} <field> of {node.target.name}."
+            )
+        return
+    if entry.type != "list_of_records":
+        raise _SemanticError(
+            f"'{node.word} {node.field}' needs a list of records. "
+            f"'{node.target.name}' is {_singular(entry.type)} — "
+            f"try: {node.word} of {node.target.name}."
+        )
+    if entry.value:
+        iterator = _make_iterator(node.target.name, entry)
+        if iterator.record_schemas is not None:
+            in_all = all(node.field in s for s in iterator.record_schemas)
+            if not in_all:
+                raise _SemanticError(
+                    _schema_mismatch_message(
+                        entry, iterator.record_schemas, node.field,
+                    )
+                )
 
 
 def _check_gather(node: GatherNode) -> None:
@@ -2220,6 +2291,18 @@ def _resolve_choose_operand(
             entry.schema[node.field],
             f"{node.field} of {node.record_name}",
         )
+    if isinstance(node, ExtremaNode):
+        # v25 — `highest`/`lowest` inside `require`/`forbid`/`permit`/
+        # `expect`/`choose`/`when`/`unless` conditions (no iterator).
+        # e.g. `require highest total of line-items is below single-
+        # item-cap`. Always numeric once validated.
+        _check_extrema(node, symtab)
+        label = (
+            f"{node.word} {node.field} of {node.target.name}"
+            if node.field is not None
+            else f"{node.word} of {node.target.name}"
+        )
+        return "number", label
     if isinstance(node, EachPronoun):
         raise _SemanticError(
             "'each' only refers to the current item inside an 'each' or "

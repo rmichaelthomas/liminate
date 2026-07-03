@@ -145,7 +145,9 @@ def test_all_reserved_count_is_58():
     # Deontic Era added the `forbid` verb (54 → 55).
     # Deontic Era batch 2 added the `permit` verb (55 → 56).
     # Temporal-Boundary Era added `starting`/`until` (56 → 58).
-    assert len(ALL_RESERVED) == 58
+    # v25 added `highest`/`lowest` operators (58 → 60 counted) plus the
+    # tombstoned `combine` (+1 uncounted) → 61 raw ALL_RESERVED entries.
+    assert len(ALL_RESERVED) == 61
 
 
 def test_about_cannot_be_used_as_variable_name():

@@ -375,22 +375,22 @@ def test_gather_equal_endpoints_single_item():
 
 
 # ---------------------------------------------------------------------------
-# combine non-destructive (v1b §39)
+# sum non-destructive (v1b §39)
 # ---------------------------------------------------------------------------
 
 
-def test_combine_returns_sum_and_does_not_modify_source():
+def test_sum_returns_sum_and_does_not_modify_source():
     symtab = {}
     run("gather the numbers from 1 to 5", symtab)
-    r = run("combine the numbers", symtab)
+    r = run("sum the numbers", symtab)
     assert r.output == ["15"]
     assert symtab["numbers"].value == [1, 2, 3, 4, 5]  # unchanged
 
 
-def test_remember_from_combine_captures_result():
+def test_remember_from_sum_captures_result():
     symtab = {}
     run("gather the numbers from 1 to 5", symtab)
-    run("remember the result called total from combine the numbers", symtab)
+    run("remember the result called total from sum the numbers", symtab)
     assert symtab["total"].value == 15
     assert symtab["total"].type == "number"
     # Source remains unchanged after capture.
@@ -576,12 +576,12 @@ def test_sentence_36_filter_scalar():
     assert "filter a list" in r.message
 
 
-def test_sentence_37_combine_strings():
+def test_sentence_37_sum_strings():
     symtab = {}
     run("remember a list called colors with red and blue and green", symtab)
-    r = run("combine colors", symtab)
+    r = run("sum colors", symtab)
     assert r.status is ResultStatus.ERROR_SEMANTIC
-    assert "only combine numbers" in r.message
+    assert "only sum numbers" in r.message
 
 
 def test_sentence_39_each_on_scalar():
@@ -674,14 +674,14 @@ def test_program_4_number_operations():
         "gather the numbers from 1 to 10",
         "filter the numbers where each is above 5",
         "count the numbers",
-        "combine the numbers",
-        "remember the result called total from combine the numbers",
+        "sum the numbers",
+        "remember the result called total from sum the numbers",
     ])
     assert results[0].output == ["1, 2, 3, 4, 5, 6, 7, 8, 9, 10"]
     assert results[2].output == ["5"]
     assert results[3].output == ["40"]
     assert symtab["total"].value == 40
-    # numbers unchanged after the capture (combine non-destructive)
+    # numbers unchanged after the capture (sum non-destructive)
     assert symtab["numbers"].value == [6, 7, 8, 9, 10]
 
 

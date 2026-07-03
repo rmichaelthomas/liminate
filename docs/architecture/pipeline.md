@@ -181,7 +181,7 @@ Builds an abstract syntax tree (AST). The parser is **slot-filling**:
 each verb has a known signature (e.g. `filter` expects a target and a
 condition), and the parser walks the tokens filling each slot in
 canonical order. The twenty-one verbs (`remember`, `show`, `filter`,
-`keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`,
+`keep`, `count`, `gather`, `sum`, `each`, `choose`, `finish`,
 `add`, `remove`, `weakens`, `require`, `forbid`, `permit`, `assign`,
 `expect`, `sort`, `compare`, `transform`) each route to a verb-specific
 sub-parser that
@@ -270,7 +270,7 @@ the things it verifies:
 
 - The names referenced actually exist in the symbol table.
 - The operation matches the target's type: `filter`, `count`, and
-  `each` need a list; `combine` needs a list of numbers.
+  `each` need a list; `sum` needs a list of numbers.
 - For field operations on a list of records, every record in the list
   actually has the referenced field.
 - A list under construction has only one kind of item — numbers,
@@ -317,10 +317,10 @@ table. Key behaviors:
   default, or its result can be captured via `remember ... from keep
   ...`. This is the reuse primitive: a `keep`-based composition is
   callable repeatedly with the same input.
-- **`count`, `gather`, and `combine` auto-show.** `gather` also
+- **`count`, `gather`, and `sum` auto-show.** `gather` also
   stores its result under the parsed name. `keep` also auto-shows.
-- **`combine` is non-destructive.** It returns a sum without changing
-  the source list.
+- **`sum` is non-destructive.** It returns a total without changing
+  the source list; an empty list sums to `0`.
 - **`each` runs the action once per item.** Inside the action, names
   resolve first against the current item (as a field on a record)
   and then against the symbol table. The sub-action can be `show

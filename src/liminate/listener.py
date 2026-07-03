@@ -54,6 +54,7 @@ from .parser import (
     ASTNode,
     CompoundConditionNode,
     ConditionNode,
+    ExtremaNode,
     FieldAccessNode,
     FinishNode,
     NameRef,
@@ -596,6 +597,35 @@ class _Runner:
             if not isinstance(record, dict) or node.field not in record:
                 return _UNSET
             return record[node.field]
+        if isinstance(node, ExtremaNode):
+            # v25 — `highest`/`lowest` in a `when`/`unless` condition.
+            # Mirrors the FieldAccessNode pattern: any transient invalid
+            # state (missing list, unset live value, empty list,
+            # non-numeric element) resolves to _UNSET so the condition
+            # simply doesn't fire yet, rather than raising — the Phase 1
+            # sequential interpreter's _eval_extrema raises instead
+            # because a one-shot statement should surface the error
+            # immediately.
+            entry = self.symtab.get(node.target.name)
+            if entry is None:
+                return _UNSET
+            if self.live_value_registry.is_unset(node.target.name):
+                return _UNSET
+            the_list = entry.value
+            if not the_list:
+                return _UNSET
+            values: list[Any] = []
+            for item in the_list:
+                if node.field is not None:
+                    if not isinstance(item, dict) or node.field not in item:
+                        return _UNSET
+                    v = item[node.field]
+                else:
+                    v = item
+                if isinstance(v, bool) or not isinstance(v, (int, float)):
+                    return _UNSET
+                values.append(v)
+            return max(values) if node.word == "highest" else min(values)
         return _UNSET
 
     # -------------------------------------------------------------------

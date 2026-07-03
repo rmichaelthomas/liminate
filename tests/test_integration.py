@@ -140,13 +140,13 @@ def test_program_4_full_pipeline():
     r18 = session.run_line("count the numbers")
     assert r18.output == ["5"]
 
-    # 19: combine auto-shows (non-destructive per v1b §39)
-    r19 = session.run_line("combine the numbers")
+    # 19: sum auto-shows (non-destructive per v1b §39)
+    r19 = session.run_line("sum the numbers")
     assert r19.output == ["40"]
     assert session.symtab["numbers"].value == [6, 7, 8, 9, 10]
 
     # 20: capture via `from` recursive descent (v1b §43)
-    r20 = session.run_line("remember the result called total from combine the numbers")
+    r20 = session.run_line("remember the result called total from sum the numbers")
     assert r20.status is ResultStatus.SUCCESS and r20.output is None
     assert session.symtab["total"].value == 40
     assert session.symtab["numbers"].value == [6, 7, 8, 9, 10]
@@ -309,7 +309,7 @@ def test_sentence_34_no_verb_error_lists_available_verbs():
     session = make_session()
     r = session.run_line("orders total above 50")
     assert r.status is ResultStatus.ERROR_PARSE
-    for verb in ("remember", "show", "filter", "count", "gather", "combine", "each"):
+    for verb in ("remember", "show", "filter", "count", "gather", "sum", "each"):
         assert verb in r.message
 
 
@@ -342,17 +342,17 @@ def test_sentence_36_filter_on_scalar():
 
 
 # ---------------------------------------------------------------------------
-# Sentence 37 — Combine on strings
+# Sentence 37 — Sum on strings
 # ---------------------------------------------------------------------------
 
 
-def test_sentence_37_combine_on_strings():
+def test_sentence_37_sum_on_strings():
     session, _ = run_lines([
         "remember a list called colors with red and blue and green",
     ])
-    r = session.run_line("combine colors")
+    r = session.run_line("sum colors")
     assert r.status is ResultStatus.ERROR_SEMANTIC
-    assert "combine numbers" in r.message
+    assert "sum numbers" in r.message
     assert "colors" in r.message
     assert "text" in r.message
 

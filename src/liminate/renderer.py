@@ -31,7 +31,6 @@ from .parser import (
     BareWord,
     ChooseBranch,
     ChooseNode,
-    CombineNode,
     CompareNode,
     CompositionCallNode,
     CompoundConditionNode,
@@ -40,6 +39,7 @@ from .parser import (
     EachNode,
     EachPronoun,
     ExpectNode,
+    ExtremaNode,
     FieldAccessNode,
     FilterNode,
     FinishNode,
@@ -61,6 +61,7 @@ from .parser import (
     SequenceNode,
     ShowNode,
     SortNode,
+    SumNode,
     TransformNode,
     WeakensNode,
     WhenNode,
@@ -161,6 +162,12 @@ def _render_node(node: ASTNode) -> str:
         # Infrastructure Era — paren-free flat prose. PEMDAS is implicit
         # in the canonical form, mirroring how humans read arithmetic.
         return f"{render(node.left)} {_ARITHMETIC_OP_WORDS[node.op]} {render(node.right)}"
+    if isinstance(node, ExtremaNode):
+        # v25 — article-free, matching FieldAccessNode's rendering style.
+        # Form A: "highest of caps". Form B: "highest total of orders".
+        if node.field is not None:
+            return f"{node.word} {node.field} of {render(node.target)}"
+        return f"{node.word} of {render(node.target)}"
 
     if isinstance(node, RememberValueNode):
         # v2a §71 / D6: preserve the user's descriptor verbatim. When the
@@ -230,8 +237,8 @@ def _render_node(node: ASTNode) -> str:
         if node.step_val is not None:
             out += f" by {_fmt_number(node.step_val)}"
         return out
-    if isinstance(node, CombineNode):
-        return f"combine the {render(node.target)}"
+    if isinstance(node, SumNode):
+        return f"sum the {render(node.target)}"
     if isinstance(node, EachNode):
         return f"each the {render(node.collection)} {render(node.action)}"
 

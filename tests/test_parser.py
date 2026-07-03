@@ -9,7 +9,6 @@ from liminate.parser import (
     BareWord,
     ChooseBranch,
     ChooseNode,
-    CombineNode,
     CompositionCallNode,
     CompoundConditionNode,
     ConditionNode,
@@ -29,6 +28,7 @@ from liminate.parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    SumNode,
     WhenNode,
     parse,
     parse_when_block,
@@ -169,10 +169,10 @@ def test_remember_composition_with_sequenced_body():
 # ---------- remember: from <verb-phrase> (v1b §43) ----------
 
 def test_remember_from_verb_phrase_captures_result():
-    ast = parse_line("remember the result called total from combine the numbers")
+    ast = parse_line("remember the result called total from sum the numbers")
     assert isinstance(ast, RememberValueNode)
     assert ast.name == "total"
-    assert isinstance(ast.value, CombineNode)
+    assert isinstance(ast.value, SumNode)
     assert ast.value.target == NameRef("numbers")
 
 
@@ -282,14 +282,14 @@ def test_single_operator_chains_do_not_trigger_amber():
     assert isinstance(ast, FilterNode)
 
 
-# ---------- count, combine, gather ----------
+# ---------- count, sum, gather ----------
 
 def test_count():
     assert parse_line("count the colors") == CountNode(target=NameRef("colors"))
 
 
-def test_combine():
-    assert parse_line("combine the numbers") == CombineNode(target=NameRef("numbers"))
+def test_sum():
+    assert parse_line("sum the numbers") == SumNode(target=NameRef("numbers"))
 
 
 def test_gather():
@@ -348,7 +348,7 @@ def test_no_verb_no_composition_is_parse_error():
 def test_no_verb_lists_available_verbs():
     result = parse_line("orders total above 50")
     msg = result.message
-    for verb in ("remember", "show", "filter", "count", "gather", "combine", "each"):
+    for verb in ("remember", "show", "filter", "count", "gather", "sum", "each"):
         assert verb in msg
 
 
@@ -404,8 +404,8 @@ PARSEABLE = [
     ("gather the numbers from 1 to 10", None),
     ("filter the numbers where each is above 5", None),
     ("count the numbers", None),
-    ("combine the numbers", None),
-    ("remember the result called total from combine the numbers", None),
+    ("sum the numbers", None),
+    ("remember the result called total from sum the numbers", None),
     ("gather the scores from 1 to 10", None),
     ("filter the scores where each is not above 7", None),
     ("filter the scores where each is not below 3", None),
