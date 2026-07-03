@@ -1,19 +1,20 @@
-Error: I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'combine', or 'each'.
+Error: I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'sum', 'each', or 'choose'.
 I understand this as: show nonexistent
 Error: I can't find 'nonexistent'. You might need to 'remember' it first.
-Error: The word 'filter' is a verb in Liminate and can't be used as a value. Try a different word.
+Error: The word 'filter' is a verb in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: "filter".
 Error: The word 'each' is reserved in Liminate — it's used as a verb. Please choose a different name.
 I understand this as: remember a list called colors with red and blue and green
-I understand this as: combine the colors
-Error: I can only combine numbers. 'colors' contains text.
+I understand this as: sum the colors
+Error: I can only sum numbers. 'colors' contains text.
+Error: The word 'combine' was renamed — use 'sum'.
 I understand this as: remember a doc called d1 with words as 100
 I understand this as: remember a list called docs with d1
 I understand this as: filter the docs where nonexistent is above 5
-Error: Not every item in 'docs' has a field called 'nonexistent'.
+Error: No item in 'docs' has a field called 'nonexistent'.
 I understand this as: remember a list called mixed with 5 and hello
 Error: A list can't mix numbers and text. '5' is a number but 'hello' is text.
 I understand this as: gather the numbers from 10 to 1
-Error: The 'from' value (10) must be less than or equal to the 'to' value (1). Try: gather the numbers from 1 to 10.
+10, 9, 8, 7, 6, 5, 4, 3, 2, 1
 I understand this as: gather the numbers from 1 to 20000
 Error: That range is too large. The maximum is 10,000 items.
 I understand this as: remember a number called age with 30
@@ -26,7 +27,7 @@ I understand this as: remember an order called order1 with total as 75 and statu
 I understand this as: remember an item called item1 with price as 30 and color as red
 I understand this as: remember a list called mixed-records with order1 and item1
 I understand this as: filter the mixed-records where total is above 50
-Error: Not every item in 'mixed-records' has a field called 'total'.
+Error: 'item1' in 'mixed-records' doesn't have a field called 'total'. Other items do have it.
 I understand this as: remember how to show-missing: show ghost
 I understand this as: show-missing
 Error: I can't find 'ghost'. You might need to 'remember' it first.

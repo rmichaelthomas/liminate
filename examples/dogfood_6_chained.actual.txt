@@ -1,6 +1,6 @@
 I understand this as: remember a list called nums with 10 and 20 and 30 and 40 and 50
-I understand this as: remember a total called sum from combine the nums
-I understand this as: show sum
+I understand this as: remember a total called nums-sum from sum the nums
+I understand this as: show nums-sum
 150
 I understand this as: remember a howmany called n from count the nums
 I understand this as: show n
@@ -10,9 +10,9 @@ I understand this as: show nums-copy
 10, 20, 30, 40, 50
 I understand this as: gather the numbers from 1 to 5
 1, 2, 3, 4, 5
-I understand this as: combine the numbers
+I understand this as: sum the numbers
 15
-I understand this as: remember a rangesum called rangesum from combine the numbers
+I understand this as: remember a rangesum called rangesum from sum the numbers
 I understand this as: show rangesum
 15
 I understand this as: filter the nums where each is above 25

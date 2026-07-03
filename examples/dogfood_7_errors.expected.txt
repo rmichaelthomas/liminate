@@ -5,13 +5,14 @@ PREDICTED OUTCOMES per error case:
 2. show nonexistent                       -> Outcome 5 (semantic): name not found
 3. remember ... with filter and blue      -> Outcome 4 (parse): vocab word in value position
 4. remember a thing called each with 5    -> Outcome 4 (parse): reserved word as name
-5. combine colors (strings)               -> Outcome 5 (semantic): combine is numeric-only
-6. filter where nonexistent is above 5    -> Outcome 5 (semantic): field not found
-7. mixed list (5 and hello)               -> Outcome 5 (semantic): homogeneous-list rule
-8. gather from 10 to 1                    -> Outcome 5 (semantic): descending range
-9. gather from 1 to 20000                 -> Outcome 5 (semantic): range cap exceeded
-10. filter scalar age                     -> Outcome 5 (semantic): filter requires list
-11. each on scalar age2                   -> Outcome 5 (semantic): each requires list
-12. schema-mismatch list filter           -> Outcome 5 (semantic): not all records have field
-13. show-missing composition call         -> Outcome 5 (semantic) at call time, body has missing name
-14. stepwise filter+show missingname      -> filter commits, then show fails; subsequent show orders should display filtered list
+5. sum colors (strings)                   -> Outcome 5 (semantic): sum is numeric-only
+6. combine colors (tombstoned rename)     -> Outcome 4 (parse): "The word 'combine' was renamed — use 'sum'."
+7. filter where nonexistent is above 5    -> Outcome 5 (semantic): field not found
+8. mixed list (5 and hello)               -> Outcome 5 (semantic): homogeneous-list rule
+9. gather from 10 to 1                    -> Outcome 1 (success): descending ranges are valid (D-6) — produces [10, 9, ..., 1]
+10. gather from 1 to 20000                -> Outcome 5 (semantic): range cap exceeded
+11. filter scalar age                     -> Outcome 5 (semantic): filter requires list
+12. each on scalar age2                   -> Outcome 5 (semantic): each requires list
+13. schema-mismatch list filter           -> Outcome 5 (semantic): not all records have field
+14. show-missing composition call         -> Outcome 5 (semantic) at call time, body has missing name
+15. stepwise filter+show missingname      -> filter commits, then show fails; subsequent show orders should display filtered list
