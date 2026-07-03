@@ -18,8 +18,12 @@ Design decisions implemented:
 
 import io
 
+from liminate.adapter import LiveValueRegistry, TestAdapter
+from liminate.analyzer import SymbolEntry
 from liminate.cli import run_file
+from liminate.interpreter import HandlerTable, execute as _execute
 from liminate.lexer import tokenize
+from liminate.listener import listen
 from liminate.parser import (
     AddNode,
     AssignNode,
@@ -33,6 +37,7 @@ from liminate.parser import (
     parse,
     parse_when_block,
 )
+from liminate.reorderer import reorder
 from liminate.renderer import render
 from liminate.result import ResultStatus
 from liminate.vocabulary import ALL_RESERVED, TokenType, reserved_category
@@ -332,7 +337,8 @@ def test_inherited_when_header_parses():
     node = parse_when_block(header, actions)
     assert not hasattr(node, "status"), getattr(node, "message", node)
     assert node.inherited is True
-    # Agent attribution on `when` headers is deferred (build §4.2).
+    # No `from` clause given, so attribution is absent (not deferred —
+    # see the `inherited when ... from <agent>` tests below).
     assert node.inherited_from is None
 
 
@@ -378,6 +384,132 @@ def test_inherited_when_missing_when_is_parse_error():
     # `inherited` not followed by `when` (in the when-block entry) errors.
     result = parse_when_block(tokenize("inherited"), [tokenize("show level")])
     assert result.status is ResultStatus.ERROR_PARSE
+
+
+# ---------------------------------------------------------------------------
+# `inherited when ... from <agent>` attribution (Invariant Checkpoint v2
+# §43 / IRQ-3). Statement-final agent attribution extended to `inherited
+# when` headers — same `_try_consume_inherited_from` helper, same
+# agent-name rules, just a new grammatical position.
+# ---------------------------------------------------------------------------
+
+
+def test_inherited_when_from_attribution_parses():
+    header = tokenize("inherited when level is above 50 from compliance-agent")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited is True
+    assert node.inherited_from == "compliance-agent"
+
+
+def test_inherited_when_from_with_unless_guard_parses():
+    header = tokenize(
+        "inherited when level is above 50 unless level is above 90 "
+        "from compliance-agent"
+    )
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited is True
+    assert node.unless is not None
+    assert node.inherited_from == "compliance-agent"
+
+
+def test_inherited_when_from_with_trailing_colon_parses():
+    header = tokenize("inherited when level is above 50 from compliance-agent:")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited_from == "compliance-agent"
+
+
+def test_inherited_when_of_condition_from_attribution_parses():
+    # The exact case the old deferral feared: `of` belongs to the
+    # condition (`status of report`), `source-agent` is the attribution.
+    header = tokenize(
+        "inherited when status of report is above 5 from source-agent"
+    )
+    actions = [tokenize("show report")]
+    node = parse_when_block(header, actions)
+    assert not hasattr(node, "status"), getattr(node, "message", node)
+    assert node.inherited_from == "source-agent"
+
+
+def test_when_header_trailing_from_without_inherited_is_parse_error():
+    header = tokenize("when level is above 50 from compliance-agent")
+    actions = [tokenize("show level")]
+    result = parse_when_block(header, actions)
+    assert result.status is ResultStatus.ERROR_PARSE
+    assert "'inherited' prefix" in result.message
+
+
+def test_inherited_when_from_quoted_agent_is_parse_error():
+    header = tokenize('inherited when level is above 50 from "compliance agent"')
+    actions = [tokenize("show level")]
+    result = parse_when_block(header, actions)
+    assert result.status is ResultStatus.ERROR_PARSE
+    assert "can't have spaces" in result.message
+
+
+def test_inherited_when_from_reserved_word_is_parse_error():
+    header = tokenize("inherited when level is above 50 from require")
+    actions = [tokenize("show level")]
+    result = parse_when_block(header, actions)
+    assert result.status is ResultStatus.ERROR_PARSE
+    assert "reserved" in result.message
+
+
+def test_inherited_when_from_missing_agent_is_parse_error():
+    header = tokenize("inherited when level is above 50 from")
+    actions = [tokenize("show level")]
+    result = parse_when_block(header, actions)
+    assert result.status is ResultStatus.ERROR_PARSE
+
+
+def test_inherited_when_from_renders_on_header_line():
+    header = tokenize(
+        "inherited when level is above 50 unless level is above 90 "
+        "from compliance-agent"
+    )
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    rendered = render(node)
+    lines = rendered.split("\n")
+    # Attribution lands on the header line, never after the action lines.
+    assert lines[0] == (
+        "inherited when level is above 50 unless level is above 90 "
+        "from compliance-agent"
+    )
+    assert "from" not in lines[1]
+
+
+def test_inherited_when_from_round_trip():
+    header = tokenize("inherited when level is above 50 from compliance-agent")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    rendered = render(node)
+    lines = rendered.split("\n")
+    reparsed = parse_when_block(
+        tokenize(lines[0]),
+        [tokenize(line.strip()) for line in lines[1:] if line.strip()],
+    )
+    assert not hasattr(reparsed, "status"), getattr(reparsed, "message", reparsed)
+    assert reparsed.condition == node.condition
+    assert reparsed.unless == node.unless
+    assert reparsed.action == node.action
+    # WhenNode metadata fields are compare=False — assert explicitly
+    # rather than relying on `==` to catch a dropped inherited_from.
+    assert reparsed.inherited is True
+    assert reparsed.inherited_from == "compliance-agent"
+
+
+def test_inherited_when_without_attribution_render_unchanged():
+    header = tokenize("inherited when level is above 50")
+    actions = [tokenize("show level")]
+    node = parse_when_block(header, actions)
+    rendered = render(node)
+    assert rendered == "inherited when level is above 50\n  show level"
 
 
 # ---------------------------------------------------------------------------
@@ -458,3 +590,37 @@ def test_about_because_inherited_together(tmp_path):
     output = _run(tmp_path, source, quiet=True)
     assert "75000" in output
     assert "Error:" not in output
+
+
+# ---------------------------------------------------------------------------
+# Integration — HANDLER_FIRE trigger metadata carries `inherited_from`
+# through the listener (§43 / IRQ-3). This is the plumbing verification:
+# listener._wrap_with_trigger already reads handler.when_node.inherited_from
+# (Meta-Structural Era batch 3) but had never had a non-None value to
+# carry until the `inherited when ... from <agent>` grammar landed.
+# ---------------------------------------------------------------------------
+
+
+def test_inherited_when_from_propagates_to_handler_fire_metadata():
+    symtab: dict[str, SymbolEntry] = {}
+    symtab["level"] = SymbolEntry(name="level", value=10, type="number")
+    ht = HandlerTable()
+    reg = LiveValueRegistry()
+
+    header = reorder(tokenize("inherited when level is above 50 from compliance-agent"))
+    actions = [reorder(tokenize("show level"))]
+    when_node = parse_when_block(header, actions)
+    assert not hasattr(when_node, "status"), getattr(when_node, "message", when_node)
+
+    register_result = _execute(
+        when_node, symtab, handler_table=ht, live_value_registry=reg,
+    )
+    assert register_result.status is ResultStatus.SUCCESS, register_result
+
+    adapter = TestAdapter([("level", 75)], name="test")
+    results = list(listen(symtab, ht, reg, adapters=[adapter]))
+    fires = [r for r in results if r.status is ResultStatus.HANDLER_FIRE]
+    assert len(fires) == 1
+    trigger = fires[0].metadata["trigger"]
+    assert trigger["inherited"] is True
+    assert trigger["inherited_from"] == "compliance-agent"
