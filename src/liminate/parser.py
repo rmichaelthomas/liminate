@@ -45,6 +45,7 @@ from typing import Any
 
 from .result import LiminateResult, ResultStatus
 from .vocabulary import (
+    TOMBSTONES,
     PackVerbSignature,
     Token,
     TokenType,
@@ -339,7 +340,7 @@ class GatherNode(ASTNode):
 
 
 @dataclass
-class CombineNode(ASTNode):
+class SumNode(ASTNode):
     target: NameRef
     rationale: str | None = field(default=None, compare=False)
     # Meta-Structural Era batch 3 — `inherited` operator + `from`
@@ -783,6 +784,22 @@ class ArithmeticNode(ASTNode):
     left: ASTNode
     right: ASTNode
     op: str  # "plus", "minus", "multiplied_by", "divided_by"
+
+
+@dataclass
+class ExtremaNode(ASTNode):
+    """v25 — `highest`/`lowest` list-extrema selector (value expression).
+
+    Form A (flat lists):   highest of <list>          -> field is None
+    Form B (record lists): highest <field> of <list>  -> field is set
+    Value-returning in both modes (VW-Q3): the scalar extremum. No
+    statement metadata fields (rationale/inherited/starting/until) —
+    this is a value node like ArithmeticNode/FieldAccessNode, never a
+    statement in its own right.
+    """
+    word: str          # "highest" | "lowest"
+    target: NameRef    # the list
+    field: str | None = None
 
 
 @dataclass
@@ -1524,10 +1541,17 @@ def _parse_one_operation_inner(stream: TokenStream, comp: set[str]) -> ASTNode:
                 arg = _consume_parameter_arg(stream, comp_name=t.value)
                 return CompositionCallNode(name=t.value, arg=arg)
             return CompositionCallNode(name=t.value)
+        # v25 — tombstoned words (renamed verbs) lex as UNKNOWN, since
+        # they're in no TokenType category table. Give the rename-specific
+        # error before the generic "I don't recognize a command" fallback.
+        if t.value in TOMBSTONES:
+            raise _ParseError(
+                f"The word '{t.value}' was renamed — use '{TOMBSTONES[t.value]}'."
+            )
         raise _ParseError(
             "I don't recognize a command here. Every sentence needs a verb "
             "like 'remember', 'show', 'filter', 'count', 'gather', "
-            "'combine', 'each', or 'choose'."
+            "'sum', 'each', or 'choose'."
         )
     # v3a §108: `when` is a top-level statement only. Any `when` reaching
     # this code path is inside a composition body, an `each` body, or a
@@ -1572,8 +1596,8 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
         return _parse_count(stream)
     if verb.value == "gather":
         return _parse_gather(stream)
-    if verb.value == "combine":
-        return _parse_combine(stream)
+    if verb.value == "sum":
+        return _parse_sum(stream)
     if verb.value == "each":
         return _parse_each(stream, comp)
     if verb.value == "choose":
@@ -2008,7 +2032,7 @@ def _name_ref_for_from(node: ASTNode) -> ASTNode:
 
 
 # ---------------------------------------------------------------------------
-# show / count / combine
+# show / count / sum
 # ---------------------------------------------------------------------------
 
 
@@ -2023,6 +2047,9 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
         nxt = stream.peek(1)
         if nxt and nxt.type is TokenType.VERB:
             return ShowNode(target=None)
+    # v25 VW-Q2 — `show highest of nums` / `show highest total of orders`.
+    if peek.type is TokenType.OPERATOR and peek.value in ("highest", "lowest"):
+        return ShowNode(target=_parse_extrema(stream))
     if peek.type is TokenType.QUOTED_STRING:
         # v2c §87/§88 — `show "text"` is literal display. But if followed
         # by `of`, the user wrote a quoted field name (rejected). And
@@ -2149,10 +2176,10 @@ def _parse_count(stream: TokenStream) -> CountNode:
     return CountNode(target=target)
 
 
-def _parse_combine(stream: TokenStream) -> CombineNode:
+def _parse_sum(stream: TokenStream) -> SumNode:
     _consume_optional_article(stream)
-    target = _consume_target(stream, verb="combine")
-    return CombineNode(target=target)
+    target = _consume_target(stream, verb="sum")
+    return SumNode(target=target)
 
 
 # ---------------------------------------------------------------------------
@@ -2891,6 +2918,11 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
     ):
         field_node: ASTNode = EachPronoun()
         return _finish_simple_condition(stream, field_node)
+    # v25 VW-Q2 — `highest`/`lowest` as a condition's left-hand side, e.g.
+    # `require highest total of line-items is below single-item-cap`.
+    if head.type is TokenType.OPERATOR and head.value in ("highest", "lowest"):
+        field_node = _parse_extrema(stream)
+        return _finish_simple_condition(stream, field_node)
     head = stream.consume()
     if head.type is TokenType.VERB and head.value == "each":
         field_node: ASTNode = EachPronoun()
@@ -3113,6 +3145,52 @@ def _parse_multiplicative(stream: TokenStream) -> ASTNode:
     return left
 
 
+def _parse_extrema(stream: TokenStream) -> ExtremaNode:
+    """v25 VW-Q1/Q2 — `highest`/`lowest` list-extrema selector.
+
+    Form A (flat lists):   highest of <list>
+    Form B (record lists): highest <field> of <list>
+
+    The OPERATOR token (`highest`/`lowest`) has been peeked, not
+    consumed, by the caller.
+    """
+    word_tok = stream.consume()
+    word = word_tok.value
+    nxt = stream.peek()
+    if nxt and nxt.type is TokenType.CONNECTIVE and nxt.value == "of":
+        stream.consume()  # eat `of`
+        _consume_optional_article(stream)
+        target = _consume_target(stream, verb=word)
+        field_name = None
+    elif (
+        nxt
+        and nxt.type is TokenType.UNKNOWN
+        and stream.peek(1) is not None
+        and stream.peek(1).type is TokenType.CONNECTIVE
+        and stream.peek(1).value == "of"
+    ):
+        field_tok = stream.consume()
+        stream.consume()  # eat `of`
+        _consume_optional_article(stream)
+        target = _consume_target(stream, verb=word)
+        field_name = field_tok.value
+    else:
+        raise _ParseError(
+            f"'{word}' needs a list — try: {word} of <list>, or "
+            f"{word} <field> of <list>."
+        )
+    # v2b §77 sub-decision I precedent: chained `of` is a parse error
+    # (no nested records).
+    chain = stream.peek()
+    if chain and chain.type is TokenType.CONNECTIVE and chain.value == "of":
+        raise _ParseError(
+            "Field access uses one record at a time: "
+            "<field> of <record>. Chained forms (a of b of c) "
+            "need nested records, which v2b doesn't yet have."
+        )
+    return ExtremaNode(word=word, target=target, field=field_name)
+
+
 def _parse_atom(stream: TokenStream) -> ASTNode:
     """Consume a single value token (NUMBER, UNKNOWN, or QUOTED_STRING),
     optionally extended by `of <record>` for field access (v2b §77).
@@ -3120,6 +3198,9 @@ def _parse_atom(stream: TokenStream) -> ASTNode:
     Vocabulary words in value position are rejected per v1c §46 (extended
     by v2c §89 — the error message now suggests quoting as the fix).
     """
+    peek = stream.peek()
+    if peek and peek.type is TokenType.OPERATOR and peek.value in ("highest", "lowest"):
+        return _parse_extrema(stream)
     tok = stream.consume()
     if tok is None:
         raise _ParseError("I expected a value here.")
@@ -3127,6 +3208,11 @@ def _parse_atom(stream: TokenStream) -> ASTNode:
         return NumberLiteral(value=_parse_number(tok.value))
     if tok.type is TokenType.UNKNOWN:
         # v2b §77: `<field> of <record>` field-access value expression.
+        # v25: this branch also covers tombstoned words (e.g. `combine`)
+        # in value position — they lex as UNKNOWN like any other bare
+        # word and fall through to BareWord/QuotedString-equivalent data
+        # semantics rather than an error. Deliberate: keeps the freeing
+        # path open (VW-Q6) and matches quoted-reserved-word handling.
         return _maybe_field_access(stream, tok.value)
     if tok.type is TokenType.QUOTED_STRING:
         # v2c §87 — quoted multi-word/reserved-word literal. §89: the

@@ -153,6 +153,12 @@ def _validate_where_head(tokens: list[Token]) -> ReorderOutput:
             if len(rest) < 2:
                 return tokens  # parser reports incomplete-condition error
             head, second = rest[0], rest[1]
+            if head.type is TokenType.OPERATOR and head.value in ("highest", "lowest"):
+                # v25 — extrema condition head: `of <list>` or `<field> of
+                # <list>` precedes the comparison operator, so the fixed
+                # head/second shape below doesn't apply. Full validation
+                # is the parser's job (_parse_extrema).
+                return tokens
             head_ok = (
                 head.type is TokenType.UNKNOWN
                 or (head.type is TokenType.VERB and head.value == "each")
