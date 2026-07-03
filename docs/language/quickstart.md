@@ -20,7 +20,7 @@ pip install -e ".[dev]"
 
 ## Run the test suite
 
-There are 1456 tests. They run in well under a minute.
+There are 1499 tests. They run in well under a minute.
 
 ```bash
 pytest tests/
@@ -68,7 +68,7 @@ Save the following three lines as `demo.limn`:
 ```
 gather the numbers from 1 to 10
 filter the numbers where each is above 5
-combine the numbers
+sum the numbers
 ```
 
 Run it:
@@ -84,7 +84,7 @@ preview):
 I understand this as: gather the numbers from 1 to 10
 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
 I understand this as: filter the numbers where each is above 5
-I understand this as: combine the numbers
+I understand this as: sum the numbers
 40
 ```
 
@@ -95,9 +95,9 @@ What happened:
 - `filter` modified `numbers` in place. After this line `numbers` holds
   `[6, 7, 8, 9, 10]`. There is no output because `filter` is silent on
   success.
-- `combine` summed the remaining numbers (6 + 7 + 8 + 9 + 10 = 40) and
-  auto-shows the result. The source list is unchanged — `combine` does
-  not modify `numbers`.
+- `sum` summed the remaining numbers (6 + 7 + 8 + 9 + 10 = 40) and
+  auto-shows the result. The source list is unchanged — `sum` does
+  not modify `numbers`. (An empty list would sum to `0`.)
 
 ## Test mode and clean output
 

@@ -147,8 +147,8 @@ def test_named_composition_definition_canonical():
     assert out == src
 
 
-def test_combine_canonical():
-    src = tokenize("combine the numbers")
+def test_sum_canonical():
+    src = tokenize("sum the numbers")
     out = reorder(src)
     assert out == src
 

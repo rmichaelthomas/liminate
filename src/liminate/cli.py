@@ -144,7 +144,7 @@ def _is_auto_shown(canonical: str | None) -> bool:
     Explicit `show <name>` and `each ... show <field>` are user-requested
     displays — truncating them would violate intent. The auto-show
     sources that can produce >20-item output are `gather` and `keep`.
-    `count` and `combine` produce single-value output that can't exceed
+    `count` and `sum` produce single-value output that can't exceed
     the threshold; checking them is harmless but unnecessary.
     """
     if not canonical:

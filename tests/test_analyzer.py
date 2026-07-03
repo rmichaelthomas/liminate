@@ -128,9 +128,9 @@ def test_gather_valid_range():
     assert not isinstance(result, LiminateResult)
 
 
-def test_combine_list_of_numbers():
+def test_sum_list_of_numbers():
     symtab = {"numbers": list_of_numbers("numbers", [1, 2, 3])}
-    result = _analyze("combine the numbers", symtab)
+    result = _analyze("sum the numbers", symtab)
     assert not isinstance(result, LiminateResult)
 
 
@@ -181,21 +181,21 @@ def test_filter_on_scalar_is_type_error():
 
 
 # ---------------------------------------------------------------------------
-# Sentence 37 — combine on strings
+# Sentence 37 — sum on strings
 # ---------------------------------------------------------------------------
 
-def test_combine_strings_is_type_error():
+def test_sum_strings_is_type_error():
     symtab = {"colors": list_of_strings("colors", ["red", "blue", "green"])}
-    result = _analyze("combine colors", symtab)
+    result = _analyze("sum colors", symtab)
     assert isinstance(result, LiminateResult)
     assert result.status is ResultStatus.ERROR_SEMANTIC
-    assert "only combine numbers" in result.message
+    assert "only sum numbers" in result.message
     assert "'colors' contains text" in result.message
 
 
-def test_combine_records_is_type_error():
+def test_sum_records_is_type_error():
     symtab = {"orders": list_of_records("orders", [{"total": 75}])}
-    result = _analyze("combine orders", symtab)
+    result = _analyze("sum orders", symtab)
     assert isinstance(result, LiminateResult)
     assert "'orders' contains records" in result.message
 
@@ -592,8 +592,8 @@ def test_remember_list_live_value_in_action_block_is_error():
     assert "live value" in out.message
 
 
-def test_show_count_combine_each_on_live_value_are_legal():
-    """v3a §111: `show`, `count`, `combine`, and `each` are read-only or
+def test_show_count_sum_each_on_live_value_are_legal():
+    """v3a §111: `show`, `count`, `sum`, and `each` are read-only or
     non-destructive — all legal on live values, in any context."""
     symtab = {
         "readings": list_of_numbers("readings", [10, 20, 30]),
@@ -601,7 +601,7 @@ def test_show_count_combine_each_on_live_value_are_legal():
     for line in (
         "show readings",
         "count the readings",
-        "combine the readings",
+        "sum the readings",
     ):
         statement = _parse(line)
         out = analyze(

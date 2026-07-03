@@ -16,7 +16,6 @@ from liminate.lexer import tokenize
 from liminate.parser import (
     ASTNode,
     BareWord,
-    CombineNode,
     CompositionCallNode,
     CompoundConditionNode,
     ConditionNode,
@@ -35,6 +34,7 @@ from liminate.parser import (
     RememberValueNode,
     SequenceNode,
     ShowNode,
+    SumNode,
     WhenNode,
     parse,
     parse_when_block,
@@ -124,9 +124,9 @@ def test_render_filter_equal_to():
     assert render(ast) == "filter the orders where total is equal to 75"
 
 
-def test_render_count_and_combine_and_gather():
+def test_render_count_and_sum_and_gather():
     assert render(CountNode(target=NameRef("colors"))) == "count the colors"
-    assert render(CombineNode(target=NameRef("numbers"))) == "combine the numbers"
+    assert render(SumNode(target=NameRef("numbers"))) == "sum the numbers"
     assert render(GatherNode("numbers", 1, 10)) == "gather the numbers from 1 to 10"
 
 
@@ -267,8 +267,8 @@ ROUND_TRIP_SENTENCES = [
     # Program 4
     ("gather the numbers from 1 to 10", None),
     ("filter the numbers where each is above 5", None),
-    ("combine the numbers", None),
-    ("remember the result called total from combine the numbers", None),
+    ("sum the numbers", None),
+    ("remember the result called total from sum the numbers", None),
     # Program 5 — not operator
     ("filter the scores where each is not above 7", None),
     ("filter the scores where each is not below 3", None),
