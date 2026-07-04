@@ -187,3 +187,47 @@ def test_integration_contradiction_warns_without_blocking_execution():
     assert any(line == "99" for line in outputs)
     # The advisory pass itself does not flip had_error.
     assert contract.results[0].status is ResultStatus.SUCCESS
+
+
+# ---------------------------------------------------------------------------
+# v28 — guarded deontics (`unless`) get conditional contradiction wording
+# ---------------------------------------------------------------------------
+
+
+def test_guarded_forbid_vs_unguarded_require_names_exception():
+    w = warnings_for([
+        "require X is above 50",
+        "forbid X is above 50 unless approved is equal to yes",
+    ])
+    assert len(w) == 1
+    assert "unless approved is equal to yes" in w[0]
+
+
+def test_both_guarded_joins_exceptions_with_or():
+    w = warnings_for([
+        "require X is above 50 unless override is equal to yes",
+        "forbid X is above 50 unless approved is equal to yes",
+    ])
+    assert len(w) == 1
+    assert "unless" in w[0]
+    assert "override is equal to yes" in w[0]
+    assert "approved is equal to yes" in w[0]
+    assert " or " in w[0]
+
+
+def test_unguarded_pair_message_unchanged():
+    w = warnings_for(["require X is above 50", "forbid X is above 50"])
+    assert len(w) == 1
+    assert "unless" not in w[0]
+    assert w[0].endswith(
+        "'require x is above 50' conflicts with 'forbid x is above 50' "
+        "— no value of x can satisfy both."
+    )
+
+
+def test_guarded_permit_still_never_contradicts():
+    w = warnings_for([
+        "require X is above 50",
+        "permit X is above 50 unless override is equal to yes",
+    ])
+    assert w == []

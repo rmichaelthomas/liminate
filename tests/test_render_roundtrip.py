@@ -34,13 +34,19 @@ from liminate.lexer import tokenize
 from liminate.parser import (
     ArithmeticNode,
     BareWord,
+    ExpectNode,
+    ForbidNode,
     NameRef,
     NumberLiteral,
+    PermitNode,
     QuotedString,
     RememberValueNode,
+    RequireNode,
     parse,
 )
 from liminate.renderer import render
+from liminate.reorderer import reorder
+from liminate.result import LiminateResult
 
 
 def _remember(src):
@@ -144,3 +150,56 @@ def test_issue_18_rendered_program_runs_identically(tmp_path):
 
     assert "Error" not in rendered_out, rendered_out
     assert original_out == rendered_out == "off\n"
+
+
+# ---------------------------------------------------------------------------
+# v28 — round-trip fidelity for `unless` exception clauses on deontics
+# ---------------------------------------------------------------------------
+
+
+def _parse_line(src):
+    reordered = reorder(tokenize(src))
+    assert not isinstance(reordered, LiminateResult), src
+    ast = parse(reordered)
+    assert not isinstance(ast, LiminateResult), src
+    return ast
+
+
+UNLESS_DEONTIC_SOURCES = [
+    ("require x is above 10 unless y is equal to yes", RequireNode),
+    (
+        "forbid x is above 50 unless approved is equal to yes",
+        ForbidNode,
+    ),
+    ("permit x is below 100 unless frozen is equal to yes", PermitNode),
+    (
+        "expect x is above 1000 unless recession is equal to yes",
+        ExpectNode,
+    ),
+]
+
+
+@pytest.mark.parametrize("src,node_type", UNLESS_DEONTIC_SOURCES)
+def test_unless_deontic_round_trips(src, node_type):
+    ast = _parse_line(src)
+    assert isinstance(ast, node_type)
+    rendered = render(ast)
+    assert rendered == src
+    again = _parse_line(rendered)
+    assert isinstance(again, node_type)
+    assert again == ast
+
+
+def test_unless_deontic_full_canonical_order_round_trip():
+    src = (
+        'starting "2025-01-01" until "2025-12-31" inherited '
+        'require x is above 10 unless y is equal to yes '
+        'because "policy" from agent-a'
+    )
+    ast = _parse_line(src)
+    assert isinstance(ast, RequireNode)
+    rendered = render(ast)
+    assert rendered == src
+    again = _parse_line(rendered)
+    assert isinstance(again, RequireNode)
+    assert again.exception is not None

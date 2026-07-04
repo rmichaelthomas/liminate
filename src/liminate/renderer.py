@@ -290,7 +290,11 @@ def _render_node(node: ASTNode) -> str:
         )
     if isinstance(node, RequireNode):
         # Normative Era batch 2 — `require <condition>`.
-        return f"require {render(node.condition)}"
+        # v28 — optional `unless <exception>` clause.
+        base = f"require {render(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render(node.exception)}"
+        return base
     if isinstance(node, RequireEachNode):
         # v8a §49 — `require each <name> in <list> <condition>`.
         return (
@@ -299,13 +303,25 @@ def _render_node(node: ASTNode) -> str:
         )
     if isinstance(node, ForbidNode):
         # Deontic Era — `forbid <condition>`.
-        return f"forbid {render(node.condition)}"
+        # v28 — optional `unless <exception>` clause.
+        base = f"forbid {render(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render(node.exception)}"
+        return base
     if isinstance(node, PermitNode):
         # Deontic Era — `permit <condition>`.
-        return f"permit {render(node.condition)}"
+        # v28 — optional `unless <exception>` clause.
+        base = f"permit {render(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render(node.exception)}"
+        return base
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — `expect <condition>`.
-        return f"expect {render(node.condition)}"
+        # v28 — optional `unless <exception>` clause.
+        base = f"expect {render(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render(node.exception)}"
+        return base
     if isinstance(node, AssignNode):
         # Delegated Era batch 3 — `assign <item> to <recipient>`.
         return f"assign {node.item.name} to {render(node.recipient)}"
@@ -387,13 +403,25 @@ def render_with_explicit_precedence(node: ASTNode) -> str:
     if isinstance(node, SequenceNode):
         return _render_sequence(node, render_with_explicit_precedence)
     if isinstance(node, RequireNode):
-        return f"require {render_with_explicit_precedence(node.condition)}"
+        base = f"require {render_with_explicit_precedence(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render_with_explicit_precedence(node.exception)}"
+        return base
     if isinstance(node, ForbidNode):
-        return f"forbid {render_with_explicit_precedence(node.condition)}"
+        base = f"forbid {render_with_explicit_precedence(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render_with_explicit_precedence(node.exception)}"
+        return base
     if isinstance(node, PermitNode):
-        return f"permit {render_with_explicit_precedence(node.condition)}"
+        base = f"permit {render_with_explicit_precedence(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render_with_explicit_precedence(node.exception)}"
+        return base
     if isinstance(node, ExpectNode):
-        return f"expect {render_with_explicit_precedence(node.condition)}"
+        base = f"expect {render_with_explicit_precedence(node.condition)}"
+        if node.exception is not None:
+            base += f" unless {render_with_explicit_precedence(node.exception)}"
+        return base
     if isinstance(node, AssignNode):
         return (
             f"assign {node.item.name} to "

@@ -311,3 +311,90 @@ def test_forbid_rejected_as_variable_name():
         ResultStatus.ERROR_PARSE,
         ResultStatus.ERROR_SEMANTIC,
     )
+
+
+# ---------------------------------------------------------------------------
+# v28 — `unless` exception clauses
+# ---------------------------------------------------------------------------
+
+
+def test_parses_forbid_with_unless():
+    ast = _parse(
+        "forbid total is above 10000 unless approved is equal to yes"
+    )
+    assert isinstance(ast, ForbidNode)
+    assert ast.condition.op == "above"
+    assert isinstance(ast.exception, ConditionNode)
+
+
+def test_parses_forbid_without_unless_has_no_exception():
+    ast = _parse("forbid total is above 10000")
+    assert isinstance(ast, ForbidNode)
+    assert ast.exception is None
+
+
+def test_parses_forbid_unless_compound_exception():
+    ast = _parse(
+        "forbid x is above 10 unless flag-a is equal to yes and "
+        "flag-b is equal to yes"
+    )
+    assert isinstance(ast, ForbidNode)
+    assert isinstance(ast.exception, CompoundConditionNode)
+    assert ast.exception.connector == "and"
+
+
+def test_parses_forbid_unless_before_because():
+    ast = _parse(
+        'forbid total is above 10000 unless approved is equal to yes '
+        'because "policy"'
+    )
+    assert isinstance(ast, ForbidNode)
+    assert ast.exception is not None
+    assert ast.rationale == "policy"
+
+
+def test_forbid_unless_render_round_trip():
+    ast = _parse(
+        "forbid total is above 10000 unless approved is equal to yes"
+    )
+    rendered = render(ast)
+    assert rendered == (
+        "forbid total is above 10000 unless approved is equal to yes"
+    )
+    again = _parse(rendered)
+    assert isinstance(again, ForbidNode)
+    assert again == ast
+
+
+# Execution semantics: halt when main AND NOT exception.
+
+
+def test_forbid_unless_main_false_silent():
+    s = _session()
+    s.run_line("remember a value called total with 5000")
+    s.run_line('remember a value called approved with "no"')
+    r = s.run_line(
+        'forbid total is above 10000 unless approved is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_forbid_unless_main_true_exception_excuses():
+    s = _session()
+    s.run_line("remember a value called total with 15000")
+    s.run_line('remember a value called approved with "yes"')
+    r = s.run_line(
+        'forbid total is above 10000 unless approved is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_forbid_unless_main_true_exception_false_violates():
+    s = _session()
+    s.run_line("remember a value called total with 15000")
+    s.run_line('remember a value called approved with "no"')
+    r = s.run_line(
+        'forbid total is above 10000 unless approved is equal to "yes"'
+    )
+    assert r.status is ResultStatus.PROHIBITION_VIOLATED
+    assert "total is above 10000" in (r.message or "")
