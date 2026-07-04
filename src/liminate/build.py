@@ -44,6 +44,7 @@ from typing import Any
 
 from .lexer import LexError, leading_indent, tokenize
 from .parser import (
+    DefineNode,
     RememberCompositionNode,
     SequenceNode,
     WhenNode,
@@ -145,6 +146,7 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
     canonical: list[str] = []
     asts: list[Any] = []
     composition_names: set[str] = set()
+    predicate_names: set[str] = set()
     topic: str | None = None
     first_eligible_seen = False
 
@@ -160,12 +162,21 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
         # Meta-Structural Era: an `about` declaration is consumed as
         # metadata before the normal pipeline. It must be the first
         # eligible (non-blank, non-comment) line and may appear at most
-        # once (MS-Q1).
+        # once (MS-Q1). Definitional Era (v31): `define` also lexes as
+        # TokenType.DECLARATION but is NOT first-line-only — it's a
+        # normal program statement, so this check is narrowed to `about`
+        # specifically and `define` falls through to the regular
+        # tokenize/reorder/parse pipeline below (mirrors run.py's
+        # identical first-line dispatch).
         try:
             decl_tokens = tokenize(line)
         except LexError as e:
             raise BuildError(f"line {i + 1}: {e.message}") from None
-        if decl_tokens and decl_tokens[0].type is TokenType.DECLARATION:
+        if (
+            decl_tokens
+            and decl_tokens[0].type is TokenType.DECLARATION
+            and decl_tokens[0].value == "about"
+        ):
             if first_eligible_seen or topic is not None:
                 raise BuildError(
                     f"line {i + 1}: 'about' is a declaration that must be "
@@ -216,7 +227,8 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
         if is_when_header:
             action_lines, next_i = _collect_when_block(lines, i)
             ast = _parse_when_block_from_source(
-                line, action_lines, composition_names, line_no=i + 1,
+                line, action_lines, composition_names, predicate_names,
+                line_no=i + 1,
             )
             asts.append(ast)
             try:
@@ -226,11 +238,12 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
                     f"line {i + 1}: failed to render canonical form ({e})"
                 ) from None
             _collect_composition_names(ast, composition_names)
+            _collect_predicate_names(ast, predicate_names)
             i = next_i
             continue
 
         # Regular statement.
-        ast = _parse_line(line, composition_names, line_no=i + 1)
+        ast = _parse_line(line, composition_names, predicate_names, line_no=i + 1)
         asts.append(ast)
         try:
             canonical.append(render(ast))
@@ -239,12 +252,15 @@ def _validate_and_render(source: str) -> tuple[list[str], list[Any], str | None]
                 f"line {i + 1}: failed to render canonical form ({e})"
             ) from None
         _collect_composition_names(ast, composition_names)
+        _collect_predicate_names(ast, predicate_names)
         i += 1
 
     return canonical, asts, topic
 
 
-def _parse_line(line: str, comp_names: set[str], *, line_no: int) -> Any:
+def _parse_line(
+    line: str, comp_names: set[str], pred_names: set[str], *, line_no: int,
+) -> Any:
     try:
         tokens = tokenize(line)
     except LexError as e:
@@ -252,7 +268,7 @@ def _parse_line(line: str, comp_names: set[str], *, line_no: int) -> Any:
     reordered = reorder(tokens)
     if isinstance(reordered, LiminateResult):
         raise BuildError(_fmt_result(reordered, line_no))
-    ast = parse(reordered, composition_names=comp_names)
+    ast = parse(reordered, composition_names=comp_names, predicate_names=pred_names)
     if isinstance(ast, LiminateResult):
         raise BuildError(_fmt_result(ast, line_no))
     return ast
@@ -262,6 +278,7 @@ def _parse_when_block_from_source(
     header_line: str,
     action_lines: list[str],
     comp_names: set[str],
+    pred_names: set[str],
     *,
     line_no: int,
 ) -> Any:
@@ -289,6 +306,7 @@ def _parse_when_block_from_source(
     ast = parse_when_block(
         header_reordered, action_token_lists,
         composition_names=comp_names,
+        predicate_names=pred_names,
     )
     if isinstance(ast, LiminateResult):
         raise BuildError(_fmt_result(ast, line_no))
@@ -348,6 +366,19 @@ def _collect_composition_names(ast: Any, sink: set[str]) -> None:
             _collect_composition_names(op, sink)
     elif isinstance(ast, WhenNode):
         _collect_composition_names(ast.action, sink)
+
+
+def _collect_predicate_names(ast: Any, sink: set[str]) -> None:
+    """Definitional Era (v31) — walk an AST collecting DefineNode.name
+    values so later statements that apply those predicates parse
+    successfully. Mirrors _collect_composition_names exactly."""
+    if isinstance(ast, DefineNode):
+        sink.add(ast.name)
+    elif isinstance(ast, SequenceNode):
+        for op in ast.operations:
+            _collect_predicate_names(op, sink)
+    elif isinstance(ast, WhenNode):
+        _collect_predicate_names(ast.action, sink)
 
 
 def _contains_when(asts: list[Any]) -> bool:

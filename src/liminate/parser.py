@@ -451,6 +451,23 @@ class CompoundConditionNode(ASTNode):
 
 
 @dataclass
+class PredicateApplicationNode(ASTNode):
+    """Definitional Era (v31) — application of a named predicate as a
+    condition leaf. Produced by `is <predicate>` / `is not <predicate>`
+    inside any condition grammar (where/keep/filter/require/forbid/
+    permit/expect/choose if/when/unless).
+
+    `subject` is the field node the predicate is applied to (NameRef,
+    EachPronoun, or FieldAccessNode). `predicate_name` keys into the
+    symbol-table predicate entry at evaluation time. `negated` inverts
+    the result (`is not <predicate>`).
+    """
+    subject: ASTNode
+    predicate_name: str
+    negated: bool = False
+
+
+@dataclass
 class ChooseBranch:
     """v2d §99–§101 — one (condition, action) pair inside a `choose`.
 
@@ -969,6 +986,33 @@ class AboutNode(ASTNode):
     topic: str
 
 
+@dataclass
+class DefineNode(ASTNode):
+    """Definitional Era (v31) — a named, reusable predicate.
+
+    `define <name>: <condition>` registers `name` as a predicate whose
+    body is the condition AST. Stored in the symbol table at execution
+    time (type "predicate"); referenced from condition grammar via
+    PredicateApplicationNode. Forward-declaration only: a predicate must
+    be defined on an earlier line before it is used (mirrors named
+    compositions).
+
+    The body is the full unified condition grammar (ConditionNode /
+    CompoundConditionNode / PredicateApplicationNode leaves).
+    """
+    name: str
+    condition: ASTNode
+    # Standard inert metadata layer, for structural consistency with
+    # other statement nodes (compare=False — never read by execution).
+    # Semantic interaction with a predicate definition is out of scope
+    # for v31; the fields exist so the render/parse machinery is uniform.
+    rationale: str | None = field(default=None, compare=False)
+    inherited: bool = field(default=False, compare=False)
+    inherited_from: str | None = field(default=None, compare=False)
+    starting_date: str | None = field(default=None, compare=False)
+    until_date: str | None = field(default=None, compare=False)
+
+
 # Set of operator words that may follow `is` as a comparison introducer.
 _COMPARISON_OPERATORS = frozenset({"above", "below", "equal_to"})
 
@@ -1027,6 +1071,7 @@ class TokenStream:
 def parse(
     tokens: list[Token],
     composition_names: set[str] | None = None,
+    predicate_names: set[str] | None = None,
 ) -> ASTNode | LiminateResult:
     """Parse a canonically-ordered token list into an AST.
 
@@ -1046,9 +1091,10 @@ def parse(
 
     stream = TokenStream(tokens)
     comp = composition_names or set()
+    preds = predicate_names or set()
 
     try:
-        ast = _parse_operation_sequence(stream, comp)
+        ast = _parse_operation_sequence(stream, comp, preds)
         if not stream.at_end():
             unexpected = stream.peek()
             raise _ParseError(
@@ -1136,6 +1182,7 @@ def parse_when_block(
     header_tokens: list[Token],
     action_token_lists: list[list[Token]],
     composition_names: set[str] | None = None,
+    predicate_names: set[str] | None = None,
 ) -> ASTNode | LiminateResult:
     """Parse a `when <cond> [unless <guard>] [:]` header plus its
     indented action block (v3a §108/§109/§110).
@@ -1208,6 +1255,7 @@ def parse_when_block(
         )
 
     comp = composition_names or set()
+    preds = predicate_names or set()
 
     # Parse the header — condition + optional unless guard + optional `:`.
     stream = TokenStream(header_tokens[1:])  # skip the `when` connective
@@ -1218,7 +1266,7 @@ def parse_when_block(
                 "I expected a condition after 'when'. "
                 "Try: when <name> is above <value>."
             )
-        condition = _parse_or_condition(stream)
+        condition = _parse_or_condition(stream, preds)
 
         unless_guard: ASTNode | None = None
         peek = stream.peek()
@@ -1232,7 +1280,7 @@ def parse_when_block(
                 raise _ParseError(
                     "I expected a guard condition after 'unless'."
                 )
-            unless_guard = _parse_or_condition(stream)
+            unless_guard = _parse_or_condition(stream, preds)
 
         # Meta-Structural Era — `inherited when ... from <agent>` agent
         # attribution (Invariant Checkpoint v2 §43). Legal only with the
@@ -1278,7 +1326,7 @@ def parse_when_block(
     # error wording; `finish` is parsed as a regular verb.
     action_asts: list[ASTNode] = []
     for tokens in action_token_lists:
-        sub = parse(tokens, composition_names=comp)
+        sub = parse(tokens, composition_names=comp, predicate_names=preds)
         if isinstance(sub, LiminateResult):
             # Propagate parse / amber outcomes directly. Amber from an
             # action statement still blocks Phase 2 per v3a §107.
@@ -1335,8 +1383,10 @@ def _starts_operation(tok: Token | None) -> bool:
     return tok.type is TokenType.OPERATOR and tok.value == "inherited"
 
 
-def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
-    first = _parse_one_operation(stream, comp)
+def _parse_operation_sequence(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ASTNode:
+    first = _parse_one_operation(stream, comp, preds)
     operations: list[ASTNode] = [first]
     connectors: list[str] = []
     while not stream.at_end():
@@ -1352,7 +1402,7 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
                 break
             stream.consume()  # eat `and`
             connectors.append("and")
-            operations.append(_parse_one_operation(stream, comp))
+            operations.append(_parse_one_operation(stream, comp, preds))
         elif peek.value == "then":
             # Normative Era batch 2: `then` always sequences operations;
             # the next token must be a verb (or an `inherited` verb). Unlike
@@ -1366,7 +1416,7 @@ def _parse_operation_sequence(stream: TokenStream, comp: set[str]) -> ASTNode:
                 )
             stream.consume()  # eat `then`
             connectors.append("then")
-            operations.append(_parse_one_operation(stream, comp))
+            operations.append(_parse_one_operation(stream, comp, preds))
         else:
             break
     if len(operations) == 1:
@@ -1501,7 +1551,9 @@ def _try_consume_because(stream: TokenStream) -> str | None:
     return rationale_tok.value
 
 
-def _try_consume_unless_exception(stream: TokenStream) -> ASTNode | None:
+def _try_consume_unless_exception(
+    stream: TokenStream, preds: set[str],
+) -> ASTNode | None:
     """v28 — consume an optional `unless <condition>` exception clause
     immediately following a deontic verb's main condition.
 
@@ -1522,7 +1574,7 @@ def _try_consume_unless_exception(stream: TokenStream) -> ASTNode | None:
     stream.consume()  # eat `unless`
     if stream.at_end():
         raise _ParseError("I expected a condition after 'unless'.")
-    return _parse_or_condition(stream)
+    return _parse_or_condition(stream, preds)
 
 
 def _try_consume_inherited_from(stream: TokenStream) -> str | None:
@@ -1572,7 +1624,9 @@ def _try_consume_inherited_from(stream: TokenStream) -> str | None:
     return agent_tok.value
 
 
-def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
+def _parse_one_operation(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ASTNode:
     # Statement-initial `starting`/`until` temporal modifiers
     # (Temporal-Boundary Era, DT-Q4). Consumed before `inherited` so the
     # canonical order is `starting ... until ... inherited <verb> ...`.
@@ -1597,7 +1651,7 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
     # this single chokepoint attaches it to the last-parsed statement node
     # in every context — top-level, `and`/`then` sequences, `choose`
     # branches, and `each` bodies — without per-verb plumbing.
-    node = _parse_one_operation_inner(stream, comp)
+    node = _parse_one_operation_inner(stream, comp, preds)
     rationale = _try_consume_because(stream)
     if rationale is not None:
         node.rationale = rationale
@@ -1621,12 +1675,14 @@ def _parse_one_operation(stream: TokenStream, comp: set[str]) -> ASTNode:
     return node
 
 
-def _parse_one_operation_inner(stream: TokenStream, comp: set[str]) -> ASTNode:
+def _parse_one_operation_inner(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ASTNode:
     t = stream.peek()
     if t is None:
         raise _ParseError("I expected an operation here.")
     if t.type is TokenType.VERB:
-        return _parse_verb_statement(stream, comp)
+        return _parse_verb_statement(stream, comp, preds)
     if t.type is TokenType.UNKNOWN:
         # v1b §41 fallback: named composition call.
         if t.value in comp:
@@ -1668,10 +1724,14 @@ def _parse_one_operation_inner(stream: TokenStream, comp: set[str]) -> ASTNode:
             "it can't introduce a statement on its own. "
             "Try: when <condition> unless <guard>."
         )
-    # Meta-structural: declarations are first-line-only and handled by
-    # the CLI before the normal pipeline. If `about` reaches here, it
-    # means it appeared on a non-first line.
+    # Meta-structural: `about` is first-line-only and handled by the CLI
+    # before the normal pipeline. Definitional Era (v31): `define` is NOT
+    # first-line-only — it's a normal program statement, dispatched here
+    # like any other verb-level construct. Any other DECLARATION reaching
+    # this point means it appeared on a non-first line.
     if t.type is TokenType.DECLARATION:
+        if t.value == "define":
+            return _parse_define(stream, comp, preds)
         raise _ParseError(
             f"'{t.value}' is a declaration that must be the first line "
             f"of the program (after any comments). It can't appear here."
@@ -1679,18 +1739,20 @@ def _parse_one_operation_inner(stream: TokenStream, comp: set[str]) -> ASTNode:
     raise _ParseError(f"I didn't expect '{t.value}' at the start of an operation.")
 
 
-def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
+def _parse_verb_statement(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ASTNode:
     verb = stream.consume()
     if verb.value == "remember":
-        return _parse_remember(stream, comp)
+        return _parse_remember(stream, comp, preds)
     if verb.value == "show":
         # v2a §69 (D1): multi-field display is only valid as the body of
         # an `each` loop. The parser tracks that via clause context.
         return _parse_show(stream, in_each=stream.in_clause("each"))
     if verb.value == "filter":
-        return _parse_filter(stream)
+        return _parse_filter(stream, preds)
     if verb.value == "keep":
-        return _parse_keep(stream)
+        return _parse_keep(stream, preds)
     if verb.value == "count":
         return _parse_count(stream)
     if verb.value == "gather":
@@ -1698,7 +1760,7 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
     if verb.value == "sum":
         return _parse_sum(stream)
     if verb.value == "each":
-        return _parse_each(stream, comp)
+        return _parse_each(stream, comp, preds)
     if verb.value == "choose":
         # v2d §102 — `choose` inside `each` is deferred. Reject at parse
         # time with the spec-mandated wording (sentence 94 / Outcome 4).
@@ -1707,7 +1769,7 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
                 "'choose' can't appear inside 'each'. To handle items "
                 "differently, use 'keep' to separate them by condition."
             )
-        return _parse_choose(stream, comp)
+        return _parse_choose(stream, comp, preds)
     if verb.value == "add":
         return _parse_add(stream)
     if verb.value == "remove":
@@ -1715,15 +1777,15 @@ def _parse_verb_statement(stream: TokenStream, comp: set[str]) -> ASTNode:
     if verb.value == "weakens":
         return _parse_weakens(stream)
     if verb.value == "require":
-        return _parse_require(stream)
+        return _parse_require(stream, preds)
     if verb.value == "forbid":
-        return _parse_forbid(stream)
+        return _parse_forbid(stream, preds)
     if verb.value == "permit":
-        return _parse_permit(stream)
+        return _parse_permit(stream, preds)
     if verb.value == "assign":
         return _parse_assign(stream)
     if verb.value == "expect":
-        return _parse_expect(stream)
+        return _parse_expect(stream, preds)
     if verb.value == "sort":
         return _parse_sort(stream)
     if verb.value == "compare":
@@ -1877,7 +1939,9 @@ def _pack_verb_missing_slot_error(
 # ---------------------------------------------------------------------------
 
 
-def _parse_remember(stream: TokenStream, comp: set[str]) -> ASTNode:
+def _parse_remember(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ASTNode:
     """remember <body>, where <body> is one of:
         how to <name> : <statement>             (composition definition)
         <article>? <descriptor>* called <name> with <value-expr>
@@ -1888,7 +1952,7 @@ def _parse_remember(stream: TokenStream, comp: set[str]) -> ASTNode:
     """
     peek = stream.peek()
     if peek and peek.type is TokenType.CONNECTIVE and peek.value == "how":
-        return _parse_composition_definition(stream, comp)
+        return _parse_composition_definition(stream, comp, preds)
 
     descriptor, saw_list = _consume_remember_intro(stream)
 
@@ -1910,10 +1974,12 @@ def _parse_remember(stream: TokenStream, comp: set[str]) -> ASTNode:
 
     if intro.value == "with":
         return _parse_remember_with(stream, name, descriptor, saw_list)
-    return _parse_remember_from(stream, name, comp, descriptor)
+    return _parse_remember_from(stream, name, comp, preds, descriptor)
 
 
-def _parse_composition_definition(stream: TokenStream, comp: set[str]) -> RememberCompositionNode:
+def _parse_composition_definition(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> RememberCompositionNode:
     stream.consume()  # how
     to = stream.consume()
     if not (to and to.type is TokenType.CONNECTIVE and to.value == "to"):
@@ -1935,8 +2001,41 @@ def _parse_composition_definition(stream: TokenStream, comp: set[str]) -> Rememb
     if not (colon and colon.type is TokenType.DELIMITER and colon.value == ":"):
         raise _ParseError("I expected ':' after the composition name.")
 
-    body = _parse_operation_sequence(stream, comp)
+    body = _parse_operation_sequence(stream, comp, preds)
     return RememberCompositionNode(name=name, body=body, param=param)
+
+
+# ---------------------------------------------------------------------------
+# define (Definitional Era, v31)
+# ---------------------------------------------------------------------------
+
+
+def _parse_define(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> DefineNode:
+    """`define <name>: <condition>` — registers a named, reusable predicate.
+
+    Mirrors `_parse_composition_definition`'s name + ':' handling exactly
+    (same name-consumption rules: UNKNOWN token, hyphens allowed, reserved
+    words rejected). The body is a condition (not an operation sequence)
+    parsed with the `define-body` clause pushed so a field-elided leaf
+    (`define big: is above 100`) binds to an implicit `each` pronoun,
+    exactly like `require-each` (v31 §90 — see the elision guard in
+    `_parse_simple_condition`).
+    """
+    stream.consume()  # eat `define`
+    name = _consume_name(stream, after="'define'")
+
+    colon = stream.consume()
+    if not (colon and colon.type is TokenType.DELIMITER and colon.value == ":"):
+        raise _ParseError("I expected ':' after the predicate name.")
+
+    stream.push_clause("define-body")
+    try:
+        condition = _parse_or_condition(stream, preds)
+    finally:
+        stream.pop_clause()
+    return DefineNode(name=name, condition=condition)
 
 
 def _consume_remember_intro(stream: TokenStream) -> tuple[str | None, bool]:
@@ -2075,7 +2174,11 @@ def _parse_record_field(stream: TokenStream) -> tuple[str, ASTNode]:
 
 
 def _parse_remember_from(
-    stream: TokenStream, name: str, comp: set[str], descriptor: str | None = None,
+    stream: TokenStream,
+    name: str,
+    comp: set[str],
+    preds: set[str],
+    descriptor: str | None = None,
 ) -> ASTNode:
     """`from` in `remember` (v1b §43):
        next token is VERB        -> result capture via recursive descent
@@ -2087,7 +2190,7 @@ def _parse_remember_from(
     if peek is None:
         raise _ParseError("I expected an expression after 'from'.")
     if peek.type is TokenType.VERB:
-        sub = _parse_verb_statement(stream, comp)
+        sub = _parse_verb_statement(stream, comp, preds)
         return RememberValueNode(name=name, value=sub, descriptor=descriptor)
     if peek.type is TokenType.UNKNOWN and peek.value in comp:
         # v1b §41 + v2d §98 — named composition call as value expression.
@@ -2374,7 +2477,9 @@ def _parse_weakens(stream: TokenStream) -> WeakensNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_require(stream: TokenStream) -> RequireNode | RequireEachNode:
+def _parse_require(
+    stream: TokenStream, preds: set[str],
+) -> RequireNode | RequireEachNode:
     """`require <condition>` — enforcement verb.
 
     The condition uses the same parser path as `choose if` /
@@ -2396,18 +2501,18 @@ def _parse_require(stream: TokenStream) -> RequireNode | RequireEachNode:
     # Second parse shape: `require each {name} in {list} {condition}`.
     peek = stream.peek()
     if peek and peek.type is TokenType.VERB and peek.value == "each":
-        return _parse_require_each(stream)
+        return _parse_require_each(stream, preds)
 
     stream.push_clause("require")
     try:
-        condition = _parse_or_condition(stream)
-        exception = _try_consume_unless_exception(stream)
+        condition = _parse_or_condition(stream, preds)
+        exception = _try_consume_unless_exception(stream, preds)
     finally:
         stream.pop_clause()
     return RequireNode(condition=condition, exception=exception)
 
 
-def _parse_require_each(stream: TokenStream) -> RequireEachNode:
+def _parse_require_each(stream: TokenStream, preds: set[str]) -> RequireEachNode:
     """Parse `require each {name} in {list} {condition}` (v8a §49).
 
     `each` has been peeked but not consumed. Consume it, then the
@@ -2452,7 +2557,7 @@ def _parse_require_each(stream: TokenStream) -> RequireEachNode:
         )
     stream.push_clause("require-each")
     try:
-        condition = _parse_or_condition(stream)
+        condition = _parse_or_condition(stream, preds)
     finally:
         stream.pop_clause()
 
@@ -2468,7 +2573,7 @@ def _parse_require_each(stream: TokenStream) -> RequireEachNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_forbid(stream: TokenStream) -> ForbidNode:
+def _parse_forbid(stream: TokenStream, preds: set[str]) -> ForbidNode:
     """`forbid <condition>` — prohibition verb.
 
     Same condition grammar as `require`. The difference is purely
@@ -2482,8 +2587,8 @@ def _parse_forbid(stream: TokenStream) -> ForbidNode:
         )
     stream.push_clause("forbid")
     try:
-        condition = _parse_or_condition(stream)
-        exception = _try_consume_unless_exception(stream)
+        condition = _parse_or_condition(stream, preds)
+        exception = _try_consume_unless_exception(stream, preds)
     finally:
         stream.pop_clause()
     return ForbidNode(condition=condition, exception=exception)
@@ -2494,7 +2599,7 @@ def _parse_forbid(stream: TokenStream) -> ForbidNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_permit(stream: TokenStream) -> PermitNode:
+def _parse_permit(stream: TokenStream, preds: set[str]) -> PermitNode:
     """`permit <condition>` — explicit permission verb.
 
     Same condition grammar as `require`/`forbid`. The difference
@@ -2508,8 +2613,8 @@ def _parse_permit(stream: TokenStream) -> PermitNode:
         )
     stream.push_clause("permit")
     try:
-        condition = _parse_or_condition(stream)
-        exception = _try_consume_unless_exception(stream)
+        condition = _parse_or_condition(stream, preds)
+        exception = _try_consume_unless_exception(stream, preds)
     finally:
         stream.pop_clause()
     return PermitNode(condition=condition, exception=exception)
@@ -2552,7 +2657,7 @@ def _parse_assign(stream: TokenStream) -> AssignNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_expect(stream: TokenStream) -> ExpectNode:
+def _parse_expect(stream: TokenStream, preds: set[str]) -> ExpectNode:
     """`expect <condition>` — tracked anticipation verb.
 
     Same condition grammar as `require`. The difference is purely
@@ -2566,8 +2671,8 @@ def _parse_expect(stream: TokenStream) -> ExpectNode:
         )
     stream.push_clause("expect")
     try:
-        condition = _parse_or_condition(stream)
-        exception = _try_consume_unless_exception(stream)
+        condition = _parse_or_condition(stream, preds)
+        exception = _try_consume_unless_exception(stream, preds)
     finally:
         stream.pop_clause()
     return ExpectNode(condition=condition, exception=exception)
@@ -2842,7 +2947,9 @@ def _parse_gather(stream: TokenStream) -> GatherNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
+def _parse_each(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> EachNode:
     _consume_optional_article(stream)
     coll_tok = stream.consume()
     if coll_tok is None:
@@ -2865,7 +2972,7 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
     try:
         # v2a §69: the show parser keys multi-field detection off this
         # clause-context flag — see _parse_verb_statement / _parse_show.
-        action = _parse_one_operation(stream, comp)
+        action = _parse_one_operation(stream, comp, preds)
     finally:
         stream.pop_clause()
     return EachNode(collection=collection, action=action)
@@ -2876,7 +2983,9 @@ def _parse_each(stream: TokenStream, comp: set[str]) -> EachNode:
 # ---------------------------------------------------------------------------
 
 
-def _parse_choose(stream: TokenStream, comp: set[str]) -> ChooseNode:
+def _parse_choose(
+    stream: TokenStream, comp: set[str], preds: set[str],
+) -> ChooseNode:
     """Parse `choose if <cond>: <action> [otherwise [if <cond>:] <action>]*`.
 
     The colon is the context switch between condition mode and action
@@ -2893,7 +3002,7 @@ def _parse_choose(stream: TokenStream, comp: set[str]) -> ChooseNode:
             "Try: choose if <condition>: <action>."
         )
     branches: list[ChooseBranch] = [
-        _parse_choose_branch(stream, comp, leader="'choose if'")
+        _parse_choose_branch(stream, comp, preds, leader="'choose if'")
     ]
     while True:
         peek = stream.peek()
@@ -2904,11 +3013,11 @@ def _parse_choose(stream: TokenStream, comp: set[str]) -> ChooseNode:
         if peek2 and peek2.type is TokenType.CONNECTIVE and peek2.value == "if":
             stream.consume()  # eat the chained `if`
             branches.append(
-                _parse_choose_branch(stream, comp, leader="'otherwise if'")
+                _parse_choose_branch(stream, comp, preds, leader="'otherwise if'")
             )
         else:
             # Terminal `otherwise <action>` — no condition, no colon (§99).
-            action = _parse_operation_sequence(stream, comp)
+            action = _parse_operation_sequence(stream, comp, preds)
             branches.append(ChooseBranch(condition=None, action=action))
             # No further branches are syntactically allowed after the
             # terminal otherwise — additional tokens are left for the
@@ -2918,14 +3027,14 @@ def _parse_choose(stream: TokenStream, comp: set[str]) -> ChooseNode:
 
 
 def _parse_choose_branch(
-    stream: TokenStream, comp: set[str], *, leader: str,
+    stream: TokenStream, comp: set[str], preds: set[str], *, leader: str,
 ) -> ChooseBranch:
     """Parse `<condition>: <action>` for a single `choose` branch. The
     `leader` argument feeds the error message so the user sees whether
     they were inside the initial `choose if` or a chained `otherwise if`."""
     stream.push_clause("choose_cond")
     try:
-        condition = _parse_or_condition(stream)
+        condition = _parse_or_condition(stream, preds)
     finally:
         stream.pop_clause()
     colon = stream.consume()
@@ -2934,7 +3043,7 @@ def _parse_choose_branch(
         raise _ParseError(
             f"I expected ':' after the {leader} condition, not '{got}'."
         )
-    action = _parse_operation_sequence(stream, comp)
+    action = _parse_operation_sequence(stream, comp, preds)
     return ChooseBranch(condition=condition, action=action)
 
 
@@ -2943,19 +3052,19 @@ def _parse_choose_branch(
 # ---------------------------------------------------------------------------
 
 
-def _parse_filter(stream: TokenStream) -> FilterNode:
-    target, condition = _parse_filter_shape(stream, verb="filter")
+def _parse_filter(stream: TokenStream, preds: set[str]) -> FilterNode:
+    target, condition = _parse_filter_shape(stream, preds, verb="filter")
     return FilterNode(target=target, condition=condition)
 
 
-def _parse_keep(stream: TokenStream) -> KeepNode:
+def _parse_keep(stream: TokenStream, preds: set[str]) -> KeepNode:
     """v2a §67. Shares the target + where + condition shape with filter."""
-    target, condition = _parse_filter_shape(stream, verb="keep")
+    target, condition = _parse_filter_shape(stream, preds, verb="keep")
     return KeepNode(target=target, condition=condition)
 
 
 def _parse_filter_shape(
-    stream: TokenStream, *, verb: str,
+    stream: TokenStream, preds: set[str], *, verb: str,
 ) -> tuple[NameRef, ASTNode]:
     """Shared parser for the filter/keep shape: optional article + target
     + 'where' + condition. v2a §67 keeps the two verbs structurally
@@ -2969,14 +3078,14 @@ def _parse_filter_shape(
 
     stream.push_clause("where")
     try:
-        condition = _parse_or_condition(stream)
+        condition = _parse_or_condition(stream, preds)
     finally:
         stream.pop_clause()
     return target, condition
 
 
-def _parse_or_condition(stream: TokenStream) -> ASTNode:
-    left = _parse_and_condition(stream)
+def _parse_or_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
+    left = _parse_and_condition(stream, preds)
     while True:
         peek = stream.peek()
         if not (peek and peek.type is TokenType.CONNECTIVE and peek.value == "or"):
@@ -2985,13 +3094,13 @@ def _parse_or_condition(stream: TokenStream) -> ASTNode:
         if nxt and nxt.type is TokenType.VERB:
             break  # operation sequencing
         stream.consume()
-        right = _parse_and_condition(stream)
+        right = _parse_and_condition(stream, preds)
         left = CompoundConditionNode(left=left, right=right, connector="or")
     return left
 
 
-def _parse_and_condition(stream: TokenStream) -> ASTNode:
-    left = _parse_simple_condition(stream)
+def _parse_and_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
+    left = _parse_simple_condition(stream, preds)
     while True:
         peek = stream.peek()
         if not (peek and peek.type is TokenType.CONNECTIVE and peek.value == "and"):
@@ -3000,12 +3109,12 @@ def _parse_and_condition(stream: TokenStream) -> ASTNode:
         if nxt and nxt.type is TokenType.VERB:
             break  # operation sequencing — exit the where clause
         stream.consume()
-        right = _parse_simple_condition(stream)
+        right = _parse_simple_condition(stream, preds)
         left = CompoundConditionNode(left=left, right=right, connector="and")
     return left
 
 
-def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
+def _parse_simple_condition(stream: TokenStream, preds: set[str]) -> ConditionNode:
     # Field reference or `each` pronoun (v1b §37).
     head = stream.peek()
     if head is None:
@@ -3015,17 +3124,20 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
     # element via an implicit `each` pronoun. Detect the elided form by a
     # leading comparison/membership token and inject EachPronoun without
     # consuming it, so the operator-parsing below proceeds normally.
-    if stream.in_clause("require-each") and (
+    # Definitional Era (v31 §90): the same elision applies inside a
+    # `define` body (`define big: is above 100`), so a predicate can be
+    # applied per-element without repeating an explicit subject.
+    if (stream.in_clause("require-each") or stream.in_clause("define-body")) and (
         (head.type is TokenType.OPERATOR and head.value in ("is", "not"))
         or (head.type is TokenType.CONNECTIVE and head.value == "includes")
     ):
         field_node: ASTNode = EachPronoun()
-        return _finish_simple_condition(stream, field_node)
+        return _finish_simple_condition(stream, field_node, preds)
     # v25 VW-Q2 — `highest`/`lowest` as a condition's left-hand side, e.g.
     # `require highest total of line-items is below single-item-cap`.
     if head.type is TokenType.OPERATOR and head.value in ("highest", "lowest"):
         field_node = _parse_extrema(stream)
-        return _finish_simple_condition(stream, field_node)
+        return _finish_simple_condition(stream, field_node, preds)
     head = stream.consume()
     if head.type is TokenType.VERB and head.value == "each":
         field_node: ASTNode = EachPronoun()
@@ -3080,10 +3192,12 @@ def _parse_simple_condition(stream: TokenStream) -> ConditionNode:
             )
         raise _ParseError(f"I didn't expect '{head.value}' as a field name.")
 
-    return _finish_simple_condition(stream, field_node)
+    return _finish_simple_condition(stream, field_node, preds)
 
 
-def _finish_simple_condition(stream: TokenStream, field_node: ASTNode) -> ConditionNode:
+def _finish_simple_condition(
+    stream: TokenStream, field_node: ASTNode, preds: set[str],
+) -> ConditionNode:
     """Parse the operator + value tail of a simple condition, given an
     already-resolved field node. Shared between the explicit-field path
     and the `require each` field-elided path (v8a §49)."""
@@ -3137,6 +3251,22 @@ def _finish_simple_condition(stream: TokenStream, field_node: ASTNode) -> Condit
 
     if nxt.type is TokenType.OPERATOR:
         if nxt.value == "not":
+            # Definitional Era (v31): `is not <predicate>`. Checked before
+            # the comparison-negation path below so a predicate name is
+            # applied rather than rejected as a missing comparison
+            # operator. `after` is the token following `not`, peeked
+            # without consuming either token yet.
+            after = stream.peek(1)
+            if (
+                after is not None
+                and after.type is TokenType.UNKNOWN
+                and after.value in preds
+            ):
+                stream.consume()  # not
+                stream.consume()  # predicate name
+                return PredicateApplicationNode(
+                    subject=field_node, predicate_name=after.value, negated=True,
+                )
             stream.consume()
             inner = stream.consume()
             if not (
@@ -3155,6 +3285,15 @@ def _finish_simple_condition(stream: TokenStream, field_node: ASTNode) -> Condit
             value = _parse_value(stream)
             return ConditionNode(field=field_node, op=nxt.value, value=value)
         raise _ParseError(f"I didn't expect '{nxt.value}' after 'is'.")
+
+    # Definitional Era (v31): `is <predicate>` applies a named predicate
+    # to the subject instead of testing string equality. The predicate
+    # table is empty for every legacy program, so this is non-breaking;
+    # `is "overdue"` (quoted) still forces literal string equality since
+    # QUOTED_STRING never matches this UNKNOWN-only check.
+    if nxt.type is TokenType.UNKNOWN and nxt.value in preds:
+        stream.consume()
+        return PredicateApplicationNode(subject=field_node, predicate_name=nxt.value)
 
     # `is` as equality operator: consume a value.
     value = _parse_value(stream)
@@ -3597,6 +3736,11 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
             return True
         if _contains_mixed_precedence(node.action):
             return True
+    if isinstance(node, DefineNode):
+        # Definitional Era (v31): a predicate body follows the same
+        # mixed and/or amber rule as any other condition-bearing
+        # statement (v1a §30).
+        return _condition_is_mixed(node.condition)
     return False
 
 

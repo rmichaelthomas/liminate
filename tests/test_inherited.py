@@ -40,7 +40,7 @@ from liminate.parser import (
 from liminate.reorderer import reorder
 from liminate.renderer import render
 from liminate.result import ResultStatus
-from liminate.vocabulary import ALL_RESERVED, TokenType, reserved_category
+from liminate.vocabulary import ALL_RESERVED, TOMBSTONES, TokenType, reserved_category
 
 
 def _ast(source):
@@ -93,8 +93,11 @@ def test_reserved_category_inherited_is_operator():
 def test_all_reserved_count_is_58():
     # Temporal-Boundary Era added `starting`/`until` connectives (56 → 58).
     # v25 added `highest`/`lowest` operators (58 → 60 counted) plus the
-    # tombstoned `combine` (+1 uncounted) → 61 raw ALL_RESERVED entries.
-    assert len(ALL_RESERVED) == 61
+    # tombstoned `combine` (+1 uncounted).
+    # Definitional Era (v31) added the `define` declaration (60 → 61
+    # counted). Use len(ALL_RESERVED) - len(TOMBSTONES) for the public
+    # count — raw len(ALL_RESERVED) is 62.
+    assert len(ALL_RESERVED) - len(TOMBSTONES) == 61
 
 
 # ---------------------------------------------------------------------------

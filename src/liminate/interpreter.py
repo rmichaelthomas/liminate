@@ -78,6 +78,7 @@ from .parser import (
     ConditionNode,
     CountNode,
     DateLiteral,
+    DefineNode,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -90,6 +91,7 @@ from .parser import (
     NameRef,
     NumberLiteral,
     PackVerbNode,
+    PredicateApplicationNode,
     QuotedString,
     RemoveNode,
     RememberCompositionNode,
@@ -250,6 +252,13 @@ def _walk_dependencies(
         if node.target.name not in seen:
             seen.add(node.target.name)
             ordered.append(node.target.name)
+    elif isinstance(node, PredicateApplicationNode):
+        # Definitional Era (v31) — a `when <subject> is <predicate>`
+        # handler depends on its subject, same as any other condition
+        # leaf. The predicate body itself is not walked: its fields
+        # resolve against the subject at application time, not against
+        # top-level symbols, so they aren't independent dependencies.
+        _walk_dependencies(node.subject, seen, ordered)
     # Literals (NumberLiteral, BareWord, QuotedString, EachPronoun)
     # contribute no dependencies — they evaluate to themselves.
 
@@ -642,6 +651,8 @@ def _exec_op(
         return _exec_remember_record(node, symtab, current_item)
     if isinstance(node, RememberCompositionNode):
         return _exec_remember_composition(node, symtab)
+    if isinstance(node, DefineNode):
+        return _exec_define(node, symtab)
     if isinstance(node, ShowNode):
         return _exec_show(node, symtab, current_item)
     if isinstance(node, FilterNode):
@@ -1324,6 +1335,30 @@ def _exec_remember_composition(
         composition_param=node.param,
     )
     return []
+
+
+def _exec_define(node: DefineNode, symtab: dict[str, SymbolEntry]) -> list[str]:
+    """Definitional Era (v31) — register a named predicate. Stores the
+    condition-body AST under the predicate name (type "predicate"),
+    mirroring how `remember how to` stores a composition body.
+    Redefinition overwrites (v1d §58 mutation semantics). The warning is
+    emitted here, not in the analyzer: `_check`'s per-statement functions
+    only ever raise or pass silently, with no channel for a non-blocking
+    informational signal, while `_exec_op` functions already return
+    `list[str]` output lines for exactly this purpose (the same channel
+    `permit` uses to emit without halting)."""
+    output: list[str] = []
+    if node.name in symtab and symtab[node.name].type == "predicate":
+        output.append(
+            f"Predicate '{node.name}' is being redefined — the earlier "
+            f"definition will be replaced."
+        )
+    symtab[node.name] = SymbolEntry(
+        name=node.name,
+        value=node.condition,
+        type="predicate",
+    )
+    return output
 
 
 # ---------------------------------------------------------------------------
@@ -2224,6 +2259,23 @@ def _eval_condition(
             return _within_tolerance(field_val, tolerance, target)
         value_val = _eval_value(cond.value, current_item, symtab)
         return _apply_op(cond.op, field_val, value_val)
+    if isinstance(cond, PredicateApplicationNode):
+        # Definitional Era (v31) — apply a named predicate. The body is
+        # re-evaluated on every application (never cached), so a
+        # predicate stays live: redefining a field it reads (e.g.
+        # `cutoff`) changes the verdict of later applications. The
+        # subject resolves to the current-item context for the nested
+        # evaluation: EachPronoun -> current_item unchanged; a NameRef to
+        # a record -> that record's dict, so the body's field references
+        # bind to the record's own fields, not the outer current_item.
+        entry = symtab.get(cond.predicate_name)
+        if entry is None or entry.type != "predicate":
+            raise _RuntimeError(
+                f"I don't have a definition for '{cond.predicate_name}'."
+            )
+        subject_val = _eval_field(cond.subject, current_item, symtab)
+        result = _eval_condition(entry.value, subject_val, symtab)
+        return (not result) if cond.negated else result
     raise _RuntimeError(f"Can't evaluate condition {type(cond).__name__}.")
 
 

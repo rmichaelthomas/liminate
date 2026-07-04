@@ -61,6 +61,7 @@ from .parser import (
     ConditionNode,
     CountNode,
     DateLiteral,
+    DefineNode,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -73,6 +74,7 @@ from .parser import (
     NameRef,
     NumberLiteral,
     PackVerbNode,
+    PredicateApplicationNode,
     RemoveNode,
     QuotedString,
     RememberCompositionNode,
@@ -144,7 +146,7 @@ class SymbolEntry:
 _TYPE_NAMES = frozenset({
     "number", "string", "record", "date",
     "list_of_numbers", "list_of_strings", "list_of_records", "list_of_dates",
-    "composition",
+    "composition", "predicate",
 })
 
 
@@ -433,6 +435,8 @@ def _check(
         )
     elif isinstance(node, RememberCompositionNode):
         pass  # §23 line 466: names checked at call time, not here.
+    elif isinstance(node, DefineNode):
+        _check_define(node, symtab)
     elif isinstance(node, ShowNode):
         _check_show(node, symtab, iterator)
     elif isinstance(node, FilterNode):
@@ -1292,6 +1296,10 @@ def _check_condition(
         _check_condition(cond.left, symtab, iterator)
         _check_condition(cond.right, symtab, iterator)
         return
+    if isinstance(cond, PredicateApplicationNode):
+        _check_predicate_application(cond, symtab)
+        _resolve_field(cond.subject, symtab, iterator)
+        return
     if not isinstance(cond, ConditionNode):
         raise _SemanticError("Unexpected condition shape.")
 
@@ -1752,6 +1760,10 @@ def _check_choose_condition(
         _check_choose_condition(cond.left, symtab)
         _check_choose_condition(cond.right, symtab)
         return
+    if isinstance(cond, PredicateApplicationNode):
+        _check_predicate_application(cond, symtab)
+        _resolve_choose_operand(cond.subject, symtab)
+        return
     if not isinstance(cond, ConditionNode):
         raise _SemanticError("Unexpected condition shape.")
     field_type, field_label = _resolve_choose_operand(cond.field, symtab)
@@ -1778,6 +1790,67 @@ def _check_choose_condition(
             _require_comparable(value_type, value_label, f"not {inner}")
         return
     raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
+
+
+# ---------------------------------------------------------------------------
+# define / predicate application (Definitional Era, v31)
+# ---------------------------------------------------------------------------
+
+_VALID_CONDITION_OPS = frozenset({
+    "is", "above", "below", "equal_to", "within", "includes", "not_includes",
+    "not_above", "not_below", "not_equal_to",
+})
+
+
+def _check_predicate_application(
+    cond: PredicateApplicationNode,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """v31 §87 — a predicate application must reference a name already
+    registered by an earlier `define` (forward-declaration only, mirroring
+    `_check_composition_call_shape`'s existence check for compositions —
+    both rely on the symbol table already reflecting every statement
+    executed so far)."""
+    if (
+        cond.predicate_name not in symtab
+        or symtab[cond.predicate_name].type != "predicate"
+    ):
+        raise _SemanticError(
+            f"I don't know a definition for '{cond.predicate_name}'. "
+            f"Use 'define {cond.predicate_name}: ...' to create one."
+        )
+
+
+def _check_define(node: DefineNode, symtab: dict[str, SymbolEntry]) -> None:
+    """v31 §87 — validate a predicate definition's body structurally.
+
+    The subject is unknown until application time (it could later be a
+    record, a scalar, or a list element), so this checks only condition
+    shape and operator validity — the same deferral `require each` gives
+    a right-hand BareWord that isn't yet in the symbol table. It does
+    NOT resolve the body's field/value types against the symbol table
+    (there is no iterator context to resolve them against).
+    """
+    _check_define_condition(node.condition, symtab)
+
+
+def _check_define_condition(
+    cond: ASTNode,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    if isinstance(cond, CompoundConditionNode):
+        _check_define_condition(cond.left, symtab)
+        _check_define_condition(cond.right, symtab)
+        return
+    if isinstance(cond, PredicateApplicationNode):
+        # v31 §84 — predicate composition: a predicate body may reference
+        # another predicate. Forward-declaration applies here too.
+        _check_predicate_application(cond, symtab)
+        return
+    if not isinstance(cond, ConditionNode):
+        raise _SemanticError("Unexpected condition shape.")
+    if cond.op not in _VALID_CONDITION_OPS:
+        raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
 
 
 # ---------------------------------------------------------------------------

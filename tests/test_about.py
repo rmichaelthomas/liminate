@@ -21,6 +21,7 @@ from liminate.result import ResultStatus
 from liminate.vocabulary import (
     ALL_RESERVED,
     DECLARATIONS,
+    TOMBSTONES,
     TokenType,
     reserved_category,
 )
@@ -133,7 +134,8 @@ def test_about_in_all_reserved():
 
 
 def test_about_in_declarations():
-    assert DECLARATIONS == frozenset({"about"})
+    # Definitional Era (v31) added `define` as the second declaration.
+    assert DECLARATIONS == frozenset({"about", "define"})
 
 
 def test_reserved_category_about_is_declaration():
@@ -146,8 +148,11 @@ def test_all_reserved_count_is_58():
     # Deontic Era batch 2 added the `permit` verb (55 → 56).
     # Temporal-Boundary Era added `starting`/`until` (56 → 58).
     # v25 added `highest`/`lowest` operators (58 → 60 counted) plus the
-    # tombstoned `combine` (+1 uncounted) → 61 raw ALL_RESERVED entries.
-    assert len(ALL_RESERVED) == 61
+    # tombstoned `combine` (+1 uncounted).
+    # Definitional Era (v31) added the `define` declaration (60 → 61
+    # counted). Raw ALL_RESERVED (including the uncounted tombstone) is
+    # 62 — use len(ALL_RESERVED) - len(TOMBSTONES) for the public count.
+    assert len(ALL_RESERVED) - len(TOMBSTONES) == 61
 
 
 def test_about_cannot_be_used_as_variable_name():
