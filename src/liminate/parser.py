@@ -652,8 +652,13 @@ class RequireNode(ASTNode):
     false, execution halts with REQUIREMENT_NOT_MET. The condition uses
     the same AST shapes as `choose if` / `where` conditions: ConditionNode
     leaves and CompoundConditionNode `and`/`or` combinators.
+
+    v28 — `exception` is an optional `unless <condition>` clause. Unlike
+    `rationale` (inert metadata), the exception changes the verb's truth
+    table, so it participates in equality comparison (default compare=True).
     """
     condition: ASTNode
+    exception: ASTNode | None = None
     rationale: str | None = field(default=None, compare=False)
     # Meta-Structural Era batch 3 — `inherited` operator + `from`
     # attribution. Both are inert provenance metadata (compare=False),
@@ -705,8 +710,12 @@ class ForbidNode(ASTNode):
     PROHIBITION_VIOLATED. If false, silent pass. Same condition AST
     as `require` / `choose if` / `where`. Mirrors `require` with
     inverted polarity.
+
+    v28 — `exception` is an optional `unless <condition>` clause (see
+    RequireNode for the compare=True rationale).
     """
     condition: ASTNode
+    exception: ASTNode | None = None
     rationale: str | None = field(default=None, compare=False)
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
@@ -728,8 +737,13 @@ class PermitNode(ASTNode):
     condition AST as `require` / `forbid` / `choose if` / `where`.
     Completes the deontic triangle: require (obligation), forbid
     (prohibition), permit (permission).
+
+    v28 — `exception` is an optional `unless <condition>` clause that
+    narrows the permission (see RequireNode for the compare=True
+    rationale).
     """
     condition: ASTNode
+    exception: ASTNode | None = None
     rationale: str | None = field(default=None, compare=False)
     inherited: bool = field(default=False, compare=False)
     inherited_from: str | None = field(default=None, compare=False)
@@ -905,8 +919,12 @@ class ExpectNode(ASTNode):
     an output line reporting the divergence. Program continues
     with SUCCESS — expectations are informational, not blocking.
     Same condition AST as `require` / `choose if` / `where`.
+
+    v28 — `exception` is an optional `unless <condition>` clause (see
+    RequireNode for the compare=True rationale).
     """
     condition: ASTNode
+    exception: ASTNode | None = None
     rationale: str | None = field(default=None, compare=False)
     # Meta-Structural Era batch 3 — `inherited` operator + `from`
     # attribution. Both are inert provenance metadata (compare=False),
@@ -1444,6 +1462,30 @@ def _try_consume_because(stream: TokenStream) -> str | None:
             f'because "your reason here". Got: {got}.'
         )
     return rationale_tok.value
+
+
+def _try_consume_unless_exception(stream: TokenStream) -> ASTNode | None:
+    """v28 — consume an optional `unless <condition>` exception clause
+    immediately following a deontic verb's main condition.
+
+    Shared by `_parse_require`, `_parse_forbid`, `_parse_permit`, and
+    `_parse_expect`. Mirrors the `unless` guard consumption in
+    `parse_when_block` — same token shape, different grammatical
+    position (inside the verb's condition grammar rather than a `when`
+    header). Returns the exception condition AST, or None if no
+    `unless` is present.
+    """
+    peek = stream.peek()
+    if not (
+        peek
+        and peek.type is TokenType.CONNECTIVE
+        and peek.value == "unless"
+    ):
+        return None
+    stream.consume()  # eat `unless`
+    if stream.at_end():
+        raise _ParseError("I expected a condition after 'unless'.")
+    return _parse_or_condition(stream)
 
 
 def _try_consume_inherited_from(stream: TokenStream) -> str | None:
@@ -2322,9 +2364,10 @@ def _parse_require(stream: TokenStream) -> RequireNode | RequireEachNode:
     stream.push_clause("require")
     try:
         condition = _parse_or_condition(stream)
+        exception = _try_consume_unless_exception(stream)
     finally:
         stream.pop_clause()
-    return RequireNode(condition=condition)
+    return RequireNode(condition=condition, exception=exception)
 
 
 def _parse_require_each(stream: TokenStream) -> RequireEachNode:
@@ -2403,9 +2446,10 @@ def _parse_forbid(stream: TokenStream) -> ForbidNode:
     stream.push_clause("forbid")
     try:
         condition = _parse_or_condition(stream)
+        exception = _try_consume_unless_exception(stream)
     finally:
         stream.pop_clause()
-    return ForbidNode(condition=condition)
+    return ForbidNode(condition=condition, exception=exception)
 
 
 # ---------------------------------------------------------------------------
@@ -2428,9 +2472,10 @@ def _parse_permit(stream: TokenStream) -> PermitNode:
     stream.push_clause("permit")
     try:
         condition = _parse_or_condition(stream)
+        exception = _try_consume_unless_exception(stream)
     finally:
         stream.pop_clause()
-    return PermitNode(condition=condition)
+    return PermitNode(condition=condition, exception=exception)
 
 
 # ---------------------------------------------------------------------------
@@ -2485,9 +2530,10 @@ def _parse_expect(stream: TokenStream) -> ExpectNode:
     stream.push_clause("expect")
     try:
         condition = _parse_or_condition(stream)
+        exception = _try_consume_unless_exception(stream)
     finally:
         stream.pop_clause()
-    return ExpectNode(condition=condition)
+    return ExpectNode(condition=condition, exception=exception)
 
 
 # ---------------------------------------------------------------------------
@@ -3445,7 +3491,10 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, RequireNode):
         # Normative Era batch 2: `require` conditions follow the same
         # mixed-precedence rule as `where` / `choose if` clauses (v1a §30).
-        return _condition_is_mixed(node.condition)
+        # v28: the `unless` exception condition follows the same rule.
+        if _condition_is_mixed(node.condition):
+            return True
+        return node.exception is not None and _condition_is_mixed(node.exception)
     if isinstance(node, RequireEachNode):
         # v8a §49: `require each` conditions follow the same
         # mixed-precedence rule as the simple `require`.
@@ -3453,15 +3502,24 @@ def _contains_mixed_precedence(node: ASTNode) -> bool:
     if isinstance(node, ForbidNode):
         # Deontic Era: `forbid` conditions follow the same
         # mixed-precedence rule as `require` / `where`.
-        return _condition_is_mixed(node.condition)
+        # v28: the `unless` exception condition follows the same rule.
+        if _condition_is_mixed(node.condition):
+            return True
+        return node.exception is not None and _condition_is_mixed(node.exception)
     if isinstance(node, PermitNode):
         # Deontic Era: `permit` conditions follow the same
         # mixed-precedence rule as `require` / `forbid` / `where`.
-        return _condition_is_mixed(node.condition)
+        # v28: the `unless` exception condition follows the same rule.
+        if _condition_is_mixed(node.condition):
+            return True
+        return node.exception is not None and _condition_is_mixed(node.exception)
     if isinstance(node, ExpectNode):
         # Epistemic Era batch 3: `expect` conditions follow the same
         # mixed-precedence rule as `require` / `where`.
-        return _condition_is_mixed(node.condition)
+        # v28: the `unless` exception condition follows the same rule.
+        if _condition_is_mixed(node.condition):
+            return True
+        return node.exception is not None and _condition_is_mixed(node.exception)
     if isinstance(node, SequenceNode):
         return any(_contains_mixed_precedence(op) for op in node.operations)
     if isinstance(node, EachNode):

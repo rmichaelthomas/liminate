@@ -89,6 +89,7 @@ from .parser import (
     WeakensNode,
     WhenNode,
 )
+from .renderer import render
 from .result import LiminateResult, ResultStatus
 from .vocabulary import (
     AppendToListExecution,
@@ -255,15 +256,18 @@ def analyze(
 # normalized comparison operator, and the (kind, value) pair. `text` is the
 # human-readable rendering used in the warning message.
 class _Deontic:
-    __slots__ = ("verb", "field", "op", "kind", "value", "text")
+    __slots__ = ("verb", "field", "op", "kind", "value", "text", "exception_text")
 
-    def __init__(self, verb, field, op, kind, value, text):
+    def __init__(self, verb, field, op, kind, value, text, exception_text=None):
         self.verb = verb      # "require" | "forbid"
         self.field = field    # field name (str)
         self.op = op          # normalized: "above" | "below" | "is"
         self.kind = kind      # "num" | "str"
         self.value = value    # int/float for "num", str for "str"
         self.text = text      # e.g. "require x is above 50"
+        # v28 — rendering of the statement's `unless` exception condition,
+        # if any, e.g. "approved is equal to yes". None when unguarded.
+        self.exception_text = exception_text
 
 
 def _iter_deontic_nodes(statements):
@@ -313,7 +317,13 @@ def _extract_deontic(node) -> "_Deontic | None":
     verb = "require" if isinstance(node, RequireNode) else "forbid"
     phrase = {"above": "is above", "below": "is below", "is": "is"}[op]
     text = f"{verb} {field} {phrase} {value_text}"
-    return _Deontic(verb, field, op, kind, value, text)
+    # v28 — a guarded deontic still participates in contradiction checking
+    # (the base condition drives the conflict rules); the exception is
+    # carried along so the warning can name it.
+    exception_text = None
+    if node.exception is not None:
+        exception_text = render(node.exception)
+    return _Deontic(verb, field, op, kind, value, text, exception_text)
 
 
 def _fmt_value_num(value) -> str:
@@ -371,10 +381,19 @@ def detect_contradictions(statements: list[ASTNode]) -> list[str]:
         for j in range(i + 1, len(deontics)):
             a, b = deontics[i], deontics[j]
             if _pair_contradicts(a, b):
-                warnings.append(
+                message = (
                     f"Possible contradiction: '{a.text}' conflicts with "
-                    f"'{b.text}' — no value of {a.field} can satisfy both."
+                    f"'{b.text}' — no value of {a.field} can satisfy both"
                 )
+                # v28 — guarded deontics get conditional wording: the
+                # conflict only holds when neither exception excuses it.
+                exceptions = [
+                    e for e in (a.exception_text, b.exception_text) if e
+                ]
+                if exceptions:
+                    message += f" unless {' or '.join(exceptions)}"
+                message += "."
+                warnings.append(message)
     return warnings
 
 
@@ -478,7 +497,10 @@ def _check(
         # Normative Era batch 2 — the condition follows the same
         # validation path as `choose if`: no iterator, names resolve
         # against the symbol table directly, field access uses `of`.
+        # v28 — the `unless` exception condition is validated the same way.
         _check_choose_condition(node.condition, symtab)
+        if node.exception is not None:
+            _check_choose_condition(node.exception, symtab)
     elif isinstance(node, RequireEachNode):
         # v8a §49 — iterated enforcement. Validate the collection is a
         # list and the binding name doesn't collide with it; the
@@ -487,17 +509,24 @@ def _check(
     elif isinstance(node, ForbidNode):
         # Deontic Era — same condition validation as `require`.
         # Behavior differs only at runtime (halts on true instead
-        # of false).
+        # of false). v28 — validate the `unless` exception too.
         _check_choose_condition(node.condition, symtab)
+        if node.exception is not None:
+            _check_choose_condition(node.exception, symtab)
     elif isinstance(node, PermitNode):
         # Deontic Era — same condition validation as `require`/`forbid`.
         # Behavior differs only at runtime (emits on true, never halts).
+        # v28 — validate the `unless` exception too.
         _check_choose_condition(node.condition, symtab)
+        if node.exception is not None:
+            _check_choose_condition(node.exception, symtab)
     elif isinstance(node, ExpectNode):
         # Epistemic Era batch 3 — same condition validation as `require`.
         # Behavior differs only at runtime (divergence emits output;
-        # never halts).
+        # never halts). v28 — validate the `unless` exception too.
         _check_choose_condition(node.condition, symtab)
+        if node.exception is not None:
+            _check_choose_condition(node.exception, symtab)
     elif isinstance(node, AssignNode):
         _check_assign(
             node, symtab, iterator,

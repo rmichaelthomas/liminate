@@ -1684,8 +1684,15 @@ def _exec_require(
     condition in canonical form and reports the actual value(s) that
     violated the rule for the first failing sub-condition (helpful for
     diagnosis when conditions are compound).
+
+    v28 — halts only when NOT condition AND NOT exception: a failing
+    condition is excused when the `unless` exception holds.
     """
     if _eval_condition(node.condition, current_item, symtab):
+        return []
+    if node.exception is not None and _eval_condition(
+        node.exception, current_item, symtab
+    ):
         return []
     condition_text = render(node.condition)
     actual = _condition_actual_values(node.condition, current_item, symtab)
@@ -1765,8 +1772,15 @@ def _exec_forbid(
     prohibition triggered); raises _ProhibitionViolated on true.
     The error message echoes the condition in canonical form and
     reports the actual value(s) that triggered the prohibition.
+
+    v28 — halts only when condition AND NOT exception: a triggered
+    prohibition is excused when the `unless` exception holds.
     """
     if not _eval_condition(node.condition, current_item, symtab):
+        return []
+    if node.exception is not None and _eval_condition(
+        node.exception, current_item, symtab
+    ):
         return []
     condition_text = render(node.condition)
     actual = _condition_actual_values(node.condition, current_item, symtab)
@@ -1789,8 +1803,15 @@ def _exec_permit(
     line recording the explicit permission. If false, silent pass.
     Never halts. The output message echoes the condition in canonical
     form and reports the actual value(s) that satisfied the permission.
+
+    v28 — emits only when condition AND NOT exception: the `unless`
+    exception narrows the permission, suppressing the emission.
     """
     if not _eval_condition(node.condition, current_item, symtab):
+        return []
+    if node.exception is not None and _eval_condition(
+        node.exception, current_item, symtab
+    ):
         return []
     condition_text = render(node.condition)
     actual = _condition_actual_values(node.condition, current_item, symtab)
@@ -1810,8 +1831,15 @@ def _exec_expect(
     actual value(s) of the first failing sub-condition. Program
     continues with SUCCESS — expectations are informational, not
     blocking.
+
+    v28 — reports divergence only when NOT condition AND NOT exception:
+    the `unless` exception explains the divergence, suppressing the report.
     """
     if _eval_condition(node.condition, current_item, symtab):
+        return []
+    if node.exception is not None and _eval_condition(
+        node.exception, current_item, symtab
+    ):
         return []
     condition_text = render(node.condition)
     actual = _condition_actual_values(node.condition, current_item, symtab)

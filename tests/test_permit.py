@@ -323,3 +323,83 @@ def test_permit_rejected_as_variable_name():
         ResultStatus.ERROR_PARSE,
         ResultStatus.ERROR_SEMANTIC,
     )
+
+
+# ---------------------------------------------------------------------------
+# v28 — `unless` exception clauses (narrowing)
+# ---------------------------------------------------------------------------
+
+
+def test_parses_permit_with_unless():
+    ast = _parse(
+        "permit expenses is below 5000 unless frozen is equal to yes"
+    )
+    assert isinstance(ast, PermitNode)
+    assert ast.condition.op == "below"
+    assert isinstance(ast.exception, ConditionNode)
+
+
+def test_parses_permit_without_unless_has_no_exception():
+    ast = _parse("permit expenses is below 5000")
+    assert isinstance(ast, PermitNode)
+    assert ast.exception is None
+
+
+def test_parses_permit_unless_before_because():
+    ast = _parse(
+        'permit expenses is below 5000 unless frozen is equal to yes '
+        'because "narrowed"'
+    )
+    assert isinstance(ast, PermitNode)
+    assert ast.exception is not None
+    assert ast.rationale == "narrowed"
+
+
+def test_permit_unless_render_round_trip():
+    ast = _parse(
+        "permit expenses is below 5000 unless frozen is equal to yes"
+    )
+    rendered = render(ast)
+    assert rendered == (
+        "permit expenses is below 5000 unless frozen is equal to yes"
+    )
+    again = _parse(rendered)
+    assert isinstance(again, PermitNode)
+    assert again == ast
+
+
+# Execution semantics: emit when main AND NOT exception (narrowing).
+
+
+def test_permit_unless_main_true_exception_false_emits():
+    s = _session()
+    s.run_line("remember a value called expenses with 3000")
+    s.run_line('remember a value called frozen with "no"')
+    r = s.run_line(
+        'permit expenses is below 5000 unless frozen is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output is not None
+    assert any("Permitted" in line for line in r.output)
+
+
+def test_permit_unless_main_true_exception_true_suppresses():
+    s = _session()
+    s.run_line("remember a value called expenses with 3000")
+    s.run_line('remember a value called frozen with "yes"')
+    r = s.run_line(
+        'permit expenses is below 5000 unless frozen is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output is None
+
+
+def test_permit_unless_main_false_silent_regardless_of_exception():
+    s = _session()
+    s.run_line("remember a value called expenses with 9000")
+    s.run_line('remember a value called frozen with "yes"')
+    r = s.run_line(
+        'permit expenses is below 5000 unless frozen is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    assert r.output is None
