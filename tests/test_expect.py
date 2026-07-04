@@ -251,3 +251,84 @@ def test_assign_then_expect_met():
     r = s.run_line('expect task-1 is "compliance-team"')
     assert r.status is ResultStatus.SUCCESS
     assert not (r.output or [])
+
+
+# ---------------------------------------------------------------------------
+# v28 — `unless` exception clauses
+# ---------------------------------------------------------------------------
+
+
+def test_parses_expect_with_unless():
+    ast = _parse(
+        "expect revenue is above 1000000 unless recession is equal to yes"
+    )
+    assert isinstance(ast, ExpectNode)
+    assert ast.condition.op == "above"
+    assert isinstance(ast.exception, ConditionNode)
+
+
+def test_parses_expect_without_unless_has_no_exception():
+    ast = _parse("expect revenue is above 1000000")
+    assert isinstance(ast, ExpectNode)
+    assert ast.exception is None
+
+
+def test_parses_expect_unless_before_because():
+    ast = _parse(
+        'expect revenue is above 1000000 unless recession is equal to '
+        'yes because "macro"'
+    )
+    assert isinstance(ast, ExpectNode)
+    assert ast.exception is not None
+    assert ast.rationale == "macro"
+
+
+def test_expect_unless_render_round_trip():
+    ast = _parse(
+        "expect revenue is above 1000000 unless recession is equal to yes"
+    )
+    rendered = render(ast)
+    assert rendered == (
+        "expect revenue is above 1000000 unless recession is equal to yes"
+    )
+    again = _parse(rendered)
+    assert isinstance(again, ExpectNode)
+    assert again == ast
+
+
+# Execution semantics: report divergence when NOT main AND NOT exception.
+
+
+def test_expect_unless_main_holds_silent():
+    s = _session()
+    s.run_line("remember a value called revenue with 1500000")
+    s.run_line('remember a value called recession with "no"')
+    r = s.run_line(
+        'expect revenue is above 1000000 unless recession is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    assert not (r.output or [])
+
+
+def test_expect_unless_main_fails_exception_explains_silent():
+    s = _session()
+    s.run_line("remember a value called revenue with 500000")
+    s.run_line('remember a value called recession with "yes"')
+    r = s.run_line(
+        'expect revenue is above 1000000 unless recession is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    assert not (r.output or [])
+
+
+def test_expect_unless_main_fails_exception_false_reports():
+    s = _session()
+    s.run_line("remember a value called revenue with 500000")
+    s.run_line('remember a value called recession with "no"')
+    r = s.run_line(
+        'expect revenue is above 1000000 unless recession is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+    text = _output_str(r)
+    assert "Expectation not met" in text
+    assert "revenue is above 1000000" in text
