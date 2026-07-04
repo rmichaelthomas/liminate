@@ -300,3 +300,151 @@ def test_stepwise_commit_before_failed_require():
     # Prior op committed.
     show = s.run_line("show audit-log")
     assert any("received" in line for line in (show.output or []))
+
+
+# ---------------------------------------------------------------------------
+# v28 — `unless` exception clauses
+# ---------------------------------------------------------------------------
+
+
+def test_parses_require_with_unless():
+    ast = _parse(
+        "require amount is above 50000 unless waiver is equal to yes"
+    )
+    assert isinstance(ast, RequireNode)
+    assert ast.condition.op == "above"
+    assert isinstance(ast.exception, ConditionNode)
+    assert ast.exception.op == "equal_to"
+
+
+def test_parses_require_without_unless_has_no_exception():
+    ast = _parse("require amount is above 50000")
+    assert isinstance(ast, RequireNode)
+    assert ast.exception is None
+
+
+def test_parses_require_unless_compound_exception():
+    ast = _parse(
+        "require x is above 10 unless flag-a is equal to yes and "
+        "flag-b is equal to yes"
+    )
+    assert isinstance(ast, RequireNode)
+    assert isinstance(ast.exception, CompoundConditionNode)
+    assert ast.exception.connector == "and"
+
+
+def test_parses_require_unless_with_field_access():
+    ast = _parse(
+        "require total of order is above 100 unless status of order "
+        "is equal to exempt"
+    )
+    assert isinstance(ast, RequireNode)
+    assert ast.exception is not None
+
+
+def test_parses_require_unless_before_because():
+    ast = _parse(
+        'require x is above 10 unless y is equal to yes because "policy"'
+    )
+    assert isinstance(ast, RequireNode)
+    assert ast.exception is not None
+    assert ast.rationale == "policy"
+
+
+def test_parses_require_unless_full_canonical_order():
+    ast = _parse(
+        'starting "2025-01-01" inherited require x is above 10 unless '
+        'y is equal to yes because "policy" from agent-a'
+    )
+    assert isinstance(ast, RequireNode)
+    assert ast.starting_date == "2025-01-01"
+    assert ast.inherited is True
+    assert ast.exception is not None
+    assert ast.rationale == "policy"
+    assert ast.inherited_from == "agent-a"
+
+
+def test_parse_error_unless_with_no_exception_condition():
+    r = _parse("require amount is above 50000 unless")
+    assert isinstance(r, LiminateResult)
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert "unless" in (r.message or "")
+
+
+def test_parse_error_double_unless():
+    r = _parse(
+        "require x is above 10 unless y is equal to yes unless "
+        "z is equal to yes"
+    )
+    assert isinstance(r, LiminateResult)
+    assert r.status is ResultStatus.ERROR_PARSE
+
+
+def test_require_each_does_not_consume_unless():
+    # `require each` returns before the `unless` consumption code —
+    # a trailing `unless` is left in the stream and errors.
+    r = _parse(
+        "require each x in items x is above 5 unless y is equal to yes"
+    )
+    assert isinstance(r, LiminateResult)
+    assert r.status is ResultStatus.ERROR_PARSE
+
+
+def test_require_unless_exception_field_not_compared_via_equals_bypass():
+    # Two nodes differing only in exception must NOT compare equal —
+    # the exception is semantic content (compare=True), not inert metadata.
+    a = _parse("require x is above 10 unless y is equal to yes")
+    b = _parse("require x is above 10 unless z is equal to yes")
+    assert a != b
+
+
+def test_require_unless_mixed_and_or_in_exception_triggers_amber():
+    r = _parse(
+        "require x is above 10 unless flag-a is equal to yes and "
+        "flag-b is equal to yes or flag-c is equal to yes"
+    )
+    assert isinstance(r, LiminateResult)
+    assert r.status is ResultStatus.AMBER_PRECEDENCE
+
+
+def test_require_unless_render_round_trip():
+    ast = _parse("require x is above 10 unless y is equal to yes")
+    rendered = render(ast)
+    assert rendered == "require x is above 10 unless y is equal to yes"
+    again = _parse(rendered)
+    assert isinstance(again, RequireNode)
+    assert again == ast
+
+
+# Execution semantics: halt when NOT main AND NOT exception.
+
+
+def test_require_unless_main_holds_exception_irrelevant():
+    s = _session()
+    s.run_line("remember a value called amount with 60000")
+    s.run_line('remember a value called waiver with "no"')
+    r = s.run_line(
+        'require amount is above 50000 unless waiver is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_require_unless_main_fails_exception_excuses():
+    s = _session()
+    s.run_line("remember a value called amount with 30000")
+    s.run_line('remember a value called waiver with "yes"')
+    r = s.run_line(
+        'require amount is above 50000 unless waiver is equal to "yes"'
+    )
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_require_unless_main_fails_exception_also_fails():
+    s = _session()
+    s.run_line("remember a value called amount with 30000")
+    s.run_line('remember a value called waiver with "no"')
+    r = s.run_line(
+        'require amount is above 50000 unless waiver is equal to "yes"'
+    )
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert "amount is above 50000" in (r.message or "")

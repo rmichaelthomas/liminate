@@ -431,6 +431,53 @@ sequence and evaluate independently:
 require total is above 100 and forbid total is above 10000 and permit category is "travel"
 ```
 
+### Exception clauses (`unless`)
+
+`require`, `forbid`, `permit`, and `expect` each accept an optional
+`unless <exception>` clause after the main condition:
+
+```
+<verb> <condition> unless <exception>
+```
+
+The exception uses the same condition grammar as the main condition —
+comparisons, `includes`, `not`, compound `and` / `or`, field access via
+`of`. Its semantics depend on the verb's polarity:
+
+- `require <condition> unless <exception>` — halts only when the
+  condition is false AND the exception is also false. A failing
+  requirement is excused when the exception holds.
+- `forbid <condition> unless <exception>` — halts only when the
+  condition is true AND the exception is false. A triggered
+  prohibition is excused when the exception holds.
+- `permit <condition> unless <exception>` — emits only when the
+  condition is true AND the exception is false. The exception
+  *narrows* the permission, suppressing the emission.
+- `expect <condition> unless <exception>` — reports divergence only
+  when the condition is false AND the exception is also false. The
+  exception explains the divergence, suppressing the report.
+
+```
+forbid total is above 10000 unless approved is equal to yes
+require margin is above 0.1 unless market-conditions is equal to recession
+permit expenses is below 5000 unless override is equal to yes
+```
+
+`unless` sits between the condition and any `because` rationale, in
+canonical order:
+
+```
+inherited forbid total is above 10000 unless approved is equal to yes because "policy" from agent-compliance
+```
+
+`unless` does not chain — a statement takes at most one `unless`
+clause. Multiple exception conditions compose within that clause via
+`and` / `or`, the same as the main condition. Mixed `and` / `or` in
+the exception triggers the amber prompt, same as the main condition.
+
+`require each` does not yet support `unless` — the exception clause
+is scoped to the four simple deontic verbs in this release.
+
 ### `assign`
 
 Stores an item-to-recipient mapping. The item becomes the variable
