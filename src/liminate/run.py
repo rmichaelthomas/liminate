@@ -114,6 +114,9 @@ class Session:
     def composition_names(self) -> set[str]:
         return {n for n, e in self.symtab.items() if e.type == "composition"}
 
+    def predicate_names(self) -> set[str]:
+        return {n for n, e in self.symtab.items() if e.type == "predicate"}
+
     def run_line(self, line: str) -> LiminateResult | None:
         """Execute one source line. Returns the result, or None for blank."""
         try:
@@ -131,7 +134,11 @@ class Session:
         reordered = reorder(tokens)
         if isinstance(reordered, LiminateResult):
             return reordered
-        ast = parse(reordered, composition_names=self.composition_names())
+        ast = parse(
+            reordered,
+            composition_names=self.composition_names(),
+            predicate_names=self.predicate_names(),
+        )
         if isinstance(ast, LiminateResult):
             # Amber outcomes carry a pending_ast for confirmation flow.
             return ast
@@ -187,6 +194,7 @@ class Session:
         ast = parse_when_block(
             header_reordered, action_token_lists,
             composition_names=self.composition_names(),
+            predicate_names=self.predicate_names(),
         )
         if isinstance(ast, LiminateResult):
             return ast
@@ -575,14 +583,21 @@ def run(
 
         # Meta-Structural Era: an `about` declaration is consumed before
         # the normal pipeline. It must be the first eligible line and may
-        # appear at most once. A `DECLARATION` token anywhere else (a
-        # second `about`, or `about` after a normal statement) is an
-        # ERROR_PARSE.
+        # appear at most once. A second `about` (or `about` after a
+        # normal statement) is an ERROR_PARSE. Definitional Era (v31):
+        # `define` also lexes as TokenType.DECLARATION but is NOT
+        # first-line-only — it's a normal program statement, so this
+        # check is narrowed to `about` specifically and `define` falls
+        # through to the regular tokenize/reorder/parse pipeline below.
         try:
             decl_tokens = tokenize(line)
         except LexError:
             decl_tokens = []
-        if decl_tokens and decl_tokens[0].type is TokenType.DECLARATION:
+        if (
+            decl_tokens
+            and decl_tokens[0].type is TokenType.DECLARATION
+            and decl_tokens[0].value == "about"
+        ):
             if first_eligible_seen or session.topic is not None:
                 err = LiminateResult(
                     status=ResultStatus.ERROR_PARSE,
