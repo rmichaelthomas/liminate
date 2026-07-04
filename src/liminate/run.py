@@ -31,7 +31,7 @@ from .analyzer import SymbolEntry, detect_contradictions
 from .interpreter import HandlerTable, _infer_type_and_schema, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
-from .parser import _ParseError, parse, parse_about, parse_when_block
+from .parser import DefineNode, _ParseError, parse, parse_about, parse_when_block
 from .reorderer import reorder
 from .result import LiminateResult, ResultStatus
 from .vocabulary import (
@@ -417,8 +417,17 @@ def _collect_deontic_statements(lines: list[str]) -> list:
     context (compositions, packs) is never parsed here. Anything that fails
     to tokenize/reorder/parse is silently skipped: this pass is advisory and
     must never introduce an error the main loop wouldn't also produce.
+
+    A single ordered scan also tracks `define` lines, accumulating predicate
+    names as they are declared, so a `require`/`forbid` that applies a named
+    predicate (`require account is high-risk`) parses to a
+    PredicateApplicationNode instead of misparsing as string equality. This
+    mirrors the forward-declaration rule the interpreter enforces via
+    `Session.predicate_names()`: a bareword is a predicate application only
+    if it was `define`d on a strictly earlier line.
     """
     asts: list = []
+    predicate_names: set[str] = set()
     for line in lines:
         stripped = line.lstrip()
         if not stripped or stripped.startswith("--"):
@@ -429,6 +438,14 @@ def _collect_deontic_statements(lines: list[str]) -> list:
             toks = tokenize(line)
         except LexError:
             continue
+        if toks and toks[0].type is TokenType.DECLARATION and toks[0].value == "define":
+            reordered = reorder(toks)
+            if isinstance(reordered, LiminateResult):
+                continue
+            node = parse(reordered, predicate_names=predicate_names)
+            if isinstance(node, DefineNode):
+                predicate_names.add(node.name)
+            continue
         if not (
             toks
             and toks[0].type is TokenType.VERB
@@ -438,7 +455,7 @@ def _collect_deontic_statements(lines: list[str]) -> list:
         reordered = reorder(toks)
         if isinstance(reordered, LiminateResult):
             continue
-        ast = parse(reordered)
+        ast = parse(reordered, predicate_names=predicate_names)
         if isinstance(ast, LiminateResult):
             continue
         asts.append(ast)
