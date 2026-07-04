@@ -206,6 +206,8 @@ def test_token_type_enum_members():
         "QUOTED_STRING",
         # Meta-Structural Era: `about` and future declarations.
         "DECLARATION",
+        # Calendar Era (v29): a bare ISO 8601 date literal.
+        "DATE",
     }
 
 

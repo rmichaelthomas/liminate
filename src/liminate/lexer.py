@@ -70,6 +70,7 @@ _DECORATIVE = ",.?!"
 # hyphen (`total-dollars`) is NOT a number. Subtraction uses the `minus` word
 # operator, not the `-` symbol, so this does not collide with arithmetic.
 _NUMBER_RE = re.compile(r"^-?\d+(?:\.\d+)?$")
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class LexError(Exception):
@@ -273,6 +274,8 @@ def _classify(cleaned: list[tuple[str, int, bool]]) -> list[Token]:
             tokens.append(Token(TokenType.DECLARATION, word, pos))
         elif _NUMBER_RE.match(word):
             tokens.append(Token(TokenType.NUMBER, word, pos))
+        elif _DATE_RE.match(word):
+            tokens.append(Token(TokenType.DATE, word, pos))
         else:
             tokens.append(Token(TokenType.UNKNOWN, word, pos))
         j += 1

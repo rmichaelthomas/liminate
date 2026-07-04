@@ -44,6 +44,7 @@ time check validates only the condition and unless guard.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 from .parser import (
@@ -59,6 +60,7 @@ from .parser import (
     CompoundConditionNode,
     ConditionNode,
     CountNode,
+    DateLiteral,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -140,8 +142,8 @@ class SymbolEntry:
 
 # Recognized type strings.
 _TYPE_NAMES = frozenset({
-    "number", "string", "record",
-    "list_of_numbers", "list_of_strings", "list_of_records",
+    "number", "string", "record", "date",
+    "list_of_numbers", "list_of_strings", "list_of_records", "list_of_dates",
     "composition",
 })
 
@@ -605,7 +607,10 @@ def _check_value_expr(
     in_action_block: bool = False,
     live_value_names: set[str] | None = None,
 ) -> None:
-    if isinstance(value_node, (NumberLiteral, BareWord, EachPronoun, QuotedString)):
+    if isinstance(
+        value_node,
+        (NumberLiteral, DateLiteral, BareWord, EachPronoun, QuotedString),
+    ):
         return
     if isinstance(value_node, NameRef):
         if value_node.name not in symtab:
@@ -775,6 +780,11 @@ def _check_arithmetic_operand(
 ) -> None:
     if isinstance(operand, NumberLiteral):
         return
+    if isinstance(operand, DateLiteral):
+        # Calendar Era (v29) — dates are valid arithmetic operands
+        # (date ± number, date - date); runtime enforces the exact
+        # operand-shape rules (_eval_date_arithmetic).
+        return
     if isinstance(operand, QuotedString):
         raise _SemanticError(
             f"Arithmetic only works with numbers, not text. "
@@ -787,7 +797,7 @@ def _check_arithmetic_operand(
         _check_field_access(operand, symtab)
         entry = symtab[operand.record_name]
         ftype = (entry.schema or {}).get(operand.field)
-        if ftype not in ("number", None, "unknown"):
+        if ftype not in ("number", "date", None, "unknown"):
             raise _SemanticError(
                 f"Arithmetic only works with numbers, but "
                 f"'{operand.field} of {operand.record_name}' is "
@@ -805,9 +815,9 @@ def _check_arithmetic_operand(
                 f"You might need to 'remember' it first."
             )
         t = symtab[operand.name].type
-        if t not in ("number", "unknown"):
+        if t not in ("number", "date", "unknown"):
             raise _SemanticError(
-                f"Arithmetic only works with numbers, but "
+                f"Arithmetic only works with numbers and dates, but "
                 f"'{operand.name}' is {_singular(t)}."
             )
         return
@@ -886,9 +896,9 @@ def _check_remember_list(
                     f"'{examples[i]}' is {_singular(t)}."
                 )
     only = next(iter(distinct))
-    if only not in ("number", "string", "record"):
+    if only not in ("number", "string", "record", "date"):
         raise _SemanticError(
-            f"v1 lists may only contain numbers, text, or records. "
+            f"v1 lists may only contain numbers, text, records, or dates. "
             f"'{examples[0]}' is {_singular(only)}."
         )
 
@@ -896,6 +906,8 @@ def _check_remember_list(
 def _infer_item_type(item: ASTNode, symtab: dict[str, SymbolEntry]) -> tuple[str, str]:
     if isinstance(item, NumberLiteral):
         return "number", _fmt_number(item.value)
+    if isinstance(item, DateLiteral):
+        return "date", item.value.isoformat()
     if isinstance(item, BareWord):
         if item.word in symtab:
             return symtab[item.word].type, item.word
@@ -1182,7 +1194,9 @@ def _check_sort(
             f"You might need to 'remember' it first."
         )
     entry = symtab[name]
-    if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
+    if entry.type not in (
+        "list_of_numbers", "list_of_strings", "list_of_records", "list_of_dates",
+    ):
         raise _SemanticError(
             f"I can only sort a list. '{name}' is {_singular(entry.type)}."
         )
@@ -1227,7 +1241,9 @@ def _check_transform(
             f"You might need to 'remember' it first."
         )
     entry = symtab[name]
-    if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
+    if entry.type not in (
+        "list_of_numbers", "list_of_strings", "list_of_records", "list_of_dates",
+    ):
         raise _SemanticError(
             f"I can only transform a list. '{name}' is {_singular(entry.type)}."
         )
@@ -1287,16 +1303,16 @@ def _check_condition(
         # No type-error fires here for v1 (the spec doesn't lock one).
         return
     if cond.op in ("above", "below"):
-        _require_numeric(field_type, field_label, cond.op)
-        _require_numeric(value_type, value_label, cond.op)
+        _require_comparable(field_type, field_label, cond.op)
+        _require_comparable(value_type, value_label, cond.op)
         return
     if cond.op == "within":
         # Issue #19: all three operands of `is within <amount> of <target>`
         # must be numeric.
-        _require_numeric(field_type, field_label, "within")
-        _require_numeric(value_type, value_label, "within")
+        _require_comparable(field_type, field_label, "within")
+        _require_comparable(value_type, value_label, "within")
         target_type, target_label = _resolve_value(cond.value2, symtab, iterator)
-        _require_numeric(target_type, target_label, "within")
+        _require_comparable(target_type, target_label, "within")
         return
     if cond.op == "equal_to":
         return  # any same-type comparison; analyzer doesn't enforce
@@ -1305,17 +1321,19 @@ def _check_condition(
     if cond.op.startswith("not_"):
         inner = cond.op[len("not_"):]
         if inner in ("above", "below"):
-            _require_numeric(field_type, field_label, f"not {inner}")
-            _require_numeric(value_type, value_label, f"not {inner}")
+            _require_comparable(field_type, field_label, f"not {inner}")
+            _require_comparable(value_type, value_label, f"not {inner}")
         return
     raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
 
 
-def _require_numeric(t: str, label: str, op: str) -> None:
-    if t == "number":
+def _require_comparable(t: str, label: str, op: str) -> None:
+    """Accept numbers or dates for ordered comparison; reject everything
+    else. Mixed number/date is caught at runtime by _apply_op."""
+    if t in ("number", "date"):
         return
     raise _SemanticError(
-        f"'{op}' requires numbers, but '{label}' is {_singular(t)}."
+        f"'{op}' requires numbers or dates, but '{label}' is {_singular(t)}."
     )
 
 
@@ -1396,6 +1414,8 @@ def _resolve_value(
 ) -> tuple[str, str]:
     if isinstance(value_node, NumberLiteral):
         return "number", _fmt_number(value_node.value)
+    if isinstance(value_node, DateLiteral):
+        return "date", value_node.value.isoformat()
     if isinstance(value_node, BareWord):
         if value_node.word in symtab:
             entry = symtab[value_node.word]
@@ -1739,23 +1759,23 @@ def _check_choose_condition(
     if cond.op in ("is", "equal_to"):
         return
     if cond.op in ("above", "below"):
-        _require_numeric(field_type, field_label, cond.op)
-        _require_numeric(value_type, value_label, cond.op)
+        _require_comparable(field_type, field_label, cond.op)
+        _require_comparable(value_type, value_label, cond.op)
         return
     if cond.op == "within":
         # Issue #19 — numeric tolerance, also valid in `choose if`.
-        _require_numeric(field_type, field_label, "within")
-        _require_numeric(value_type, value_label, "within")
+        _require_comparable(field_type, field_label, "within")
+        _require_comparable(value_type, value_label, "within")
         target_type, target_label = _resolve_choose_operand(cond.value2, symtab)
-        _require_numeric(target_type, target_label, "within")
+        _require_comparable(target_type, target_label, "within")
         return
     if cond.op in ("includes", "not_includes"):
         return
     if cond.op.startswith("not_"):
         inner = cond.op[len("not_"):]
         if inner in ("above", "below"):
-            _require_numeric(field_type, field_label, f"not {inner}")
-            _require_numeric(value_type, value_label, f"not {inner}")
+            _require_comparable(field_type, field_label, f"not {inner}")
+            _require_comparable(value_type, value_label, f"not {inner}")
         return
     raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
 
@@ -2146,6 +2166,7 @@ _LIST_ITEM_CATEGORY = {
     "list_of_numbers": "number",
     "list_of_strings": "string",
     "list_of_records": "record",
+    "list_of_dates": "date",
 }
 
 
@@ -2258,6 +2279,8 @@ def _infer_add_item_type(
     iterated record resolves to that field's type."""
     if isinstance(item, NumberLiteral):
         return "number", _fmt_number(item.value)
+    if isinstance(item, DateLiteral):
+        return "date", item.value.isoformat()
     if isinstance(item, QuotedString):
         return "string", item.content
     if isinstance(item, FieldAccessNode):
@@ -2300,6 +2323,8 @@ def _resolve_choose_operand(
     access uses `<field> of <record>` explicitly (§100)."""
     if isinstance(node, NumberLiteral):
         return "number", _fmt_number(node.value)
+    if isinstance(node, DateLiteral):
+        return "date", node.value.isoformat()
     if isinstance(node, BareWord):
         if node.word in symtab:
             return symtab[node.word].type, node.word
@@ -2361,7 +2386,9 @@ def _require_list(
             f"I can't find '{name}'. You might need to 'remember' it first."
         )
     entry = symtab[name]
-    if entry.type not in ("list_of_numbers", "list_of_strings", "list_of_records"):
+    if entry.type not in (
+        "list_of_numbers", "list_of_strings", "list_of_records", "list_of_dates",
+    ):
         if verb == "filter":
             msg = f"I can only filter a list. '{name}' is {_singular(entry.type)}."
         elif verb == "keep":
@@ -2387,6 +2414,8 @@ def _make_iterator(name: str, entry: SymbolEntry) -> IteratorContext:
         return IteratorContext(collection_name=name, scalar_type="number")
     if entry.type == "list_of_strings":
         return IteratorContext(collection_name=name, scalar_type="string")
+    if entry.type == "list_of_dates":
+        return IteratorContext(collection_name=name, scalar_type="date")
     raise _SemanticError(f"'{name}' isn't a list I can iterate.")
 
 
@@ -2398,6 +2427,8 @@ def _value_type(v: Any) -> str:
         return "number"
     if isinstance(v, str):
         return "string"
+    if isinstance(v, date):
+        return "date"
     if isinstance(v, dict):
         return "record"
     return "unknown"
@@ -2407,9 +2438,11 @@ _SINGULAR = {
     "number": "a number",
     "string": "text",
     "record": "a record",
+    "date": "a date",
     "list_of_numbers": "a list of numbers",
     "list_of_strings": "a list of text",
     "list_of_records": "a list of records",
+    "list_of_dates": "a list of dates",
     "composition": "a composition",
     "unknown": "an unknown type",
 }
@@ -2417,9 +2450,11 @@ _PLURAL = {
     "number": "numbers",
     "string": "text",
     "record": "records",
+    "date": "dates",
     "list_of_numbers": "lists of numbers",
     "list_of_strings": "lists of text",
     "list_of_records": "lists of records",
+    "list_of_dates": "lists of dates",
 }
 
 
