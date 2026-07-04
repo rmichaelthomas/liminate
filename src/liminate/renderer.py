@@ -37,6 +37,7 @@ from .parser import (
     ConditionNode,
     CountNode,
     DateLiteral,
+    DefineNode,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -49,6 +50,7 @@ from .parser import (
     NameRef,
     NumberLiteral,
     PackVerbNode,
+    PredicateApplicationNode,
     QuotedString,
     RemoveNode,
     RememberCompositionNode,
@@ -143,6 +145,12 @@ def _render_node(node: ASTNode) -> str:
         if " " in node.topic:
             return f'about "{node.topic}"'
         return f"about {node.topic}"
+    if isinstance(node, DefineNode):
+        # Definitional Era (v31) — `define <name>: <condition>`. Metadata
+        # prefixes/suffixes (starting/until/inherited/because/from) are
+        # applied uniformly by `render`'s getattr-based wrapper, so this
+        # renders only the name + body.
+        return f"define {node.name}: {render(node.condition)}"
     if isinstance(node, NumberLiteral):
         return _fmt_number(node.value)
     if isinstance(node, DateLiteral):
@@ -368,6 +376,12 @@ def _render_node(node: ASTNode) -> str:
         return _render_condition(node)
     if isinstance(node, CompoundConditionNode):
         return f"{render(node.left)} {node.connector} {render(node.right)}"
+    if isinstance(node, PredicateApplicationNode):
+        # Definitional Era (v31) — `<subject> is [not] <predicate>`.
+        subject = render(node.subject)
+        if node.negated:
+            return f"{subject} is not {node.predicate_name}"
+        return f"{subject} is {node.predicate_name}"
 
     raise TypeError(f"render() has no rule for {type(node).__name__}")
 
