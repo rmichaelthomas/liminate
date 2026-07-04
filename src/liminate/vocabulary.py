@@ -86,6 +86,13 @@ Sources:
   only, value-returning, erroring on an empty list (VW-Q2/Q3/Q4). Total
   60 reserved words — 21 verbs, 22 connectives, 10 operators, 3 articles,
   3 multi-word reserved, 1 declaration; tombstones uncounted.
+- Definitional Era (checkpoint v31) — `define` declaration (+1). Unlike
+  `about`, `define` is a program-level statement dispatched through the
+  normal parse pipeline (not a first-line-only declaration): `define
+  <name>: <condition>` registers a named, reusable domain predicate,
+  referenced elsewhere as `is <name>` / `is not <name>`. Total 61
+  reserved words — 21 verbs, 22 connectives, 10 operators, 3 articles,
+  3 multi-word reserved, 2 declarations; tombstones uncounted.
 """
 
 from dataclasses import dataclass
@@ -260,7 +267,12 @@ MULTI_WORD_RESERVED: frozenset[str] = frozenset({
 # `about` declares the program's topic as inert metadata — visible to
 # tooling (inspect, Receipts, Inyim) but not to the runtime symbol
 # table. Single, first-line-only (MS-Q1).
-DECLARATIONS: frozenset[str] = frozenset({"about"})
+#
+# Definitional Era (v31): `define` is the second declaration. Unlike
+# `about`, it is NOT first-line-only — it's a normal program statement
+# dispatched through the standard parse pipeline anywhere in the
+# program, registering a named predicate in the symbol table.
+DECLARATIONS: frozenset[str] = frozenset({"about", "define"})
 
 # v25 — tombstoned renamed words. Reserved (in ALL_RESERVED) so old
 # programs fail with a self-explaining error instead of a generic one,
@@ -269,8 +281,8 @@ DECLARATIONS: frozenset[str] = frozenset({"about"})
 # tombstone requires future evidence (checkpoint v25, VW-Q6).
 TOMBSTONES: dict[str, str] = {"combine": "sum"}
 
-# All 60 reserved words. 21 verbs, 22 connectives, 10 operators, 3
-# articles, 0 V2-reserved, 3 multi-word reserved, 1 declaration.
+# All 61 reserved words. 21 verbs, 22 connectives, 10 operators, 3
+# articles, 0 V2-reserved, 3 multi-word reserved, 2 declarations.
 # Tombstones (TOMBSTONES) are reserved but uncounted — same accounting
 # as pack words (see reserved_category).
 # v3a §124 was 34
@@ -308,6 +320,11 @@ TOMBSTONES: dict[str, str] = {"combine": "sum"}
 # v25 vocabulary wave: `combine` renamed to `sum` (net 0 — verb count
 # stays 21; `combine` moves to TOMBSTONES, uncounted). `highest`/`lowest`
 # added to OPERATORS (+2 — list-extrema value selectors, VW-Q2). Total 60.
+# Definitional Era (v31): +1 — `define` declaration (DECLARATIONS), the
+# second member of the declaration grammatical category. Public total 61
+# (raw len(ALL_RESERVED) is 62 — includes the uncounted `combine`
+# tombstone; use `len(ALL_RESERVED) - len(TOMBSTONES)` for the public
+# count, never the raw length).
 ALL_RESERVED: frozenset[str] = (
     VERBS | CONNECTIVES | OPERATORS | ARTICLES | V2_RESERVED
     | MULTI_WORD_RESERVED | DECLARATIONS | frozenset(TOMBSTONES)
@@ -324,7 +341,7 @@ def reserved_category(word: str) -> str | None:
     v4a §137: active pack verbs report as "verb"; active pack nouns
     report as "noun". Pack words are only reserved while the pack that
     declared them is loaded — the base vocabulary is the canonical
-    surface (currently 60 reserved words — 21 verbs, 0 V2-reserved;
+    surface (currently 61 reserved words — 21 verbs, 0 V2-reserved;
     see module docstring).
 
     v25: tombstoned words (TOMBSTONES) report as "renamed word" — checked

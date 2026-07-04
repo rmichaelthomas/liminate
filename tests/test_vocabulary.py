@@ -84,13 +84,14 @@ def test_multi_word_reserved():
 
 
 def test_total_reserved_count_is_54():
-    # 60 reserved words total (v25: +2 for `highest`/`lowest`; `combine`
-    # -> `sum` is a net-0 rename, tombstoned and uncounted). 21 verbs +
-    # 22 connectives + 10 operators + 3 multi-word + 3 articles +
-    # 0 v2-deferred + 1 declaration = 60. TOMBSTONES is reserved but
-    # not part of the public count (see test_reserved_sets_are_disjoint,
-    # which accounts for it separately).
-    assert len(ALL_RESERVED) == 61
+    # 61 public reserved words total (Definitional Era v31: +1 for the
+    # `define` declaration). 21 verbs + 22 connectives + 10 operators +
+    # 3 multi-word + 3 articles + 0 v2-deferred + 2 declarations = 61.
+    # TOMBSTONES is reserved but not part of the public count — raw
+    # len(ALL_RESERVED) is 62 (includes the uncounted `combine`
+    # tombstone). Count assertions must use
+    # len(ALL_RESERVED) - len(TOMBSTONES), never the raw len (v30 §78).
+    assert len(ALL_RESERVED) - len(TOMBSTONES) == 61
 
 
 def test_reserved_sets_are_disjoint():
