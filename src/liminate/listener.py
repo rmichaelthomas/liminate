@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
+from datetime import date
 from queue import Empty, Queue
 from typing import Any, Iterator
 
@@ -808,6 +809,14 @@ def _apply_op(op: str, a: Any, b: Any) -> bool:
     NOTE: this function is duplicated in interpreter.py. Both copies
     must stay in sync when adding new operators.
     """
+    if op in ("above", "below", "not_above", "not_below"):
+        # Calendar Era (v29) — mirror interpreter.py's date-comparison guard.
+        if (isinstance(a, date) or isinstance(b, date)) and type(a) is not type(b):
+            other = b if isinstance(a, date) else a
+            kind = "a number" if isinstance(other, (int, float)) and not isinstance(other, bool) else "text"
+            raise _RuntimeError(
+                f"I can't compare a date to {kind}. Both sides must be dates."
+            )
     if op == "is":
         return a == b
     if op == "above":

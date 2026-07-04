@@ -573,13 +573,16 @@ first, then the symbol table.
 ## Temporal boundaries (`starting` / `until`)
 
 Two statement-initial connectives give a rule an effective date and a
-sunset clause. They attach to any verb statement and take a quoted
-ISO 8601 date (`YYYY-MM-DD`):
+sunset clause. They attach to any verb statement and take an ISO 8601
+date (`YYYY-MM-DD`), quoted or bare (Calendar Era, v29 — bare dates
+were added alongside the [date value type](#dates); both forms are
+equivalent and always canonicalize to the quoted form):
 
 ```
 starting "2025-07-01" require amount is above 50000
 until "2025-12-31" forbid total is above 10000
 starting "2025-07-01" until "2025-12-31" permit category is "travel"
+starting 2025-07-01 require amount is above 50000
 ```
 
 `starting` declares when a rule takes effect; `until` declares when it
@@ -1021,9 +1024,11 @@ A literal value can be:
 - **A number** — digits with an optional single decimal point.
   Examples: `30`, `3.14`, `100`. The language does not support
   negative numbers or scientific notation.
-- **A single-word string** — any bare word that is not a number and
-  not in the reserved-word list. Examples: `red`, `active`,
-  `portland`. Strings are case-folded to lowercase.
+- **A date** — a bare ISO 8601 date, `YYYY-MM-DD`. Example:
+  `2025-07-01`. See [Dates](#dates) (Calendar Era, v29).
+- **A single-word string** — any bare word that is not a number, not
+  a date, and not in the reserved-word list. Examples: `red`,
+  `active`, `portland`. Strings are case-folded to lowercase.
 - **A quoted multi-word string** — any text inside `"..."` (v2c).
   Used for values that contain spaces or that collide with the
   reserved-word list. Examples: `"in progress"`, `"high priority"`,
@@ -1042,6 +1047,87 @@ remember a list called items with filter and blue
 
 Wrapping the reserved word in quotes is the v2c remedy — quoted
 content bypasses the vocabulary lookup.
+
+## Dates
+
+Calendar Era (v29) adds `date` as a third scalar value type, alongside
+number and string. Zero new reserved words — a bare date is recognized
+by shape (`YYYY-MM-DD`), the same way a bare number is recognized by
+its digit shape.
+
+A date literal is bare, unquoted ISO 8601:
+
+```
+remember a date called due-date with 2025-07-01
+```
+
+Dates work anywhere a value does: a standalone value, a record field,
+or a list item — a list of dates must be homogeneous, same as a list
+of numbers or strings.
+
+```
+remember an order called o1 with filed-date as 2025-07-01 and status as active
+remember a list called deadlines with 2025-07-01 and 2025-08-01 and 2025-09-01
+```
+
+**Quoting still marks data.** `"2025-07-01"` (quoted) is a string, not
+a date — the same "quotes bypass vocabulary/type inference" rule that
+applies everywhere else in the language (see [Quoting](#quoting-v2c)).
+This is a deliberate escape hatch: wrap a date-shaped value in quotes
+if you want it treated as text.
+
+**Comparison.** Every condition operator works on dates: `is`, `above`,
+`below`, `equal to`, `not above`, `not below`, `not equal to`, `within`.
+Comparing a date to a number or to text is a type error — both sides of
+an ordered comparison must be dates:
+
+```
+require due-date is below 2025-12-31
+forbid filed-date is above 2025-12-31 unless waiver is equal to yes
+```
+
+**`within` on dates** measures a day count rather than a numeric
+distance. The tolerance is still a plain number:
+
+```
+require filed-date is within 30 of 2025-07-01
+```
+
+**Arithmetic** extends `plus`/`minus` to dates, in whole days only
+(fractional-day arithmetic isn't supported):
+
+```
+remember a date called deadline from filing-date plus 30
+remember a value called gap from deadline minus due-date
+```
+
+`date plus number` and `date minus number` return a date. `date minus
+date` returns the day count between them (a number). `date plus date`,
+and multiplying or dividing a date, are errors.
+
+**`highest` / `lowest`** and **`sort`** work on date fields and lists
+of dates the same way they work on numbers — `highest`/`lowest` return
+the latest/earliest date; `sort` orders chronologically:
+
+```
+sort the entries by filed-date
+highest filed-date of submissions
+lowest filed-date of submissions
+keep the orders where filed-date is above 2025-01-01
+```
+
+**`today`.** Dates don't evaluate against a clock on their own — a
+program that wants "the current date" references the name `today`,
+which is a product-layer injected value, not a language builtin. The
+CLI injects it automatically on every run; an embedder calling `run()`
+directly supplies it via `inject={"today": ...}`. A program that
+references `today` without an injected value gets "I can't find
+'today'" like any other unresolved name — and a program that never
+references `today` is unaffected by its presence.
+
+```
+require due-date is below today
+```
 
 ## Mixed `and` / `or` and the amber prompt
 

@@ -108,6 +108,10 @@ class TokenType(Enum):
     # distinct from verbs/connectives/operators. `about` is the first
     # declaration — it declares the program's topic as inert metadata.
     DECLARATION = "DECLARATION"
+    # Calendar Era (v29): a bare ISO 8601 date literal (YYYY-MM-DD).
+    # Recognized by lexer shape, not vocabulary lookup — same accounting
+    # as NUMBER. Not in ALL_RESERVED; the 60-word count is unaffected.
+    DATE = "DATE"
 
 
 @dataclass

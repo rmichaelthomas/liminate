@@ -34,6 +34,7 @@ import copy
 import re
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import date, timedelta
 from typing import Any
 
 from .adapter import LiveValueRegistry
@@ -76,6 +77,7 @@ from .parser import (
     CompoundConditionNode,
     ConditionNode,
     CountNode,
+    DateLiteral,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -2064,6 +2066,8 @@ def _evaluate_expression(
 ) -> Any:
     if isinstance(expr, NumberLiteral):
         return expr.value
+    if isinstance(expr, DateLiteral):
+        return expr.value
     if isinstance(expr, BareWord):
         # If the word matches a symbol, copy its value (§24 line 486).
         # Otherwise treat the word as a string literal.
@@ -2227,7 +2231,19 @@ def _within_tolerance(field_val: Any, tolerance: Any, target: Any) -> bool:
     """Issue #19 — numeric tolerance comparison: True when
     |field_val - target| <= tolerance. All three operands must be numbers;
     a non-number produces a friendly runtime error rather than a Python
-    TypeError."""
+    TypeError.
+
+    Calendar Era (v29) — when both field_val and target are dates, the
+    tolerance measures a day count instead: |field - target| in days.
+    """
+    if isinstance(field_val, date) and isinstance(target, date):
+        if isinstance(tolerance, bool) or not isinstance(tolerance, (int, float)):
+            raise _RuntimeError(
+                f"'within' on dates needs a numeric day count, but the "
+                f"amount is {_format_scalar(tolerance)}."
+            )
+        return abs((field_val - target).days) <= tolerance
+
     for label, v in (("value", field_val), ("amount", tolerance), ("target", target)):
         if isinstance(v, bool) or not isinstance(v, (int, float)):
             raise _RuntimeError(
@@ -2237,8 +2253,10 @@ def _within_tolerance(field_val: Any, tolerance: Any, target: Any) -> bool:
     return abs(field_val - target) <= tolerance
 
 
-def _eval_extrema(node: ExtremaNode, symtab: dict[str, SymbolEntry]) -> int | float:
-    """v25 — evaluate `highest`/`lowest`. Numeric-only; errors on an
+def _eval_extrema(node: ExtremaNode, symtab: dict[str, SymbolEntry]) -> int | float | date:
+    """v25 — evaluate `highest`/`lowest`. Numbers or dates (Calendar Era
+    v29 extends this to dates: `highest`/`lowest` on a date field or a
+    list of dates returns the latest/earliest date); errors on an
     empty list (deliberately asymmetric with `sum []` == 0 — an empty
     sum is 0, an empty extremum is undefined). Lists never hold
     DecayingValue elements (only scalar symbols do), so no decay
@@ -2252,18 +2270,23 @@ def _eval_extrema(node: ExtremaNode, symtab: dict[str, SymbolEntry]) -> int | fl
         values = []
         for item in the_list:
             v = item[node.field]
+            if isinstance(v, date):
+                values.append(v)
+                continue
             if isinstance(v, bool) or not isinstance(v, (int, float)):
                 raise _RuntimeError(
-                    f"'{node.word}' needs numbers. Field '{node.field}' in "
+                    f"'{node.word}' needs numbers or dates. Field '{node.field}' in "
                     f"'{node.target.name}' contains {_format_scalar(v)}."
                 )
             values.append(v)
     else:
         values = list(the_list)
         for v in values:
+            if isinstance(v, date):
+                continue
             if isinstance(v, bool) or not isinstance(v, (int, float)):
                 raise _RuntimeError(
-                    f"'{node.word}' needs numbers. '{node.target.name}' contains text."
+                    f"'{node.word}' needs numbers or dates. '{node.target.name}' contains text."
                 )
     return max(values) if node.word == "highest" else min(values)
 
@@ -2297,6 +2320,8 @@ def _eval_field(field_node: ASTNode, current_item: Any, symtab) -> Any:
 
 def _eval_value(value_node: ASTNode, current_item: Any, symtab) -> Any:
     if isinstance(value_node, NumberLiteral):
+        return value_node.value
+    if isinstance(value_node, DateLiteral):
         return value_node.value
     if isinstance(value_node, BareWord):
         if value_node.word in symtab:
@@ -2345,6 +2370,9 @@ def _eval_arithmetic(
     """
     left = _eval_arithmetic_operand(node.left, symtab, current_item)
     right = _eval_arithmetic_operand(node.right, symtab, current_item)
+    # Calendar Era (v29) — date arithmetic dispatch.
+    if isinstance(left, date) or isinstance(right, date):
+        return _eval_date_arithmetic(left, right, node.op)
     if isinstance(left, bool) or not isinstance(left, (int, float)):
         raise _RuntimeError(
             f"I can only do arithmetic with numbers, but the left side "
@@ -2369,6 +2397,57 @@ def _eval_arithmetic(
             return int(result)
         return result
     raise _RuntimeError(f"Unknown arithmetic operator '{node.op}'.")
+
+
+def _eval_date_arithmetic(left: Any, right: Any, op: str) -> date | int:
+    """Calendar Era (v29) — date arithmetic.
+
+    date + number = date + N days (returns date)
+    date - number = date - N days (returns date)
+    date - date   = day count (returns int)
+    date + date   = error
+    date * / date / = error
+    Number must be a whole integer.
+    """
+    if op in ("multiplied_by", "divided_by"):
+        raise _RuntimeError("Dates can't be multiplied or divided.")
+
+    if isinstance(left, date) and isinstance(right, date):
+        if op == "minus":
+            return (left - right).days
+        raise _RuntimeError(
+            "I can't add two dates — did you mean to subtract? "
+            "Try: date minus date."
+        )
+
+    # One operand is a date, the other must be a number (day offset).
+    if isinstance(left, date):
+        the_date, the_number, date_is_left = left, right, True
+    else:
+        the_date, the_number, date_is_left = right, left, False
+
+    if isinstance(the_number, bool) or not isinstance(the_number, (int, float)):
+        raise _RuntimeError(
+            "Date arithmetic works in whole days — "
+            f"the offset must be a number, not {_format_scalar(the_number)}."
+        )
+    if the_number != int(the_number):
+        raise _RuntimeError(
+            f"Date arithmetic works in whole days — "
+            f"{_format_scalar(the_number)} isn't a whole number."
+        )
+    days = int(the_number)
+
+    if op == "plus":
+        return the_date + timedelta(days=days)
+    if op == "minus":
+        if date_is_left:
+            return the_date - timedelta(days=days)
+        raise _RuntimeError(
+            "I can't subtract a date from a number. "
+            "Try: date minus number."
+        )
+    raise _RuntimeError(f"Unknown arithmetic operator '{op}' on dates.")
 
 
 def _eval_arithmetic_operand(
@@ -2404,6 +2483,16 @@ def _apply_op(op: str, a: Any, b: Any) -> bool:
     # NOTE: this function is duplicated in listener.py to avoid a circular
     # import between interpreter and listener. Both copies must stay in
     # sync when adding new operators.
+    if op in ("above", "below", "not_above", "not_below"):
+        # Calendar Era (v29) — dates support ordered comparison natively,
+        # but a date compared against a number or string must raise a
+        # friendly runtime error instead of a Python TypeError.
+        if (isinstance(a, date) or isinstance(b, date)) and type(a) is not type(b):
+            other = b if isinstance(a, date) else a
+            kind = "a number" if isinstance(other, (int, float)) and not isinstance(other, bool) else "text"
+            raise _RuntimeError(
+                f"I can't compare a date to {kind}. Both sides must be dates."
+            )
     if op == "is":
         return a == b
     if op == "above":
@@ -2486,6 +2575,8 @@ def _infer_type_and_schema(v: Any) -> tuple[str, dict[str, str] | None]:
         return "number", None
     if isinstance(v, str):
         return "string", None
+    if isinstance(v, date):
+        return "date", None
     if isinstance(v, dict):
         return "record", {k: _scalar_type(val) for k, val in v.items()}
     if isinstance(v, list):
@@ -2499,6 +2590,8 @@ def _infer_type_and_schema(v: Any) -> tuple[str, dict[str, str] | None]:
             return "list_of_records", None
         if isinstance(first, str):
             return "list_of_strings", None
+        if isinstance(first, date):
+            return "list_of_dates", None
         return "list_of_numbers", None
     return "unknown", None
 
@@ -2510,6 +2603,8 @@ def _scalar_type(v: Any) -> str:
         return "number"
     if isinstance(v, str):
         return "string"
+    if isinstance(v, date):
+        return "date"
     if isinstance(v, dict):
         return "record"
     return "unknown"
@@ -2545,6 +2640,8 @@ def _format_scalar(v: Any) -> str:
         return str(v)
     if isinstance(v, str):
         return v
+    if isinstance(v, date):
+        return v.isoformat()  # "2025-07-01"
     if isinstance(v, dict):
         return _format_record(v)
     return str(v)
