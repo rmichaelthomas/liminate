@@ -36,6 +36,7 @@ from .parser import (
     CompoundConditionNode,
     ConditionNode,
     CountNode,
+    DateLiteral,
     EachNode,
     EachPronoun,
     ExpectNode,
@@ -144,6 +145,9 @@ def _render_node(node: ASTNode) -> str:
         return f"about {node.topic}"
     if isinstance(node, NumberLiteral):
         return _fmt_number(node.value)
+    if isinstance(node, DateLiteral):
+        # Calendar Era (v29) — dates render bare, no quotes.
+        return node.value.isoformat()  # "2025-07-01"
     if isinstance(node, BareWord):
         # v2c §90: conditional quoting — quote multi-word or reserved-word
         # values to preserve round-trip integrity. Single-word non-reserved
@@ -187,7 +191,7 @@ def _render_node(node: ASTNode) -> str:
         # re-parses as a copy reference, changing the statement's meaning
         # and breaking at runtime (issue #18). NumberLiteral/BareWord were
         # already routed through `with`; QuotedString was the gap.
-        if isinstance(node.value, (NumberLiteral, BareWord, QuotedString)):
+        if isinstance(node.value, (NumberLiteral, DateLiteral, BareWord, QuotedString)):
             return f"remember {art} {desc} called {node.name} with {render(node.value)}"
         return f"remember {art} {desc} called {node.name} from {render(node.value)}"
     if isinstance(node, RememberListNode):
