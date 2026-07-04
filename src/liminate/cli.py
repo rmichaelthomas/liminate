@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime, timezone
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
@@ -375,12 +376,16 @@ def run_file(
 
     on_blank = (lambda: write("\n")) if quiet else None
 
+    # Calendar Era (v29) — `today` is a product-layer injected value, not
+    # vocabulary. Always available; programs that don't reference it are
+    # unaffected.
     result = run_program(
         content,
         domain_packs=domain_packs,
         auto_confirm_amber=auto_confirm_amber,
         on_result=on_result,
         on_blank=on_blank,
+        inject={"today": datetime.now(timezone.utc).date()},
     )
     return result.had_error
 

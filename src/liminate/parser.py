@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Any
 
 from .result import LiminateResult, ResultStatus
@@ -66,6 +67,15 @@ class ASTNode:
 @dataclass
 class NumberLiteral(ASTNode):
     value: int | float
+
+
+@dataclass
+class DateLiteral(ASTNode):
+    """Calendar Era (v29) — a date literal. Stored as a Python
+    datetime.date. Validated as a real calendar date at parse time
+    (2025-02-30 is rejected). Enters every value position through
+    _parse_atom, parallel to NumberLiteral."""
+    value: date
 
 
 @dataclass
@@ -1390,13 +1400,19 @@ def _try_consume_starting_until(
     ):
         stream.consume()  # eat `starting`
         date_tok = stream.consume()
-        if date_tok is None or date_tok.type is not TokenType.QUOTED_STRING:
+        if date_tok is None or date_tok.type not in (
+            TokenType.QUOTED_STRING, TokenType.DATE,
+        ):
             got = date_tok.value if date_tok else "end of line"
             raise _ParseError(
-                f"'starting' needs a quoted date — try: "
-                f'starting "2025-07-01". Got: {got}.'
+                f"'starting' needs a date — try: "
+                f'starting "2025-07-01" or starting 2025-07-01. Got: {got}.'
             )
-        _validate_iso_date(date_tok.value, "starting")
+        if date_tok.type is TokenType.QUOTED_STRING:
+            _validate_iso_date(date_tok.value, "starting")
+        else:
+            # Lexer-validated shape; parse-time calendar validation.
+            _validate_calendar_date(date_tok.value)
         starting_date = date_tok.value
 
     peek = stream.peek()
@@ -1407,13 +1423,19 @@ def _try_consume_starting_until(
     ):
         stream.consume()  # eat `until`
         date_tok = stream.consume()
-        if date_tok is None or date_tok.type is not TokenType.QUOTED_STRING:
+        if date_tok is None or date_tok.type not in (
+            TokenType.QUOTED_STRING, TokenType.DATE,
+        ):
             got = date_tok.value if date_tok else "end of line"
             raise _ParseError(
-                f"'until' needs a quoted date — try: "
-                f'until "2025-12-31". Got: {got}.'
+                f"'until' needs a date — try: "
+                f'until "2025-12-31" or until 2025-12-31. Got: {got}.'
             )
-        _validate_iso_date(date_tok.value, "until")
+        if date_tok.type is TokenType.QUOTED_STRING:
+            _validate_iso_date(date_tok.value, "until")
+        else:
+            # Lexer-validated shape; parse-time calendar validation.
+            _validate_calendar_date(date_tok.value)
         until_date = date_tok.value
 
     return starting_date, until_date
@@ -1432,6 +1454,21 @@ def _validate_iso_date(date_str: str, keyword: str) -> None:
         raise _ParseError(
             f"'{keyword}' needs an ISO 8601 date (YYYY-MM-DD) — "
             f'try: {keyword} "2025-07-01". Got: "{date_str}".'
+        )
+
+
+def _validate_calendar_date(date_str: str) -> date:
+    """Calendar Era (v29) — parse and validate a YYYY-MM-DD string as
+    a real calendar date. Returns a datetime.date on success. Raises
+    _ParseError with a friendly message on invalid dates (2025-02-30,
+    2025-13-01, etc.). The lexer has already validated the shape
+    (^\\d{4}-\\d{2}-\\d{2}$); this validates the content."""
+    try:
+        return date.fromisoformat(date_str)
+    except ValueError:
+        raise _ParseError(
+            f"'{date_str}' isn't a valid calendar date. "
+            f"Dates use the format YYYY-MM-DD — for example, 2025-07-01."
         )
 
 
@@ -3142,6 +3179,11 @@ def _parse_within_tolerance(stream: TokenStream) -> ASTNode:
         )
     if tok.type is TokenType.NUMBER:
         return NumberLiteral(value=_parse_number(tok.value))
+    if tok.type is TokenType.DATE:
+        raise _ParseError(
+            "'within' needs a numeric amount (the number of days), "
+            f"not a date. Got: {tok.value}."
+        )
     if tok.type is TokenType.UNKNOWN:
         return BareWord(word=tok.value)
     cat = reserved_category(tok.value)
@@ -3272,6 +3314,8 @@ def _parse_atom(stream: TokenStream) -> ASTNode:
         raise _ParseError("I expected a value here.")
     if tok.type is TokenType.NUMBER:
         return NumberLiteral(value=_parse_number(tok.value))
+    if tok.type is TokenType.DATE:
+        return DateLiteral(value=_validate_calendar_date(tok.value))
     if tok.type is TokenType.UNKNOWN:
         # v2b §77: `<field> of <record>` field-access value expression.
         # v25: this branch also covers tombstoned words (e.g. `combine`)
@@ -3431,6 +3475,8 @@ def _consume_parameter_arg(stream: TokenStream, *, comp_name: str) -> str | ASTN
         )
     if tok.type is TokenType.NUMBER:
         return NumberLiteral(value=_parse_number(tok.value))
+    if tok.type is TokenType.DATE:
+        return DateLiteral(value=_validate_calendar_date(tok.value))
     if tok.type is TokenType.QUOTED_STRING:
         return QuotedString(content=tok.value)
     if tok.type is not TokenType.UNKNOWN:

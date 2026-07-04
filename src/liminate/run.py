@@ -28,7 +28,7 @@ from typing import Any, Callable
 
 from .adapter import DomainPack, LiveValueRegistry
 from .analyzer import SymbolEntry, detect_contradictions
-from .interpreter import HandlerTable, execute
+from .interpreter import HandlerTable, _infer_type_and_schema, execute
 from .lexer import LexError, leading_indent, tokenize
 from .listener import listen
 from .parser import _ParseError, parse, parse_about, parse_when_block
@@ -450,6 +450,7 @@ def run(
     enter_phase2: bool = True,
     on_result: ResultSink | None = None,
     on_blank: Callable[[], None] | None = None,
+    inject: dict[str, Any] | None = None,
 ) -> ContractResult:
     """Execute a Liminate program from source text and return structured
     results. Performs NO I/O — no print, no input, no file reads, no
@@ -480,12 +481,22 @@ def run(
       amber itself in that case.
     - `on_blank`: optional callback invoked for each blank/comment line
       skipped at top level (CLI uses it for quiet-mode blank mirroring).
+    - `inject`: Calendar Era (v29) — product-layer values (e.g. `today`)
+      bound into the symbol table before Phase 1 begins, so every source
+      line can reference them like any other name. Additive: a program
+      that never references an injected name is unaffected by its
+      presence.
 
     Each produced `LiminateResult` carries `line` (1-based source line) and
     `source` (raw line text) so embedders can serialize per-line without
     re-running the loop.
     """
     session = Session(domain_packs=domain_packs)
+    for name, value in (inject or {}).items():
+        type_, schema = _infer_type_and_schema(value)
+        session.symtab[name] = SymbolEntry(
+            name=name, value=value, type=type_, schema=schema,
+        )
     results: list[LiminateResult] = []
 
     amber_statuses = (
