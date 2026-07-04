@@ -266,8 +266,8 @@ class _Deontic:
         self.verb = verb      # "require" | "forbid"
         self.field = field    # field name (str)
         self.op = op          # normalized: "above" | "below" | "is"
-        self.kind = kind      # "num" | "str"
-        self.value = value    # int/float for "num", str for "str"
+        self.kind = kind      # "num" | "str" | "pred"
+        self.value = value    # int/float for "num", str for "str", predicate name for "pred"
         self.text = text      # e.g. "require x is above 50"
         # v28 — rendering of the statement's `unless` exception condition,
         # if any, e.g. "approved is equal to yes". None when unguarded.
@@ -290,6 +290,26 @@ def _extract_deontic(node) -> "_Deontic | None":
     its condition is out of scope (compound, non-name field, or a value that
     isn't a literal / bareword)."""
     cond = node.condition
+    if isinstance(cond, PredicateApplicationNode):
+        # Opaque-atom predicate awareness (Item 1). A predicate application is
+        # treated as a single indivisible fact `field is <predicate>`. The
+        # detector cannot see the predicate body (deliberately unbuilt), but it
+        # can still reason that P and not-P are jointly unsatisfiable. Negated
+        # applications are out of scope — parity with the existing `not_*`
+        # operator exclusion for literals.
+        if cond.negated:
+            return None
+        if not isinstance(cond.subject, NameRef):
+            return None
+        field = cond.subject.name
+        verb = "require" if isinstance(node, RequireNode) else "forbid"
+        text = f"{verb} {field} is {cond.predicate_name}"
+        exception_text = None
+        if node.exception is not None:
+            exception_text = render(node.exception)
+        return _Deontic(
+            verb, field, "is", "pred", cond.predicate_name, text, exception_text,
+        )
     # Compound conditions are out of scope — skip entirely (no leaf extraction).
     if not isinstance(cond, ConditionNode):
         return None
@@ -361,8 +381,14 @@ def _pair_contradicts(a: _Deontic, b: _Deontic) -> bool:
             if above_val >= below_val:
                 return True
         # Rule 4 — two equality requirements with different values can never
-        # both hold.
-        if a.op == "is" and b.op == "is" and not _values_equal(a, b):
+        # both hold. Predicates are opaque atoms: two different predicates (or
+        # a predicate and a literal) may well co-hold, so Rule 4 is suppressed
+        # whenever either side is a predicate application.
+        if (
+            a.op == "is" and b.op == "is"
+            and a.kind != "pred" and b.kind != "pred"
+            and not _values_equal(a, b)
+        ):
             return True
 
     return False
