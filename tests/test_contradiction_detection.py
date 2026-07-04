@@ -231,3 +231,100 @@ def test_guarded_permit_still_never_contradicts():
         "permit X is above 50 unless override is equal to yes",
     ])
     assert w == []
+
+
+# ---------------------------------------------------------------------------
+# Item 1 — opaque-atom predicate awareness (Definitional Era `define`)
+# ---------------------------------------------------------------------------
+#
+# `warnings_for` parses each line independently via the module-level `_parse`
+# (which calls `parse(reordered)` with no predicate table), so it CANNOT
+# exercise predicate applications — a predicate line run through it would
+# misparse exactly as the bug did. Predicate tests must go through the
+# whole-program `run` path, which threads predicate names through the fixed
+# pre-pass.
+
+
+def program_warnings(source_lines):
+    """Collect contradiction warnings by running the whole-program loop,
+    which threads predicate names through the pre-pass. Required for any
+    program that uses `define` — the analyzer-only `warnings_for` helper
+    parses without a predicate table and would misparse `is <predicate>`."""
+    from liminate.run import run as run_program
+    source = "\n".join(source_lines)
+    contract = run_program(source, enter_phase2=False)
+    return [
+        line
+        for r in contract.results
+        if r and r.output
+        for line in r.output
+        if line.startswith("⚠")
+    ]
+
+
+def test_same_predicate_require_forbid_warns():
+    """Same-predicate require/forbid warns — the sound P-and-not-P case."""
+    w = program_warnings([
+        "define big: is above 100",
+        "require X is big",
+        "forbid X is big",
+    ])
+    assert len(w) == 1
+    assert "contradiction" in w[0].lower()
+
+
+def test_different_predicates_no_warning():
+    """Different-predicate require/require does not warn — the
+    false-positive kill this build exists for."""
+    w = program_warnings([
+        "define big: is above 100",
+        "define positive: is above 0",
+        "require X is big",
+        "require X is positive",
+    ])
+    assert w == []
+
+
+def test_predicate_and_literal_no_warning():
+    """Predicate + literal require/require does not warn."""
+    w = program_warnings([
+        "define big: is above 100",
+        "require X is big",
+        "require X is 500",
+    ])
+    assert w == []
+
+
+def test_pre_declaration_use_stays_string_equality():
+    """A bareword used before its `define` is string equality at that
+    point — the pre-pass must agree with the interpreter's forward-
+    declaration rule, not treat it as a predicate application."""
+    w = program_warnings([
+        "require X is big",
+        "require X is 500",
+        "define big: is above 100",
+    ])
+    assert len(w) == 1
+    assert "require x is big" in w[0]
+    assert "require x is 500" in w[0]
+
+
+def test_negated_predicate_application_out_of_scope():
+    """`is not <predicate>` is out of scope for extraction — no warning."""
+    w = program_warnings([
+        "define big: is above 100",
+        "require X is big",
+        "forbid X is not big",
+    ])
+    assert w == []
+
+
+def test_guarded_predicate_deontic_keeps_conditional_wording():
+    """A guarded predicate deontic still gets conditional warning wording."""
+    w = program_warnings([
+        "define high-risk: is above 90",
+        "require X is high-risk",
+        "forbid X is high-risk unless approved is equal to yes",
+    ])
+    assert len(w) == 1
+    assert "unless approved is equal to yes" in w[0]
