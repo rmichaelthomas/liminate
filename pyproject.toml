@@ -7,7 +7,7 @@ license = "Apache-2.0"
 authors = [
     { name = "R. Michael Thomas" }
 ]
-keywords = ["programming-language", "prose-as-syntax", "natural-language", "interpreter"]
+keywords = ["prose-as-syntax", "natural-language", "interpreter"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
