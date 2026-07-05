@@ -4,7 +4,7 @@
 **Source:** Liminate checkpoints v28 (Unless on Deontics Design Lock), v29 (Calendar Era Design Lock), v30 (Calendar Era Build Completion), v31 (Definitional Era Design Lock) — all July 4, 2026. Verified against `src/liminate/vocabulary.py` on `liminate@main`.
 **Scope:** Vocabulary expanded from **60 → 61 reserved words** (21 verbs, 22 connectives, 10 operators, 3 articles, 3 multi-word reserved, 2 declarations). One new word: `define` (a declaration, joining `about`). Two grammar/value-type extensions that added **zero** new words: `unless` exception clauses on the deontic verb family (`require`/`forbid`/`permit`/`expect`), and the Calendar Era's `date` as a third scalar value type. Version v0.15.0 → v0.16.0. Test count 1499 → 1654.
 
-**Status of this packet:** Unlike prior handoff packets in this directory, the `liminate-dev` changes described below were **already executed directly** this session (Claude Code has write access to the `liminate-dev` repo locally) rather than left as a pending handoff. This packet is the record of what changed, not an instruction queue. Branch: `docs/propagate-v28-v31-vocabulary-wave` in `liminate-dev`, not yet pushed or merged.
+**Status of this packet:** Unlike prior handoff packets in this directory, the `liminate-dev` changes described below were **already executed directly** this session (Claude Code has write access to the `liminate-dev` repo locally) rather than left as a pending handoff. This packet is the record of what changed, not an instruction queue. Branch: `docs/propagate-v28-v31-vocabulary-wave` in `liminate-dev`, pushed to origin; not yet merged.
 
 ## Pages Updated
 
