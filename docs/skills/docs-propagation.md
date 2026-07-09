@@ -7,8 +7,8 @@ description: >-
   repos," "update READMEs," "sync the docs," "docs pass," or after a
   build session that changed vocabulary, verbs, connectives, or public
   API surfaces. Produces ordered update instructions per repo, a website
-  handoff packet for liminate-site, and optionally a build prompt for
-  Claude Code. Co-triggers liminate-session-contracts if not already
+  handoff packet for liminate-dev (the public site), and optionally a
+  build prompt for Claude Code. Co-triggers liminate-session-contracts if not already
   active. Do NOT use for archival documents (checkpoints, addenda, gap
   inventories) — those are historical records and must not be modified.
 ---
@@ -17,7 +17,7 @@ description: >-
 
 ## What This Skill Is For
 
-After a vocabulary addition, architectural change, or feature release lands across the Liminate ecosystem, the public-facing documentation in multiple repos needs to be updated to reflect the new state. This skill coordinates that update — identifying which documents in which repos need changes, producing the updates in dependency order, and generating a website handoff packet for liminate-site.
+After a vocabulary addition, architectural change, or feature release lands across the Liminate ecosystem, the public-facing documentation in multiple repos needs to be updated to reflect the new state. This skill coordinates that update — identifying which documents in which repos need changes, producing the updates in dependency order, and generating a website handoff packet for the public site (served from `liminate-dev`).
 
 This is a propagation skill, not a creation skill. It does not produce new architecture or lock new decisions. It takes already-locked decisions from checkpoints and addenda and pushes them into the documentation surfaces where users, agents, and contributors will encounter them.
 
@@ -39,21 +39,16 @@ The protocol is identical in both environments. The difference is output mode: C
 ~/projects/  (or wherever repos are cloned)
 ├── liminate/
 ├── liminate-session-contracts/
-├── liminate-receipts/
 ├── liminate-contract-inheritance/
-├── liminate-site/
+├── liminate-dev/
 ├── prosecode-prompt-compiler/
 ├── prosecode-context-pager/
 └── prosecode-handoff-packet/
 ```
 
+`liminate-dev` is both the products repo (Receipts, Agreements, Mood Ring, Pulse, Seshat) and the public site (`static/site/*`) — `liminate-site` and `liminate-receipts` were retired as of the site-consolidation commit and are no longer separate propagation targets.
+
 If a repo is not cloned locally, skip it and flag it in the output. Do not fail the entire propagation because one satellite repo is missing.
-
----
-
-## Session Contract Co-Trigger
-
-When this skill activates, check whether a `liminate-session-contracts` contract is already running. If not, start one. Documentation propagation involves claims about what the current locked state IS — those claims need verification backing. Follow the two-channel protocol from `liminate-session-contracts`.
 
 ---
 
@@ -71,9 +66,8 @@ The Liminate ecosystem spans these repos. Each has different documentation surfa
 |---|---|---|
 | `liminate` (core) | `README.md`, `CLAUDE.md`, `AGENTS.md`, `docs/language/syntax.md`, `docs/language/quickstart.md`, `docs/spec/inscript_v1_thirty_sentences.md`, `docs/guide/reactive_patterns.md`, `docs/architecture/pipeline.md`, `docs/roadmap/v1-v2-boundary.md`, `docs/DEV_README.md` | Vocabulary changes, verb additions, connective additions, parser changes, runtime changes, new features |
 | `liminate-session-contracts` | `README.md`, `SKILL.md` | New verbs/connectives that affect contract syntax, new pack definitions |
-| `liminate-receipts` | `README.md` | Changes to contract storage, API, or UI |
 | `liminate-contract-inheritance` | `README.md`, `SKILL.md`, `AGENTS.md` | Inheritance model changes, new verbs that affect inheritance semantics |
-| `liminate-site` | `index.html`, `language/` pages, `spec/`, `learn/`, `philosophy/`, `skills/`, `start/`, `install/` | Any public-facing change — vocabulary, features, positioning |
+| `liminate-dev` (products + public site) | `README.md`, `static/index.html` (syntax-highlighter token tables), `static/landing.html`, product pages (`static/moodring*.html`, `static/pulse/*`, `static/agreements.html`, `static/seshat.html`, …), and the site under `static/site/` (`index.html`, `language/` pages incl. `vocabulary/` and `values/`, `spec/`, `learn/`, `philosophy/`, `skills/`, `start/`, `install/`) | Any public-facing change — vocabulary, features, positioning. Supersedes the retired `liminate-site` and `liminate-receipts` repos. |
 | `prosecode-prompt-compiler` | `README.md`, `SKILL.md` | Changes to intent vocabulary, new intent verbs |
 | `prosecode-context-pager` | `README.md`, `SKILL.md`, `CLAUDE.md` | Changes to paging strategy, scoring, or integration |
 | `prosecode-handoff-packet` | `README.md`, `SKILL.md` | Changes to handoff structure, new sections |
@@ -82,7 +76,11 @@ The Liminate ecosystem spans these repos. Each has different documentation surfa
 
 ## Pre-Propagation Protocol
 
-Before producing any updates:
+Before producing any updates, complete these steps in order:
+
+### Step 0: Session contract
+
+If a session contract is not already open, open one now. This is Step 0 — it runs before any other work. Documentation propagation involves claims about what the current locked state IS — those claims need verification backing. Follow the two-channel protocol from `liminate-session-contracts`.
 
 ### Step 1: Identify the source of truth
 
@@ -105,7 +103,7 @@ Categorize the change:
 
 For each affected repo, use `github_get_file` to read the documents that need updating. Search for the specific strings that will be stale — word counts, verb lists, feature descriptions. Do not assume you know what the documents say. Read them.
 
-**Search all known prior values, not just the most recent.** Documents drift across multiple changes. A file stuck at 34 words won't be caught by a grep for 38. When scanning for a numeric value like a word count, search for every known prior value of that number (e.g., `34`, `35`, `38`, `40`). When scanning for a list like verb names, search for both the presence of new entries and the absence of entries that should now appear.
+**Search all known prior values, not just the most recent.** Documents drift across multiple changes. A file stuck at "34 reserved words" won't be caught by a grep for "38." When scanning for a numeric value like a word count, search for the stale *phrases* that contain the number (e.g., `"34 reserved words"`, `"35 reserved words"`, `"12 verbs"`, `"16 connectives"`), not bare numbers. Bare numbers produce false positives — SVG paths, CSS values, tutorial examples, and inline code all contain digit sequences that have nothing to do with vocabulary counts. When scanning for a list like verb names, search for both the presence of new entries and the absence of entries that should now appear.
 
 **Flag dated status lines as a decision point.** When a document contains a time-stamped status snapshot (e.g., "Status (May 13, 2026): 713 tests, 34 reserved words"), surface it to Rob as a question: should the line be rewritten with current values, or preserved as a historical marker with a new current-status line added above it? Do not make this decision autonomously — the answer depends on whether the document treats the line as living status or as a point-in-time record.
 
@@ -126,15 +124,15 @@ Updates must follow this dependency order:
    - `README.md` — feature summary, word count, examples
    - `CLAUDE.md` / `AGENTS.md` — agent instruction files referencing vocabulary
 
-2. **Satellite repos** (`liminate-session-contracts`, `liminate-receipts`, `liminate-contract-inheritance`, Prosecode repos) — Update only the docs that reference the changed elements. Most vocabulary additions won't touch most satellite repos.
+2. **Satellite repos** (`liminate-session-contracts`, `liminate-contract-inheritance`, Prosecode repos) — Update only the docs that reference the changed elements. Most vocabulary additions won't touch most satellite repos.
 
-3. **`liminate-site`** — Updated last. The website is the public face; it should reflect the final state after all repo docs are updated.
+3. **`liminate-dev`'s public site** (`static/site/*`, plus the product pages' own vocabulary mentions) — Updated last. The website is the public face; it should reflect the final state after all repo docs are updated.
 
 ---
 
 ## Website Handoff Packet
 
-After producing updates for all repos, generate a separate handoff packet specifically for liminate-site updates. This packet is tuned for the agent doing the website work — it needs to know what content changed, where it appears on the site, and what pages need updating.
+After producing updates for all repos, generate a separate handoff packet specifically for the public site (`liminate-dev`'s `static/site/*` and product pages). This packet is tuned for the agent doing the website work — it needs to know what content changed, where it appears on the site, and what pages need updating.
 
 **Filename:** `liminate_site_handoff_{YYYY_MM_DD}_{subtitle}.md`
 
@@ -145,7 +143,7 @@ After producing updates for all repos, generate a separate handoff packet specif
 
 **Date:** {date}
 **Source:** {checkpoint/addendum that locked the changes}
-**Scope:** {what changed — e.g., "vocabulary expanded from 34 to 45 words, 5 new verbs, 4 new connectives"}
+**Scope:** {what changed — e.g., "vocabulary expanded from {N} to {M} words, {X} new verbs, {Y} new connectives"}
 
 ## Pages Requiring Updates
 
@@ -170,7 +168,7 @@ For each page, the specific text that needs to change:
 
 ## Style and Tone Notes
 
-The liminate-site uses {describe the site's current voice and style}.
+The site uses {describe the site's current voice and style}.
 All new content should match this voice. Do not introduce marketing
 language, hype, or claims not backed by the locked checkpoint.
 
