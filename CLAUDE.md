@@ -4,7 +4,7 @@
 
 Liminate is a prose-as-syntax programming language. The interpreter is a Python pipeline: lexer → reorderer → parser + renderer → analyzer → interpreter, with a Phase 2 event-driven listener layered on top.
 
-Current vocabulary: 21 verbs, 22 connectives, 60 reserved words. Domain packs may declare additional verbs and nouns via the pack-verb contract.
+Current vocabulary: 21 verbs, 22 connectives, 61 reserved words. Domain packs may declare additional verbs and nouns via the pack-verb contract.
 
 ## Critical Rules
 

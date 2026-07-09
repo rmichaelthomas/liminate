@@ -34,29 +34,32 @@ If a feature is shipped, it has a locked specification, a working implementation
 
 ### Execution model
 
-- **Two-phase execution.** Phase 1 runs every top-level sequential statement (`remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, named composition calls) in source order. Phase 2 starts after Phase 1 completes with zero errors AND at least one `when` handler registered. (v3a §107)
+- **Two-phase execution.** Phase 1 runs every top-level sequential statement (`remember`, `show`, `filter`, `keep`, `count`, `gather`, `sum`, `each`, `choose`, named composition calls) in source order. Phase 2 starts after Phase 1 completes with zero errors AND at least one `when` handler registered. (v3a §107)
 - **Stepwise sequences.** When operations chain with `and` between complete verb phrases, each operation commits independently. A later failure does not roll back earlier side effects. (v1d §56)
 - **Single-threaded event queue (Phase 2).** Adapters push `(name, value)` updates into a shared FIFO. The interpreter drains one update to completion (write → re-eval → fire-eligible → cascade) before the next dequeue. (v3a §119)
 - **Edge-triggered evaluation (Phase 2).** Handlers fire on false→true transitions of their compound eligibility. Unchanged adapter updates are silently absorbed. Modifications inside an action block are coalesced by name and cascade depth-first. (v3a §113/§114)
 
-### Vocabulary (58 reserved words)
+### Vocabulary (61 reserved words)
 
-- **21 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `combine`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `forbid`, `permit`, `assign`, `expect`, `sort`, `compare`, `transform`.
+- **21 verbs:** `remember`, `show`, `filter`, `keep`, `count`, `gather`, `sum`, `each`, `choose`, `finish`, `add`, `remove`, `weakens`, `require`, `forbid`, `permit`, `assign`, `expect`, `sort`, `compare`, `transform`. (`combine` is tombstoned — renamed to `sum` in v0.15.0; reserved but inactive, rejected with a rename-specific error, excluded from the count.)
 - **22 connectives:** `where`, `and`, `or`, `from`, `with`, `called`, `to`, `how`, `as`, `of`, `if`, `otherwise`, `when`, `unless`, `includes`, `within`, `over`, `then`, `by`, `because`, `starting`, `until`.
-- **8 single-word operators:** `is`, `above`, `below`, `not`, `plus`, `minus`, `reverse`, `inherited`. Plus `equal`/`multiplied`/`divided` as multi-word components (combine with `to`/`by` per inception §22).
+- **10 single-word operators:** `is`, `above`, `below`, `not`, `plus`, `minus`, `reverse`, `inherited`, `highest`, `lowest`. Plus `equal`/`multiplied`/`divided` as multi-word components (combine with `to`/`by` per inception §22).
 - **3 articles:** `the`, `a`, `an`.
-- **1 declaration:** `about`.
+- **2 declarations:** `about`, `define`.
 - **1 delimiter:** `:`.
 - **0 v2-deferred:** `V2_RESERVED` is now empty — `transform` and `compare` have been promoted to active verbs.
 
 The Meta-Structural Era added three self-describing words as inert metadata (visible to rendering and `inspect`, never executed): `about` (program topic declaration, first line), `because` (statement-terminal quoted rationale on any verb statement), and `inherited` (statement-initial provenance modifier marking a statement as carried forward from a prior context, with optional `from <agent>` attribution).
 
-The Deontic Era completed the obligation/prohibition/permission triangle: `forbid` (halts with `PROHIBITION_VIOLATED` when its condition is true — the mirror of `require`) and `permit` (emits an informational line when its condition is true, never halts — the `expect` pattern). The Temporal-Boundary Era added `starting` and `until`, statement-initial connectives attaching quoted ISO 8601 effective dates and sunset clauses as inert metadata; temporal evaluation is a product-layer concern, not interpreter runtime.
+The Deontic Era completed the obligation/prohibition/permission triangle: `forbid` (halts with `PROHIBITION_VIOLATED` when its condition is true — the mirror of `require`) and `permit` (emits an informational line when its condition is true, never halts — the `expect` pattern). The Temporal-Boundary Era added `starting` and `until`, statement-initial connectives attaching quoted ISO 8601 effective dates and sunset clauses as inert metadata; temporal evaluation is a product-layer concern, not interpreter runtime. The v0.15.0 vocabulary wave renamed `combine` to `sum` and added `highest`/`lowest` as list-extrema value selectors.
+
+v0.16.0 added three more surfaces without breaking the two-phase shape: `unless` exception clauses on the deontic verb family (`require`/`forbid`/`permit`/`expect` — zero new words, an existing connective in a new grammatical position); the Calendar Era (`date` as a third scalar value type — zero new words, recognized by shape like a bare number); and the Definitional Era (`define <name>: <condition>` — one new declaration, joining `about` — names a reusable, testable condition referenced elsewhere as `is <name>` / `is not <name>`, working everywhere the condition grammar already works).
 
 ### Data types and values
 
 - **Numbers** — non-negative integers and decimals (`30`, `3.14`).
-- **Single-word strings** — bare words that are neither numbers nor reserved words (`active`, `portland`). Case-folded to lowercase.
+- **Dates** — bare ISO 8601 literals, `YYYY-MM-DD` (`2025-07-01`). Whole-day arithmetic, all comparison operators, day-based `within` tolerance, and `highest`/`lowest`/`sort` support. (Calendar Era, v0.16.0)
+- **Single-word strings** — bare words that are neither numbers, dates, nor reserved words (`active`, `portland`). Case-folded to lowercase.
 - **Multi-word / quoted strings** — `"in progress"`, `"high priority"`. Values only (names use hyphens). Quoting bypasses the reserved-word vocabulary lookup, so `with label as "filter"` stores the literal string "filter". The renderer drops quotes around safe single-word values when echoing canonical prose. (v2c §86–§92)
 - **Homogeneous lists** — all numbers, all strings, or all records.
 - **Records** — named-field bundles built with `as`.
@@ -66,7 +69,7 @@ The Deontic Era completed the obligation/prohibition/permission triangle: `forbi
 
 - **In-place `filter`** — modifies the target list directly.
 - **Non-destructive `keep`** (v2a §67) — returns a fresh list of matches; source unchanged. Auto-shows by default; captures via `remember ... from keep ...`. Enables reusable filter compositions.
-- **Non-destructive `combine`** — returns the sum without changing the source.
+- **Non-destructive `sum`** — returns the sum without changing the source.
 - **Generalized `of`** (v2b §77) — `<field> of <record>` works in any value position: after `show`, in `where`/`choose if`/`when`/`unless` conditions on either side, in `with`/`from` value position. Single-level only; chained `of` (`a of b of c`) stays rejected until nested records exist.
 - **Multi-field `each show`** (v2a §69) — `each the docs show A and B` emits `A: ..., B: ...` per record. Duplicate field names are a semantic error.
 - **`choose` conditional branching** (v2d §99) — `choose if <cond>: <action> [otherwise [if <cond>:] <action>]*`. First matching branch fires; terminal `otherwise` is a fallback. Side-effect-only.
@@ -74,7 +77,7 @@ The Deontic Era completed the obligation/prohibition/permission triangle: `forbi
 - **`finish` immediate-and-total shutdown** (v3a §112) — inside an action block (directly, inside a `choose` branch, or inside a composition called from one), `finish` terminates the listener. Yields only the SHUTDOWN result.
 - **Composition return values** (v2b §76) — `remember the X from <comp>` captures the value of the composition's last operation. Side-effect-only last ops (`show`/`filter`/`each`/`choose`/`finish`) are rejected at the call site.
 - **Composition parameters** (v2d §96) — one named parameter, names-only, deep-copy semantics, local binding with global shadow/restore. Parameter-mismatch errors at the call site.
-- **Auto-show** — `count`, `combine`, `gather`, and `keep` (standalone) display their results without an explicit `show`.
+- **Auto-show** — `count`, `sum`, `gather`, and `keep` (standalone) display their results without an explicit `show`.
 - **Copy semantics** — every data operation copies values. Two names never alias the same underlying collection.
 - **Iterator context for `each`** — during iteration, names resolve first as a field on the current record, then against the symbol table.
 

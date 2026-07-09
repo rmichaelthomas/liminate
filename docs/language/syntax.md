@@ -1,7 +1,7 @@
 # Liminate syntax
 
 A practical guide to writing Liminate programs. Liminate is a bounded
-prose language: 60 reserved words plus user-provided names and literal
+prose language: 61 reserved words plus user-provided names and literal
 values. The prose IS the program.
 
 This guide covers the full shipped surface: v1, v2a (`keep`, `of`,
@@ -15,9 +15,13 @@ additions, the Infrastructure Era (`by`/`plus`/`minus`/`multiplied
 by`/`divided by` arithmetic, `sort`/`reverse`, `compare`, `transform`),
 the Deontic Era (`forbid`/`permit` — completing the
 require/forbid/permit triangle), the Temporal-Boundary Era
-(`starting`/`until` — effective dates and sunset clauses), and the
+(`starting`/`until` — effective dates and sunset clauses), the
 v0.15.0 vocabulary wave (`combine` renamed to `sum`; `highest`/`lowest`
-list-extrema selectors).
+list-extrema selectors), `unless` exception clauses on the deontic
+verb family (`require`/`forbid`/`permit`/`expect`, v0.16.0, zero new
+words), the Calendar Era (`date` as a third scalar value type, v0.16.0,
+zero new words), and the Definitional Era (`define` — named, reusable
+domain predicates, v0.16.0, one new declaration).
 See [`../roadmap/v1-v2-boundary.md`](../roadmap/v1-v2-boundary.md) for
 what's intentionally not built.
 
@@ -51,7 +55,7 @@ three rules:
 
 - Start with a letter.
 - Contain letters, digits, and hyphens.
-- Cannot be one of the 60 reserved words.
+- Cannot be one of the 61 reserved words.
 
 Valid: `age`, `orders`, `find-big-orders`, `order1`, `my-list`.
 
@@ -1035,7 +1039,7 @@ A literal value can be:
   `"filter"` (the literal word "filter" as data, not the verb). See
   [Quoting](#quoting-v2c) for the full rules.
 
-Vocabulary words (the 60 reserved words) cannot be used **unquoted**
+Vocabulary words (the 61 reserved words) cannot be used **unquoted**
 as values:
 
 ```
@@ -1127,6 +1131,73 @@ references `today` is unaffected by its presence.
 
 ```
 require due-date is below today
+```
+
+## Named predicates (`define`)
+
+The Definitional Era (v31) adds `define` — a declaration that names a
+reusable, testable condition (a domain adjective like "overdue" or
+"high-risk") once, instead of repeating the condition text everywhere
+it's used. `define` is the second declaration after `about`. One new
+word.
+
+```
+define overdue: due-date is below cutoff
+```
+
+The name becomes usable anywhere the condition grammar is — `where`,
+`keep`, `filter`, `require`, `require each`, `forbid`, `permit`,
+`expect`, `choose if`, `when`, and `unless` — as `is <name>` or `is not
+<name>`:
+
+```
+filter the orders where each is overdue
+keep the orders where each is not overdue
+forbid total is above 10000 unless each is overdue
+```
+
+**The `is <bareword>` collision** is resolved at parse time: `is
+overdue` produces a predicate application if `overdue` has been
+`define`d, and ordinary string equality otherwise. Quoting still forces
+literal equality (`is "overdue"`) for the rare case where a word
+happens to collide with a predicate name.
+
+**Forward declaration.** A predicate must be `define`d before it's
+used — `define overdue: ...` has to appear above any line that tests
+`is overdue`. This matches `remember how to` (compositions must be
+defined before they're called) and matches reading order.
+
+**Predicates compose.** A predicate body may reference another
+predicate:
+
+```
+define overdue: due-date is below cutoff
+define high-risk: is overdue and total is above 10000
+```
+
+The forward-declaration rule makes recursion structurally impossible —
+by the time a predicate references another by name, that other
+predicate must already exist.
+
+**Predicates are live, not snapshots.** Names inside a predicate body
+resolve against the symbol table at the moment the predicate is
+evaluated, not at the moment it was defined. If `cutoff` changes via
+`remember`, every use of `is overdue` picks up the new value
+immediately.
+
+**Scope and redefinition.** `define` is top-level only — it can't
+appear inside a `when` block, an `each` body, or a `choose` branch.
+Redefining a name overwrites the earlier definition (the same mutation
+semantics as `remember`); the analyzer emits an amber warning so
+accidental shadowing doesn't pass silently.
+
+**Field elision.** Inside a `define` body, an elided left-hand side
+(a condition that starts with `is`, `not`, or `includes`) refers to the
+current item, the same as inside `require each`:
+
+```
+define big: is above 100
+filter the numbers where each is big
 ```
 
 ## Mixed `and` / `or` and the amber prompt
