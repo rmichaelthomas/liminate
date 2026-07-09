@@ -141,6 +141,12 @@ the most mechanical stage:
 - Accumulates a `"..."` run as a single `QUOTED_STRING` token (v2c
   §86). Quoted content preserves spaces and any punctuation; the
   vocabulary lookup is bypassed for quoted tokens (§89).
+- Recognizes a bare `YYYY-MM-DD` word as a `TokenType.DATE` token
+  (Calendar Era, v29) — a date is recognized by shape, the same way a
+  bare number is recognized by its digit shape. Quoting a date-shaped
+  value (`"2025-07-01"`) still produces a `QUOTED_STRING`, so the
+  string/date distinction stays under the author's control. Zero new
+  reserved words.
 - Identifies blank lines (and lines that are only punctuation) as
   producing zero tokens, which the rest of the pipeline skips.
 - Exposes a separate `leading_indent(line)` helper (v3a §110) that
@@ -195,8 +201,11 @@ plus one-token lookahead:
 - `and` / `or` — list construction, compound condition, operation
   sequencing, record-field continuation, or multi-field display
   inside `each ... show` (five contexts).
-- `is` — comparison introducer (followed by an operator) or equality
-  operator (followed by a value).
+- `is` — comparison introducer (followed by an operator), equality
+  operator (followed by a value), or (v0.16.0, Definitional Era) a
+  predicate application if the following bareword is a `define`d
+  predicate name — checked against a parser-maintained predicate table
+  before falling through to string equality.
 - `not` — always modifies the operator that follows.
 - `to` — range endpoint after `from <number>`, or part of `equal to`.
 - `from` — range start in `gather`, result capture in `remember`
@@ -209,8 +218,9 @@ plus one-token lookahead:
 - `if` / `otherwise` — branch introducers inside `choose` (v2d §99).
 - `when` — top-level handler registration; rejected with a specific
   error in any nested position (v3a §108).
-- `unless` — guard clause on a `when` line; rejected anywhere else
-  (v3a §109).
+- `unless` — guard clause on a `when` line (v3a §109), and (v0.16.0)
+  an independent exception-condition clause on `require`/`forbid`/
+  `permit`/`expect`; rejected in any other position.
 
 If any condition (in `where`, `choose if`, `when`, or `unless`) mixes
 both `and` and `or`, the parse still succeeds (standard precedence:
@@ -228,6 +238,33 @@ a parse error, optional colon at end of the `when` line.
 If parsing fails, the parser returns a parse error with a plain-
 English message — never an "unexpected token at column N" style
 error.
+
+**Exception clauses (v0.16.0).** `RequireNode`, `ForbidNode`,
+`PermitNode`, and `ExpectNode` each carry an `exception: ASTNode |
+None` field. After the verb-specific sub-parser consumes the main
+condition via `_parse_or_condition`, it peeks for `unless` and, if
+found, calls `_parse_or_condition` again for a complete, independent
+exception condition tree — the same structural model as the `unless`
+guard on `WhenNode`. The exception sits before the statement-terminal
+`because`/`from` metadata layer, so the canonical order is `starting
+... until ... inherited <verb> <condition> unless <exception> because
+"..." from <agent>`.
+
+**Predicate table (v0.16.0, Definitional Era).** The parser maintains
+a predicate table — a `dict[str, ASTNode]` — populated as `define
+<name>: <condition>` statements are parsed. `DefineNode` carries the
+name and the condition AST. Elsewhere, `_finish_simple_condition`
+checks the table after consuming `is` (or `is not`): a match produces
+a `PredicateApplicationNode` (`subject`, `predicate_name`, `negated`);
+no match falls through to the existing equality path unchanged. Because
+the check lives in the leaf function every condition-accepting
+construct converges to, predicates work in `where`, `keep`, `filter`,
+`require` (including `require each`), `forbid`, `permit`, `expect`,
+`choose if`, `when`, and `unless` with no verb-specific parser changes.
+The forward-declaration requirement (a predicate must be `define`d
+above any line that uses it) structurally rules out recursion — a
+predicate body may reference another predicate, but never itself,
+directly or mutually.
 
 ### Canonical renderer
 
@@ -283,6 +320,30 @@ the things it verifies:
   a composition whose last operation is `show`/`filter`/`each`/
   `choose`/`finish` cannot be captured in `remember the X from
   <comp>`.
+- **Exception clauses (v0.16.0).** The `exception` tree on
+  `RequireNode`/`ForbidNode`/`PermitNode`/`ExpectNode` is validated
+  through `_check_choose_condition` — the same path used for the main
+  condition and for `WhenNode`'s `unless` guard. `_contains_mixed_precedence`
+  checks the exception tree too, so a mixed `and`/`or` inside an
+  exception triggers the same amber-precedence confirmation as
+  anywhere else.
+- **Predicates (v0.16.0, Definitional Era).** A `DefineNode` is
+  validated for condition grammar (legal operators and structure) but
+  not for field existence — field names in a predicate body resolve
+  later, at application time, against whatever context the predicate
+  is applied in. A `PredicateApplicationNode` is validated by checking
+  that its `predicate_name` exists in the parser's predicate table; an
+  undefined name is a semantic error. Redefining a predicate name
+  emits an amber warning rather than an error.
+- **Predicate-aware contradiction detection (v0.16.0).** The
+  contradiction pre-pass threads predicate names through instead of
+  treating a predicate application as an ordinary field/value
+  comparison, and treats predicate applications as opaque atoms during
+  satisfiability analysis — so a guarded or predicated `require`/
+  `forbid` pair no longer produces false-positive contradiction
+  warnings or crashes the detector. When a detected conflict involves
+  an `unless`-guarded deontic, the warning names the exception
+  condition rather than reporting an unconditional contradiction.
 
 For Phase 2 `when` registration, the analyzer validates only the
 condition and `unless` guard (v3a §108) — action-block statements are
@@ -335,6 +396,24 @@ table. Key behaviors:
 - **Copy semantics everywhere.** Data is copied when stored or
   retrieved by name. Two names never alias the same underlying
   collection.
+- **Exception evaluation is polarity-appropriate per verb (v0.16.0).**
+  `require` halts on `NOT main AND NOT exception`; `forbid` halts on
+  `main AND NOT exception`; `permit` emits on `main AND NOT exception`
+  (the exception narrows the permission); `expect` reports divergence
+  on `NOT main AND NOT exception`.
+- **Predicates are evaluated live, not snapshotted (v0.16.0).** A
+  `PredicateApplicationNode` re-evaluates its stored condition AST
+  against the current context every time it runs — fields resolve
+  against the current iterator item (or an explicit record subject),
+  and names resolve against the current symbol table. If a value the
+  predicate depends on changes via `remember`, every subsequent
+  application sees the new value.
+- **Date arithmetic is whole-day only (Calendar Era, v29).**
+  `date plus number` and `date minus number` return a date; `date
+  minus date` returns the day count between them as a number. `date
+  plus date`, and multiplying or dividing a date, are runtime errors.
+  Every comparison operator and `within` (day-based tolerance) work on
+  dates; comparing a date to a number or string is a type error.
 - **Stepwise execution.** When several operations are joined by `and`
   (sequencing, not condition), each one commits independently. If a
   later one fails, earlier side effects remain and the error message
