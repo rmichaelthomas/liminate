@@ -42,6 +42,8 @@ Liminate is a prose-as-syntax language where plain English sentences execute dir
 
 The two-tier naming is intentional: `liminate-*` is the substrate (the language and its native formats), `prosecode-*` is the processing layer (tools that operate on context).
 
+Liminate also powers a separate product cluster built around [Seshat](https://github.com/rmichaelthomas/seshat-app), a local environmental agent harness that governs what AI agents do on your machine — see the [seshat-app](https://github.com/rmichaelthomas/seshat-app) repo or [liminate.dev/seshat](https://liminate.dev/seshat).
+
 ## Install
 
 Requires Python 3.10+.
