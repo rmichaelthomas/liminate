@@ -361,3 +361,149 @@ def test_extrema_and_top_level_each_pronoun_are_unencodable():
         enc.encode_field(checker.EachPronoun())
     with pytest.raises(checker.UnencodableConstruct):
         enc.encode_value(checker.EachPronoun())
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — arithmetic, name inlining, TI-Q13 closure
+# ---------------------------------------------------------------------------
+
+
+def test_build_definitions_from_remember_value_nodes():
+    statements = [_parse_line(l) for l in [
+        "remember a number called beta with 4",
+        "remember a number called z from beta multiplied by beta",
+        "forbid alpha is above z",
+    ]]
+    definitions = checker._build_definitions(statements)
+    assert set(definitions) == {"beta", "z"}
+    assert isinstance(definitions["z"], checker.ArithmeticNode)
+
+
+def test_build_definitions_later_overwrites_earlier():
+    statements = [_parse_line(l) for l in [
+        "remember a number called w with 1",
+        "remember a number called w with 2",
+    ]]
+    definitions = checker._build_definitions(statements)
+    assert isinstance(definitions["w"], checker.NumberLiteral)
+    assert definitions["w"].value == 2
+
+
+def test_build_definitions_descends_into_sequence_node():
+    seq = checker.SequenceNode(
+        operations=[
+            _parse_line("remember a number called w with 1"),
+            _parse_line("remember a number called v with 2"),
+        ],
+        connectors=["and"],
+    )
+    definitions = checker._build_definitions([seq])
+    assert set(definitions) == {"w", "v"}
+
+
+def test_inlining_applies_when_defining_expression_has_arithmetic():
+    definitions = {
+        "beta": checker.NumberLiteral(value=4),
+        "z": checker.ArithmeticNode(
+            left=checker.BareWord(word="beta"),
+            right=checker.BareWord(word="beta"),
+            op="multiplied_by",
+        ),
+    }
+    symtab = _number_symtab(beta=4, alpha=0)
+    enc = checker._Encoder(z3, symtab, definitions)
+    with pytest.raises(checker.NonlinearArithmetic):
+        enc.encode_value(checker.BareWord(word="z"))
+
+
+def test_inlining_skipped_when_defining_expression_has_no_arithmetic():
+    """A plain `remember ... with 4` (no ArithmeticNode in its defining
+    expression) is NOT inlined — it resolves to its opaque constant."""
+    definitions = {"w": checker.NumberLiteral(value=4)}
+    symtab = _number_symtab(w=4)
+    enc = checker._Encoder(z3, symtab, definitions)
+    result = enc.encode_value(checker.BareWord(word="w"))
+    assert result is enc.constants["w"]
+
+
+def test_self_reference_guard_falls_back_to_opaque_constant():
+    """`remember a number called x from x plus 1` — inlining must not
+    recurse infinitely; on revisit it falls back to the opaque constant."""
+    definitions = {
+        "x": checker.ArithmeticNode(
+            left=checker.BareWord(word="x"),
+            right=checker.NumberLiteral(value=1),
+            op="plus",
+        ),
+    }
+    symtab = _number_symtab(x=0)
+    enc = checker._Encoder(z3, symtab, definitions)
+    result = enc.encode_value(checker.BareWord(word="x"))  # must not raise / hang
+    assert result is not None
+
+
+def test_multiplied_by_nonlinear_when_neither_operand_constant():
+    definitions = {
+        "beta": checker.NumberLiteral(value=4),
+    }
+    symtab = _number_symtab(beta=4)
+    enc = checker._Encoder(z3, symtab, definitions)
+    node = checker.ArithmeticNode(
+        left=checker.BareWord(word="beta"),
+        right=checker.BareWord(word="beta"),
+        op="multiplied_by",
+    )
+    with pytest.raises(checker.NonlinearArithmetic):
+        enc.encode_value(node)
+
+
+def test_multiplied_by_linear_when_one_operand_is_a_literal():
+    symtab = _number_symtab(beta=4)
+    enc = checker._Encoder(z3, symtab, {})
+    node = checker.ArithmeticNode(
+        left=checker.BareWord(word="beta"),
+        right=checker.NumberLiteral(value=2),
+        op="multiplied_by",
+    )
+    result = enc.encode_value(node)  # must not raise
+    assert result is not None
+
+
+def test_divided_by_nonlinear_when_neither_operand_constant():
+    symtab = _number_symtab(beta=4, gamma=2)
+    enc = checker._Encoder(z3, symtab, {})
+    node = checker.ArithmeticNode(
+        left=checker.BareWord(word="beta"),
+        right=checker.BareWord(word="gamma"),
+        op="divided_by",
+    )
+    with pytest.raises(checker.NonlinearArithmetic):
+        enc.encode_value(node)
+
+
+def test_TI_Q13_checker_rejects_value_indirection_the_analyzer_permits():
+    """Matched pair with tests/test_arithmetic.py's
+    test_KNOWN_GAP_value_indirection_bypasses_the_linearity_restriction,
+    which deliberately pins that liminate.run()/the analyzer PASS this
+    program: PR #62's syntactic linearity check sees only a bare
+    NameRef/BareWord in the condition, never the ArithmeticNode that
+    produced it. The checker closes that gap by inlining the value at
+    encode time and rejecting the nonlinear multiplication it exposes."""
+    lines = [
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "remember a value called doubled from beta multiplied by beta",
+        "forbid alpha is above doubled",
+    ]
+    session, results = run_lines(lines)
+    for r in results[:-1]:
+        assert r.status.name == "SUCCESS", r.message
+    assert results[-1].status.name == "PROHIBITION_VIOLATED"  # liminate.run() accepts + enforces it
+
+    statements = [_parse_line(l) for l in lines]
+    definitions = checker._build_definitions(statements)
+    enc = checker._Encoder(z3, session.symtab, definitions)
+    cond = statements[-1].condition
+    with pytest.raises(checker.NonlinearArithmetic) as excinfo:
+        enc.encode_condition(cond)
+    assert "doubled" in str(excinfo.value)

@@ -280,6 +280,11 @@ class _Encoder:
             f"Can't encode field reference {type(node).__name__}."
         )
 
+    # -----------------------------------------------------------------
+    # Phase 4 — value position: literals, name resolution + inlining,
+    # arithmetic + nonlinearity detection (TI-Q13 closure)
+    # -----------------------------------------------------------------
+
     def encode_value(self, node, origin_name=None):
         if isinstance(node, NumberLiteral):
             return self.z3.RealVal(node.value)
@@ -288,18 +293,94 @@ class _Encoder:
         if isinstance(node, QuotedString):
             return self.z3.StringVal(node.content)
         if isinstance(node, (BareWord, NameRef)):
+            # §3 correction (4): both shapes must be handled — the parser
+            # emits BareWord for names in value position, but the AST
+            # comment allows NameRef too.
             return self._resolve_name_value(node)
         if isinstance(node, FieldAccessNode):
             return self.encode_field(node)
+        if isinstance(node, ArithmeticNode):
+            return self._encode_arithmetic(node, origin_name)
+        # EachPronoun at top level and ExtremaNode (§6: out of scope
+        # this build) both fall through to this generic branch.
         raise UnencodableConstruct(f"Can't encode value {type(node).__name__}.")
 
     def _resolve_name_value(self, node):
         name = node.word if isinstance(node, BareWord) else node.name
+        defining = self.definitions.get(name)
+        if (
+            defining is not None
+            and self._contains_arithmetic(defining)
+            and name not in self._inlining_visited
+        ):
+            # §7 inlining rule: the symbol table only stores computed
+            # values, not defining expressions, so a name whose defining
+            # `remember` involves arithmetic is inlined — the recursive
+            # encode below is what lets nonlinearity be caught at all.
+            self._inlining_visited.add(name)
+            try:
+                return self.encode_value(defining, origin_name=name)
+            finally:
+                self._inlining_visited.discard(name)
         if name in self.constants:
             return self.constants[name]
         if isinstance(node, BareWord):
+            # Matches interpreter._eval_value: an unresolved BareWord is
+            # a string literal, not an error.
             return self.z3.StringVal(node.word)
         raise UnencodableConstruct(f"'{name}' isn't defined.")
+
+    def _contains_arithmetic(self, node) -> bool:
+        return isinstance(node, ArithmeticNode)
+
+    def _is_compile_time_constant(self, node) -> bool:
+        """A numeral literal, or an arithmetic tree of literals only —
+        deliberately NOT resolved through name indirection. A BareWord/
+        NameRef operand (e.g. `beta` in `beta multiplied by beta`) is
+        always treated as an opaque runtime symbol here, even if its own
+        defining value happens to be a literal — that symbol is a free
+        Z3 constant to the solver, so multiplying it by itself is
+        genuinely nonlinear regardless of what the interpreter would
+        compute it to be at run time."""
+        if isinstance(node, NumberLiteral):
+            return True
+        if isinstance(node, ArithmeticNode):
+            return (
+                self._is_compile_time_constant(node.left)
+                and self._is_compile_time_constant(node.right)
+            )
+        return False
+
+    def _encode_arithmetic(self, node, origin_name=None):
+        if node.op in ("multiplied_by", "divided_by"):
+            if not self._is_compile_time_constant(
+                node.left
+            ) and not self._is_compile_time_constant(node.right):
+                raise NonlinearArithmetic(self._nonlinear_message(node, origin_name))
+        left = self.encode_value(node.left, origin_name=origin_name)
+        right = self.encode_value(node.right, origin_name=origin_name)
+        if node.op == "plus":
+            return left + right
+        if node.op == "minus":
+            return left - right
+        if node.op == "multiplied_by":
+            return left * right
+        if node.op == "divided_by":
+            return left / right
+        raise UnencodableConstruct(f"Unknown arithmetic operator '{node.op}'.")
+
+    def _nonlinear_message(self, node, origin_name) -> str:
+        op_word = "multiplied by" if node.op == "multiplied_by" else "divided by"
+        msg = (
+            f"'{render(node.left)} {op_word} {render(node.right)}' is nonlinear "
+            f"— neither side is a compile-time constant."
+        )
+        if origin_name is not None:
+            msg += (
+                f" This came from inlining '{origin_name}', defined by a "
+                f"'remember' statement."
+            )
+        return msg
 
 
 # Mirrors interpreter._MAX_PREDICATE_EVAL_DEPTH — belt-and-braces defense
@@ -343,6 +424,31 @@ def _substitute_each_pronoun(node, replacement):
             op=node.op,
         )
     return node
+
+
+def _iter_statements(statements):
+    """Descend into SequenceNode, mirroring the walking convention
+    analyzer._iter_deontic_nodes uses — the shared pattern §10 asks the
+    checker to reuse, applied here to the broader set of statement types
+    check_agreement needs (not just Require/Forbid)."""
+    for stmt in statements:
+        if isinstance(stmt, SequenceNode):
+            yield from _iter_statements(stmt.operations)
+        else:
+            yield stmt
+
+
+def _build_definitions(statements):
+    """§7 — name -> defining ASTNode, scanned from the program AST. The
+    symbol table only stores computed values (RememberValueNode.value is
+    gone by execution time), so this is the only place the defining
+    expression survives. Later definitions overwrite earlier ones,
+    matching _store's overwrite semantics (v1d §58)."""
+    definitions: dict[str, object] = {}
+    for stmt in _iter_statements(statements):
+        if isinstance(stmt, RememberValueNode):
+            definitions[stmt.name] = stmt.value
+    return definitions
 
 
 def _encode_comparison(z3mod, op, lhs, rhs):
