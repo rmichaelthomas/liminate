@@ -790,6 +790,8 @@ def _check_arithmetic(
     node: ArithmeticNode,
     symtab: dict[str, SymbolEntry],
     iterator: IteratorContext | None,
+    *,
+    restrict_nonlinear: bool = False,
 ) -> None:
     """Infrastructure Era — validate both operands of a binary
     arithmetic expression. Both must be numeric (or resolvable to a
@@ -798,15 +800,48 @@ def _check_arithmetic(
     a numeric field; BareWord operands defer to runtime (they may
     resolve via the iterator context). Nested ArithmeticNode operands
     recurse.
+
+    `restrict_nonlinear` — Fable decidability condition (c). Only the
+    value side of a deontic/choice condition (`forbid`/`require`/
+    `permit`/`expect`/`choose`, via `_resolve_choose_operand`) sets this;
+    it never enters the SMT encoder from `remember ... with/from`, list
+    items, or `add <expr> to <list>`, so those stay unrestricted.
     """
-    _check_arithmetic_operand(node.left, symtab, iterator)
-    _check_arithmetic_operand(node.right, symtab, iterator)
+    _check_arithmetic_operand(
+        node.left, symtab, iterator, restrict_nonlinear=restrict_nonlinear
+    )
+    _check_arithmetic_operand(
+        node.right, symtab, iterator, restrict_nonlinear=restrict_nonlinear
+    )
+
+    if restrict_nonlinear and node.op in ("multiplied_by", "divided_by"):
+        if not _is_literal_operand(node.left) and not _is_literal_operand(node.right):
+            raise _SemanticError(
+                f"Multiplication and division need at least one plain "
+                f"number. '{render(node.left)}' and '{render(node.right)}' "
+                f"are both values that vary at run time."
+            )
+
+
+def _is_literal_operand(node: ASTNode) -> bool:
+    """Fable decidability condition (c) — at most one operand of a
+    `multiplied_by`/`divided_by` node may be runtime-resolved. A node is
+    a compile-time literal iff it's a NumberLiteral/DateLiteral, or an
+    ArithmeticNode whose own operands are both literal.
+    """
+    if isinstance(node, (NumberLiteral, DateLiteral)):
+        return True
+    if isinstance(node, ArithmeticNode):
+        return _is_literal_operand(node.left) and _is_literal_operand(node.right)
+    return False
 
 
 def _check_arithmetic_operand(
     operand: ASTNode,
     symtab: dict[str, SymbolEntry],
     iterator: IteratorContext | None,
+    *,
+    restrict_nonlinear: bool = False,
 ) -> None:
     if isinstance(operand, NumberLiteral):
         return
@@ -821,7 +856,9 @@ def _check_arithmetic_operand(
             f"'{operand.content}' is text."
         )
     if isinstance(operand, ArithmeticNode):
-        _check_arithmetic(operand, symtab, iterator)
+        _check_arithmetic(
+            operand, symtab, iterator, restrict_nonlinear=restrict_nonlinear
+        )
         return
     if isinstance(operand, FieldAccessNode):
         _check_field_access(operand, symtab)
@@ -2559,7 +2596,10 @@ def _resolve_choose_operand(
     if isinstance(node, ArithmeticNode):
         # Infrastructure Era — arithmetic operands inside `choose` /
         # `require` / `expect` conditions resolve to numbers.
-        _check_arithmetic(node, symtab, iterator=None)
+        # Fable decidability condition (c) — this is the value side of a
+        # deontic/choice condition, the only place that reaches the SMT
+        # encoder, so it's the one call site that restricts nonlinearity.
+        _check_arithmetic(node, symtab, iterator=None, restrict_nonlinear=True)
         return "number", "arithmetic expression"
     raise _SemanticError("Unexpected operand in 'choose' condition.")
 

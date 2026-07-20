@@ -176,3 +176,82 @@ def test_condition_scrambled_error_offers_canonical_condition_shape():
     assert isinstance(out, LiminateResult)
     assert "is" in out.message
     assert "field" in out.message.lower() or "comparison" in out.message.lower()
+
+
+# ---------- temporal-prefix bare-date acceptance (Fix A) ----------
+#
+# These go through liminate.run() rather than parse(tokenize(...)) —
+# the reorder() guard on QUOTED_STRING-only date tokens is what dropped
+# bare dates on the floor with ERROR_PARSE, and parse(tokenize(...))
+# never exercises reorder() so it could not have caught the bug.
+
+import liminate
+
+
+def _run_statuses(line: str) -> list[str]:
+    source = "remember a number called x with 20\n" + line
+    result = liminate.run(source)
+    return [r.status.name for r in result.results]
+
+
+def test_temporal_prefix_bare_both_succeeds_through_run():
+    assert _run_statuses(
+        "starting 2025-07-01 until 2025-12-31 require x is above 10"
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_quoted_both_succeeds_through_run():
+    assert _run_statuses(
+        'starting "2025-07-01" until "2025-12-31" require x is above 10'
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_bare_starting_only_succeeds_through_run():
+    assert _run_statuses(
+        "starting 2025-07-01 require x is above 10"
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_quoted_starting_only_succeeds_through_run():
+    assert _run_statuses(
+        'starting "2025-07-01" require x is above 10'
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_bare_until_only_succeeds_through_run():
+    assert _run_statuses(
+        "until 2025-12-31 require x is above 10"
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_quoted_until_only_succeeds_through_run():
+    assert _run_statuses(
+        'until "2025-12-31" require x is above 10'
+    ) == ["SUCCESS", "SUCCESS"]
+
+
+def test_temporal_prefix_bare_date_populates_ast_metadata():
+    tokens = tokenize(
+        "starting 2025-07-01 until 2025-12-31 require x is above 10"
+    )
+    reordered = reorder(tokens)
+    assert isinstance(reordered, list)
+    from liminate.parser import parse
+
+    node = parse(reordered)
+    assert node.starting_date == "2025-07-01"
+    assert node.until_date == "2025-12-31"
+
+
+def test_temporal_prefix_bare_dates_with_inherited_reorders():
+    tokens = tokenize(
+        "starting 2025-07-01 until 2025-12-31 inherited require x is above 10"
+    )
+    reordered = reorder(tokens)
+    assert isinstance(reordered, list)
+    from liminate.parser import parse
+
+    node = parse(reordered)
+    assert node.starting_date == "2025-07-01"
+    assert node.until_date == "2025-12-31"
+    assert node.inherited is True
