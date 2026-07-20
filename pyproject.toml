@@ -25,6 +25,7 @@ liminate = "liminate.cli:main"
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
 build = ["pyinstaller>=6.0"]
+check = ["z3-solver>=4.12"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
