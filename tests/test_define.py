@@ -16,7 +16,7 @@ the vocabulary count, and contradiction pre-pass safety.
 
 from __future__ import annotations
 
-from liminate.analyzer import SymbolEntry
+from liminate.analyzer import SymbolEntry, analyze
 from liminate.cli import Session
 from liminate.interpreter import execute as _execute
 from liminate.lexer import tokenize
@@ -39,7 +39,7 @@ from liminate.parser import (
 )
 from liminate.renderer import render
 from liminate.reorderer import reorder
-from liminate.result import ResultStatus
+from liminate.result import LiminateResult, ResultStatus
 from liminate.run import run as run_program
 from liminate.vocabulary import ALL_RESERVED, DECLARATIONS, TOMBSTONES, reserved_category
 
@@ -359,3 +359,116 @@ def test_predicate_containing_forbid_does_not_crash_prepass():
     ])
     contract = run_program(source, enter_phase2=False)
     assert contract.results[-1].status is ResultStatus.SUCCESS
+
+
+# ---------------------------------------------------------------------------
+# Cyclic predicate rejection
+#
+# A predicate body may reference another predicate (§84 composition), and
+# redefinition overwrites in place (v1d §58). Together, those two rules let
+# a redefinition introduce a cycle a later `define` never sees coming:
+# `define q: is p` only checks that `p` exists *right now* — it says
+# nothing about what `p` itself might later be redefined to. Evaluating a
+# cyclic predicate chain recurses forever, so this must be caught before
+# it ever reaches evaluation.
+# ---------------------------------------------------------------------------
+
+
+def test_cyclic_redefinition_two_hop_is_rejected_not_a_recursion_error():
+    s = Session()
+    s.run_line("remember a number called x with 5")
+    s.run_line("define p: is above 1")
+    s.run_line("define q: is p")
+    r = s.run_line("define p: is q")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert r.message == (
+        "Definition 'p' refers back to itself through 'q'. "
+        "A definition can't depend on itself."
+    )
+    # The rejected redefinition must not have overwritten `p` — the
+    # earlier, non-cyclic definition stays live and evaluates normally.
+    verdict = s.run_line("require x is p")
+    assert verdict.status is ResultStatus.SUCCESS
+
+
+def test_three_way_cycle_is_rejected():
+    s = Session()
+    s.run_line("define p: is above 1")
+    s.run_line("define q: is p")
+    s.run_line("define r: is q")
+    result = s.run_line("define p: is r")
+    assert result.status is ResultStatus.ERROR_SEMANTIC
+    assert "Definition 'p' refers back to itself through" in result.message
+    assert "'r'" in result.message
+    assert "'q'" in result.message
+
+
+def test_direct_self_reference_on_first_definition_hits_forward_declaration_check():
+    # Mirrors test_undefined_predicate_reference_raises_clear_error: the
+    # decoupled parse()/analyze() path with an explicit predicate_names
+    # set produces a PredicateApplicationNode even though `p` has never
+    # actually been defined. In the normal Session/run() flow this can't
+    # happen — predicate_names is always derived live from the symbol
+    # table, so a first-ever `define p: is p` parses as harmless string
+    # equality instead. This decoupled construction is what exercises the
+    # forward-declaration path directly: it must still raise the
+    # ORIGINAL "I don't know a definition" error, not the new
+    # cycle-rejection error — the cycle check must never shadow it.
+    ast = parse(tokenize("define p: is p"), predicate_names={"p"})
+    result = analyze(ast, {})
+    assert isinstance(result, LiminateResult)
+    assert result.status is ResultStatus.ERROR_SEMANTIC
+    assert "I don't know a definition for 'p'" in result.message
+
+
+def test_legal_redefinition_without_a_cycle_still_works():
+    s = Session()
+    s.run_line("define p: is above 1")
+    r = s.run_line("define p: is above 2")
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_legal_composition_still_works():
+    s = Session()
+    r1 = s.run_line("define adult: age is above 17")
+    assert r1.status is ResultStatus.SUCCESS
+    r2 = s.run_line("define eligible: is adult")
+    assert r2.status is ResultStatus.SUCCESS
+
+
+def test_depth_guard_catches_a_hand_constructed_cyclic_symbol_table():
+    # Belt-and-braces: the analyzer's cycle check makes this unreachable
+    # through normal `define` usage, but a symbol table built directly —
+    # bypassing analysis entirely, exactly the way a caller could misuse
+    # the parse()/execute() split — must still surface a structured
+    # ERROR_SEMANTIC instead of a bare RecursionError.
+    symtab = {
+        "x": SymbolEntry(name="x", value=5, type="number"),
+        "p": SymbolEntry(
+            name="p",
+            value=PredicateApplicationNode(subject=EachPronoun(), predicate_name="q"),
+            type="predicate",
+        ),
+        "q": SymbolEntry(
+            name="q",
+            value=PredicateApplicationNode(subject=EachPronoun(), predicate_name="p"),
+            type="predicate",
+        ),
+    }
+    ast = RequireNode(
+        condition=PredicateApplicationNode(subject=NameRef(name="x"), predicate_name="p"),
+    )
+    result = _execute(ast, symtab)
+    assert result.status is ResultStatus.ERROR_SEMANTIC
+    assert "nested more than 64 levels deep" in result.message
+
+
+def test_legal_ten_deep_predicate_chain_still_passes():
+    s = Session()
+    s.run_line("define p0: is above 1")
+    for i in range(1, 11):
+        r = s.run_line(f"define p{i}: is p{i - 1}")
+        assert r.status is ResultStatus.SUCCESS
+    s.run_line("remember a number called x with 5")
+    verdict = s.run_line("require x is p10")
+    assert verdict.status is ResultStatus.SUCCESS
