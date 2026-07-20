@@ -1858,6 +1858,13 @@ def _check_define(node: DefineNode, symtab: dict[str, SymbolEntry]) -> None:
     (there is no iterator context to resolve them against).
     """
     _check_define_condition(node.condition, symtab)
+    # Cycle check runs only after the forward-declaration check above has
+    # passed clean — every predicate_name reachable in one hop is already
+    # confirmed to exist, so a first-ever `define p: is p` still hits the
+    # "I don't know a definition" error above, unchanged. Only reachability
+    # back to `node.name` itself (direct or via a chain of already-defined
+    # predicates, as happens on redefinition) is new territory here.
+    _check_predicate_definition_cycle(node.name, node.condition, symtab)
 
 
 def _check_define_condition(
@@ -1877,6 +1884,60 @@ def _check_define_condition(
         raise _SemanticError("Unexpected condition shape.")
     if cond.op not in _VALID_CONDITION_OPS:
         raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
+
+
+def _check_predicate_definition_cycle(
+    name: str,
+    condition: ASTNode,
+    symtab: dict[str, SymbolEntry],
+) -> None:
+    """Reject a definition whose body reaches back to its own name through
+    a chain of predicate references (redefinition can introduce this even
+    though `_check_define_condition` never sees it, since each hop only
+    checks that the *next* name already exists — not what that name's own
+    body eventually leads back to)."""
+    path = _find_predicate_cycle(name, condition, symtab, [], set())
+    if path is None:
+        return
+    if not path:
+        raise _SemanticError(f"Definition '{name}' can't depend on itself.")
+    chain = ", ".join(f"'{step}'" for step in path)
+    raise _SemanticError(
+        f"Definition '{name}' refers back to itself through {chain}. "
+        f"A definition can't depend on itself."
+    )
+
+
+def _find_predicate_cycle(
+    target: str,
+    cond: ASTNode,
+    symtab: dict[str, SymbolEntry],
+    path: list[str],
+    visited: set[str],
+) -> list[str] | None:
+    """Walk the reference graph from `cond`, resolving each
+    PredicateApplicationNode against `symtab` as it stands at this
+    definition site. Returns the intermediate-name path to `target` if
+    reached, else None. Reuses the visited-set pattern from
+    `_composition_void_result_verb` to keep the walk cycle-safe."""
+    if isinstance(cond, CompoundConditionNode):
+        found = _find_predicate_cycle(target, cond.left, symtab, path, visited)
+        if found is not None:
+            return found
+        return _find_predicate_cycle(target, cond.right, symtab, path, visited)
+    if isinstance(cond, PredicateApplicationNode):
+        ref = cond.predicate_name
+        if ref == target:
+            return path
+        if ref in visited:
+            return None
+        visited.add(ref)
+        if ref in symtab and symtab[ref].type == "predicate":
+            return _find_predicate_cycle(
+                target, symtab[ref].value, symtab, path + [ref], visited,
+            )
+        return None
+    return None
 
 
 # ---------------------------------------------------------------------------

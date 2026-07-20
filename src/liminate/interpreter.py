@@ -64,6 +64,17 @@ _in_action_block: ContextVar[bool] = ContextVar(
 _live_value_names_ctx: ContextVar[set[str] | None] = ContextVar(
     "liminate_live_value_names", default=None,
 )
+# Defensive depth guard for predicate application (belt-and-braces against
+# analyzer._check_predicate_definition_cycle): that static check rejects
+# cyclic `define`s at registration time, so this cap should be unreachable
+# in practice. It exists so any path the analyzer misses — a hand-built
+# symbol table, a future caller that skips analysis — still surfaces a
+# structured ERROR_SEMANTIC instead of a bare RecursionError. 64 is far
+# above any plausible legitimate predicate-composition depth.
+_predicate_eval_depth: ContextVar[int] = ContextVar(
+    "liminate_predicate_eval_depth", default=0,
+)
+_MAX_PREDICATE_EVAL_DEPTH = 64
 from .parser import (
     AddNode,
     ArithmeticNode,
@@ -2273,8 +2284,19 @@ def _eval_condition(
             raise _RuntimeError(
                 f"I don't have a definition for '{cond.predicate_name}'."
             )
+        depth = _predicate_eval_depth.get()
+        if depth >= _MAX_PREDICATE_EVAL_DEPTH:
+            raise _RuntimeError(
+                f"Predicate '{cond.predicate_name}' is nested more than "
+                f"{_MAX_PREDICATE_EVAL_DEPTH} levels deep — this usually "
+                f"means two or more definitions refer back to each other."
+            )
         subject_val = _eval_field(cond.subject, current_item, symtab)
-        result = _eval_condition(entry.value, subject_val, symtab)
+        token = _predicate_eval_depth.set(depth + 1)
+        try:
+            result = _eval_condition(entry.value, subject_val, symtab)
+        finally:
+            _predicate_eval_depth.reset(token)
         return (not result) if cond.negated else result
     raise _RuntimeError(f"Can't evaluate condition {type(cond).__name__}.")
 
