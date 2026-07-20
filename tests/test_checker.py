@@ -91,3 +91,65 @@ def test_check_agreement_raises_checker_unavailable_without_z3():
     assert result.returncode == 0, result.stderr
     assert "RAISED_CHECKER_UNAVAILABLE" in result.stdout
     assert "pip install liminate[check]" in result.stdout
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 — sort model and constant allocation
+# ---------------------------------------------------------------------------
+
+z3 = pytest.importorskip("z3")
+
+from liminate import checker  # noqa: E402  (after importorskip)
+
+
+def test_constant_map_number_string_date_record_and_string_list():
+    symtab = {
+        "amount": SymbolEntry(name="amount", value=10, type="number"),
+        "status": SymbolEntry(name="status", value="open", type="string"),
+        "due": SymbolEntry(
+            name="due", value=__import__("datetime").date(2026, 1, 1), type="date"
+        ),
+        "order1": SymbolEntry(
+            name="order1",
+            value={"total": 50, "label": "x"},
+            type="record",
+            schema={"total": "number", "label": "string"},
+        ),
+        "tags": SymbolEntry(
+            name="tags", value=["a", "b"], type="list_of_strings"
+        ),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+
+    assert enc.constants["amount"].sort() == z3.RealSort()
+    assert enc.constants["status"].sort() == z3.StringSort()
+    assert enc.constants["due"].sort() == z3.IntSort()
+    assert enc.constants["order1__total"].sort() == z3.RealSort()
+    assert enc.constants["order1__label"].sort() == z3.StringSort()
+
+    # No constant is allocated for a list — membership expands to a
+    # disjunction at encode time instead.
+    assert "tags" not in enc.constants
+
+    # Reverse map round-trips for every allocated constant.
+    for original in ("amount", "status", "due", "order1__total", "order1__label"):
+        sanitized = enc._sanitize(original)
+        assert enc.reverse[sanitized] == original
+
+
+def test_constant_map_sanitizes_hyphenated_names():
+    symtab = {
+        "actor-teams": SymbolEntry(name="actor-teams", value=1, type="number"),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+    const = enc.constants["actor-teams"]
+    # Must be a legal Z3/SMT identifier — no raw hyphen survives.
+    assert "-" not in str(const)
+    assert enc.reverse[enc._sanitize("actor-teams")] == "actor-teams"
+
+
+def test_date_ordinal_helper_matches_toordinal():
+    import datetime
+
+    d = datetime.date(2026, 7, 20)
+    assert checker._date_ordinal(d) == d.toordinal()
