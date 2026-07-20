@@ -1857,6 +1857,15 @@ def _check_define(node: DefineNode, symtab: dict[str, SymbolEntry]) -> None:
     NOT resolve the body's field/value types against the symbol table
     (there is no iterator context to resolve them against).
     """
+    # Surface-form self-reference runs first and regardless of whether
+    # `node.name` is already in `symtab`. When `p` has never been defined,
+    # `is p` parses to a BareWord-equality ConditionNode, not a
+    # PredicateApplicationNode — so the reference-graph walk below never
+    # sees it (there is no predicate reference in the AST to walk). Left
+    # unchecked, `define p: is p` on a first-ever definition silently
+    # means "equals the text 'p'" instead of erroring, even though the
+    # line reads as self-referential to a human.
+    _check_self_referential_define(node.name, node.condition)
     _check_define_condition(node.condition, symtab)
     # Cycle check runs only after the forward-declaration check above has
     # passed clean — every predicate_name reachable in one hop is already
@@ -1865,6 +1874,31 @@ def _check_define(node: DefineNode, symtab: dict[str, SymbolEntry]) -> None:
     # back to `node.name` itself (direct or via a chain of already-defined
     # predicates, as happens on redefinition) is new territory here.
     _check_predicate_definition_cycle(node.name, node.condition, symtab)
+
+
+def _check_self_referential_define(name: str, cond: ASTNode) -> None:
+    """Reject `define p: is p` — a body that compares against a bare word
+    identical to the name being defined.
+
+    When `p` is not yet a known predicate, the parser resolves `is p` to
+    a string-equality ConditionNode with value=BareWord('p'), not to a
+    PredicateApplicationNode — so the reference-graph walk in
+    _find_predicate_cycle never sees it. The line reads as a self-
+    reference and silently means "equals the text 'p'", so it is rejected
+    here on the surface form, before that ambiguity can resolve either
+    way.
+    """
+    if isinstance(cond, CompoundConditionNode):
+        _check_self_referential_define(name, cond.left)
+        _check_self_referential_define(name, cond.right)
+        return
+    if not isinstance(cond, ConditionNode):
+        return
+    for operand in (cond.field, cond.value, cond.value2):
+        if isinstance(operand, BareWord) and operand.word == name:
+            raise _SemanticError(f"Definition '{name}' can't refer to itself.")
+        if isinstance(operand, NameRef) and operand.name == name:
+            raise _SemanticError(f"Definition '{name}' can't refer to itself.")
 
 
 def _check_define_condition(
