@@ -472,3 +472,73 @@ def test_legal_ten_deep_predicate_chain_still_passes():
     s.run_line("remember a number called x with 5")
     verdict = s.run_line("require x is p10")
     assert verdict.status is ResultStatus.SUCCESS
+
+
+# ---------------------------------------------------------------------------
+# Self-referential define on a first-ever definition (no prior `p`).
+#
+# `_find_predicate_cycle` above only ever sees a PredicateApplicationNode —
+# it cannot catch this case, because when `p` has never been defined, `is p`
+# parses to a BareWord-equality ConditionNode instead (see
+# test_direct_self_reference_on_first_definition_hits_forward_declaration_check
+# for the decoupled construction that demonstrates why). Real `Session` usage
+# hits string equality, not a predicate reference — so it needs its own
+# surface-form check, `_check_self_referential_define`, run unconditionally
+# in `_check_define` regardless of whether `p` is already known.
+# ---------------------------------------------------------------------------
+
+
+def test_self_reference_on_first_definition_is_rejected():
+    s = Session()
+    r = s.run_line("define p: is p")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert r.message == "Definition 'p' can't refer to itself."
+
+
+def test_self_reference_in_field_position_is_rejected():
+    s = Session()
+    r = s.run_line("define p: p is above 1")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert r.message == "Definition 'p' can't refer to itself."
+
+
+def test_self_reference_in_compound_and_branch_is_rejected():
+    s = Session()
+    r = s.run_line("define p: is above 1 and is p")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert r.message == "Definition 'p' can't refer to itself."
+
+
+def test_self_reference_in_compound_or_branch_is_rejected():
+    s = Session()
+    r = s.run_line("define p: is p or is above 1")
+    assert r.status is ResultStatus.ERROR_SEMANTIC
+    assert r.message == "Definition 'p' can't refer to itself."
+
+
+def test_is_not_self_reference_is_a_pre_existing_parse_error_not_semantic():
+    # `is not <bareword>` never parses when the word isn't already a known
+    # predicate name — this is pre-existing, unrelated grammar behavior
+    # (identical for any unknown word, e.g. `define p: is not grownup`),
+    # not something this fix introduces or can reach. It is out of scope:
+    # the fix is analyzer-only and must not touch parsing (see
+    # `_check_self_referential_define`'s docstring). Documented here so the
+    # self-reference test group doesn't imply this line is unhandled.
+    s = Session()
+    r = s.run_line("define p: is not p")
+    assert r.status is ResultStatus.ERROR_PARSE
+    assert r.message == "After 'not' I expected 'above', 'below', or 'equal to'."
+
+
+def test_bareword_differing_from_defined_name_stays_string_equality():
+    s = Session()
+    s.run_line("define p: is above 1")
+    r = s.run_line("define q: is p")
+    assert r.status is ResultStatus.SUCCESS
+
+
+def test_predicate_named_after_an_unrelated_fact_still_works():
+    s = Session()
+    s.run_line('remember a string called status with "p"')
+    r = s.run_line("define matches-p: is p")
+    assert r.status is ResultStatus.SUCCESS
