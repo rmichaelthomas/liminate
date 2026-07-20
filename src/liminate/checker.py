@@ -382,6 +382,44 @@ class _Encoder:
             )
         return msg
 
+    # -----------------------------------------------------------------
+    # Phase 5 — deontic statement effect formulas (§8)
+    # -----------------------------------------------------------------
+
+    def encode_deontic(self, node):
+        """Returns (effect, allowed) for a Require/Forbid/Permit/Expect
+        node. `effect` is the condition under which the statement fires
+        (halts for require/forbid, emits for permit, reports for
+        expect). `allowed` is the allowed-state space (require/forbid
+        only — None for permit/expect, which never participate in the
+        require/forbid contradiction check per the locked DT-Q3
+        decision: permit never contradicts)."""
+        condition = self.encode_condition(node.condition)
+        exception = (
+            self.encode_condition(node.exception)
+            if node.exception is not None
+            else self.z3.BoolVal(False)
+        )
+        not_condition = self.z3.Not(condition)
+        not_exception = self.z3.Not(exception)
+        if isinstance(node, RequireNode):
+            effect = self.z3.And(not_condition, not_exception)
+            allowed = self.z3.Or(condition, exception)
+            return effect, allowed
+        if isinstance(node, ForbidNode):
+            effect = self.z3.And(condition, not_exception)
+            allowed = self.z3.Or(not_condition, exception)
+            return effect, allowed
+        if isinstance(node, PermitNode):
+            effect = self.z3.And(condition, not_exception)
+            return effect, None
+        if isinstance(node, ExpectNode):
+            effect = self.z3.And(not_condition, not_exception)
+            return effect, None
+        raise UnencodableConstruct(
+            f"Can't encode deontic statement {type(node).__name__}."
+        )
+
 
 # Mirrors interpreter._MAX_PREDICATE_EVAL_DEPTH — belt-and-braces defense
 # against a hand-built symbol table, since PRs #60/#61 already guarantee

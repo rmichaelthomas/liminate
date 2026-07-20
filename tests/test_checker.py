@@ -507,3 +507,154 @@ def test_TI_Q13_checker_rejects_value_indirection_the_analyzer_permits():
     with pytest.raises(checker.NonlinearArithmetic) as excinfo:
         enc.encode_condition(cond)
     assert "doubled" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# Phase 5 — deontic statement effect formulas
+# ---------------------------------------------------------------------------
+
+
+def _pin_all(enc, symtab):
+    """Pin every scalar fact the encoder allocated a constant for to its
+    real interpreter value, so a formula referencing only those facts
+    collapses to a concrete, closed boolean."""
+    assumptions = []
+    for name, entry in symtab.items():
+        if name not in enc.constants:
+            continue
+        if entry.type == "date":
+            assumptions.append(enc.constants[name] == checker._date_ordinal(entry.value))
+        elif entry.type in ("number", "string"):
+            assumptions.append(enc.constants[name] == entry.value)
+    return assumptions
+
+
+def _run_last_and_encode(lines):
+    session, results = run_lines(lines)
+    for r in results[:-1]:
+        assert r.status.name == "SUCCESS", r.message
+    last_ast = _parse_line(lines[-1])
+    enc = checker._Encoder(z3, session.symtab, {})
+    effect, allowed = enc.encode_deontic(last_ast)
+    assumptions = _pin_all(enc, session.symtab)
+    return results[-1], effect, allowed, assumptions
+
+
+def test_require_effect_fires_iff_interpreter_halts():
+    r, effect, _, assumptions = _run_last_and_encode([
+        "remember a number called amount with 40",
+        "require amount is above 50",
+    ])
+    assert r.status.name == "REQUIREMENT_NOT_MET"
+    assert _check_with(effect, *assumptions) == z3.sat
+
+    r2, effect2, _, assumptions2 = _run_last_and_encode([
+        "remember a number called amount with 60",
+        "require amount is above 50",
+    ])
+    assert r2.status.name == "SUCCESS"
+    assert _check_with(effect2, *assumptions2) == z3.unsat
+
+
+def test_require_unless_excuses_matches_interpreter():
+    r, effect, _, assumptions = _run_last_and_encode([
+        "remember a number called amount with 40",
+        'remember a string called override with "yes"',
+        "require amount is above 50 unless override is yes",
+    ])
+    assert r.status.name == "SUCCESS"  # excused
+    assert _check_with(effect, *assumptions) == z3.unsat
+
+
+def test_forbid_effect_fires_iff_interpreter_halts():
+    r, effect, _, assumptions = _run_last_and_encode([
+        "remember a number called amount with 60",
+        "forbid amount is above 50",
+    ])
+    assert r.status.name == "PROHIBITION_VIOLATED"
+    assert _check_with(effect, *assumptions) == z3.sat
+
+    r2, effect2, _, assumptions2 = _run_last_and_encode([
+        "remember a number called amount with 40",
+        "forbid amount is above 50",
+    ])
+    assert r2.status.name == "SUCCESS"
+    assert _check_with(effect2, *assumptions2) == z3.unsat
+
+
+def test_forbid_unless_excuses_matches_interpreter():
+    r, effect, _, assumptions = _run_last_and_encode([
+        "remember a number called amount with 60",
+        'remember a string called override with "yes"',
+        "forbid amount is above 50 unless override is yes",
+    ])
+    assert r.status.name == "SUCCESS"  # excused
+    assert _check_with(effect, *assumptions) == z3.unsat
+
+
+def test_permit_effect_fires_iff_interpreter_emits():
+    session, results = run_lines([
+        "remember a number called amount with 60",
+        "permit amount is above 50",
+    ])
+    assert results[-1].output is not None  # fired
+    enc = checker._Encoder(z3, session.symtab, {})
+    effect, allowed = enc.encode_deontic(_parse_line("permit amount is above 50"))
+    assert allowed is None  # §8: permit never participates in allowed-space checks
+    assumptions = _pin_all(enc, session.symtab)
+    assert _check_with(effect, *assumptions) == z3.sat
+
+    session2, results2 = run_lines([
+        "remember a number called amount with 40",
+        "permit amount is above 50",
+    ])
+    assert results2[-1].output is None  # did not fire
+    enc2 = checker._Encoder(z3, session2.symtab, {})
+    effect2, _ = enc2.encode_deontic(_parse_line("permit amount is above 50"))
+    assumptions2 = _pin_all(enc2, session2.symtab)
+    assert _check_with(effect2, *assumptions2) == z3.unsat
+
+
+def test_expect_effect_fires_iff_interpreter_reports_divergence():
+    session, results = run_lines([
+        "remember a number called amount with 40",
+        "expect amount is above 50",
+    ])
+    assert results[-1].output is not None  # divergence reported
+    enc = checker._Encoder(z3, session.symtab, {})
+    effect, allowed = enc.encode_deontic(_parse_line("expect amount is above 50"))
+    assert allowed is None
+    assumptions = _pin_all(enc, session.symtab)
+    assert _check_with(effect, *assumptions) == z3.sat
+
+    session2, results2 = run_lines([
+        "remember a number called amount with 60",
+        "expect amount is above 50",
+    ])
+    assert results2[-1].output is None  # met expectation, no report
+    enc2 = checker._Encoder(z3, session2.symtab, {})
+    effect2, _ = enc2.encode_deontic(_parse_line("expect amount is above 50"))
+    assumptions2 = _pin_all(enc2, session2.symtab)
+    assert _check_with(effect2, *assumptions2) == z3.unsat
+
+
+def test_require_forbid_effect_and_allowed_are_logical_complements():
+    for line in ("require amount is above 50", "forbid amount is above 50"):
+        enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+        effect, allowed = enc.encode_deontic(_parse_line(line))
+        s = z3.Solver()
+        s.add(effect != enc.z3.Not(allowed))
+        assert s.check() == z3.unsat  # no assignment breaks the complement
+
+
+def test_exception_none_collapses_to_false():
+    """When `exception` is None, E must behave as BoolVal(False) so the
+    require/forbid formulas collapse to the unguarded shape."""
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    node = _parse_line("require amount is above 50")
+    assert node.exception is None
+    effect, allowed = enc.encode_deontic(node)
+    plain_condition = enc.encode_condition(node.condition)
+    s = z3.Solver()
+    s.add(allowed != plain_condition)
+    assert s.check() == z3.unsat
