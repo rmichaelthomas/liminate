@@ -420,6 +420,79 @@ class _Encoder:
             f"Can't encode deontic statement {type(node).__name__}."
         )
 
+    # -----------------------------------------------------------------
+    # Phase 6, check 7 — a predicate's own body, standing alone
+    # -----------------------------------------------------------------
+    #
+    # A `define` body is normally only ever encoded through an
+    # application site (§6), where EachPronoun substitutes to a concrete
+    # subject expression with a known sort. Check 7 asks whether the
+    # body is constant *for any possible subject* — so it needs a fresh,
+    # unconstrained Z3 constant standing in for "any subject," sorted by
+    # how the body actually compares it. Reuses the same substitution +
+    # encode_condition machinery as a real application by registering
+    # the placeholder under a synthetic name in `self.constants`, rather
+    # than inventing a second code path.
+
+    def encode_predicate_body_standalone(self, predicate_name, body):
+        sort = self._infer_subject_sort(body, set())
+        if sort is None:
+            raise UnencodableConstruct(
+                f"Can't infer a subject type for predicate "
+                f"'{predicate_name}' — its body never compares the "
+                f"implicit subject against anything with a known sort."
+            )
+        placeholder = f"__subject__{predicate_name}"
+        ident = self._sanitize(placeholder)
+        if sort == "number":
+            self.constants[placeholder] = self.z3.Real(ident)
+        elif sort == "string":
+            self.constants[placeholder] = self.z3.String(ident)
+        else:
+            self.constants[placeholder] = self.z3.Int(ident)
+        substituted = _substitute_each_pronoun(body, NameRef(name=placeholder))
+        return self.encode_condition(substituted)
+
+    def _infer_subject_sort(self, node, visited):
+        if isinstance(node, CompoundConditionNode):
+            return self._infer_subject_sort(
+                node.left, visited
+            ) or self._infer_subject_sort(node.right, visited)
+        if isinstance(node, ConditionNode):
+            if isinstance(node.field, EachPronoun):
+                hint = self._value_sort_hint(node.value)
+                if hint is None and node.value2 is not None:
+                    hint = self._value_sort_hint(node.value2)
+                return hint
+            return None
+        if isinstance(node, PredicateApplicationNode):
+            if isinstance(node.subject, EachPronoun):
+                if node.predicate_name in visited:
+                    return None
+                entry = self.symtab.get(node.predicate_name)
+                if entry is None or entry.type != "predicate":
+                    return None
+                return self._infer_subject_sort(
+                    entry.value, visited | {node.predicate_name}
+                )
+            return None
+        return None
+
+    def _value_sort_hint(self, node):
+        if isinstance(node, (NumberLiteral, ArithmeticNode)):
+            return "number"
+        if isinstance(node, DateLiteral):
+            return "date"
+        if isinstance(node, QuotedString):
+            return "string"
+        if isinstance(node, (BareWord, NameRef)):
+            name = node.word if isinstance(node, BareWord) else node.name
+            entry = self.symtab.get(name)
+            if entry is not None and entry.type in ("number", "string", "date"):
+                return entry.type
+            return None
+        return None
+
 
 # Mirrors interpreter._MAX_PREDICATE_EVAL_DEPTH — belt-and-braces defense
 # against a hand-built symbol table, since PRs #60/#61 already guarantee
@@ -506,6 +579,305 @@ def _encode_comparison(z3mod, op, lhs, rhs):
     if op == "not_below":
         return lhs >= rhs
     raise UnencodableConstruct(f"Unknown comparison operator '{op}'.")
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — the seven core checks (§9)
+# ---------------------------------------------------------------------------
+
+_SOLVER_TIMEOUT_MS = 5000
+_PAIRWISE_CAP = 200
+
+_VERB_NAMES = {
+    RequireNode: "require",
+    ForbidNode: "forbid",
+    PermitNode: "permit",
+    ExpectNode: "expect",
+}
+
+
+@dataclass
+class _DeonticEntry:
+    index: int
+    verb: str
+    node: object
+    effect: object
+    allowed: object | None
+    text: str
+
+
+def _collect_deontic_entries(enc, statements) -> list[_DeonticEntry]:
+    entries = []
+    for stmt in _iter_statements(statements):
+        verb = _VERB_NAMES.get(type(stmt))
+        if verb is None:
+            continue
+        effect, allowed = enc.encode_deontic(stmt)
+        entries.append(_DeonticEntry(
+            index=len(entries), verb=verb, node=stmt,
+            effect=effect, allowed=allowed, text=render(stmt),
+        ))
+    return entries
+
+
+def _tracked_name(index, verb) -> str:
+    return f"stmt_{index}_{verb}"
+
+
+def _interpret_check_result(z3mod, result) -> str:
+    if result == z3mod.unsat:
+        return "unsat"
+    if result == z3mod.sat:
+        return "sat"
+    return "unknown"
+
+
+def _run_query(enc, tracked):
+    """tracked: list[(formula, name)]. Every assertion is tracked (§9)
+    so unsat_core() can map a finding back to its source statement(s).
+    A per-query timeout means a hard query surfaces as 'unknown' rather
+    than hanging the whole run."""
+    s = enc.z3.Solver()
+    s.set("timeout", _SOLVER_TIMEOUT_MS)
+    for formula, name in tracked:
+        s.assert_and_track(formula, name)
+    status = _interpret_check_result(enc.z3, s.check())
+    core = s.unsat_core() if status == "unsat" else None
+    return status, core
+
+
+def _inconclusive(check_name, statements) -> Finding:
+    return Finding(
+        kind="inconclusive", severity="info", statements=list(statements),
+        explanation=(
+            f"Check '{check_name}' timed out and is inconclusive for: "
+            f"{', '.join(statements)}."
+        ),
+    )
+
+
+def _cap_finding(count) -> Finding | None:
+    if count <= _PAIRWISE_CAP:
+        return None
+    return Finding(
+        kind="inconclusive", severity="info", statements=[],
+        explanation=(
+            f"{count} deontic statements exceeds the pairwise-check cap of "
+            f"{_PAIRWISE_CAP} — require/forbid contradiction (check 3) and "
+            f"redundant-forbid (check 5) were skipped. Per-statement checks "
+            f"still ran."
+        ),
+    )
+
+
+def _check_always_deny(enc, entries) -> list[Finding]:
+    """Check 1 — a require whose allowed-space (C ∨ E) is UNSAT can
+    never be satisfied: it always halts execution."""
+    findings = []
+    for e in entries:
+        if e.verb != "require":
+            continue
+        status, _ = _run_query(enc, [(e.allowed, _tracked_name(e.index, e.verb))])
+        if status == "unsat":
+            findings.append(Finding(
+                kind="always_deny", severity="error", statements=[e.text],
+                explanation=(
+                    f"'{e.text}' can never be satisfied — every possible "
+                    f"state violates it, so this requirement always halts "
+                    f"execution."
+                ),
+            ))
+        elif status == "unknown":
+            findings.append(_inconclusive("always_deny", [e.text]))
+    return findings
+
+
+def _check_dead_forbid(enc, entries, swallowed) -> list[Finding]:
+    """Check 2 — a forbid whose effect (C ∧ ¬E) is UNSAT never fires.
+    Suppressed for a statement check 4 already flagged (§9: run check 4
+    first, report the more specific diagnosis, not both)."""
+    findings = []
+    for e in entries:
+        if e.verb != "forbid" or e.index in swallowed:
+            continue
+        status, _ = _run_query(enc, [(e.effect, _tracked_name(e.index, e.verb))])
+        if status == "unsat":
+            findings.append(Finding(
+                kind="dead_forbid", severity="warning", statements=[e.text],
+                explanation=(
+                    f"'{e.text}' can never trigger — no possible state "
+                    f"satisfies its condition, so this prohibition never "
+                    f"fires."
+                ),
+            ))
+        elif status == "unknown":
+            findings.append(_inconclusive("dead_forbid", [e.text]))
+    return findings
+
+
+def _check_require_forbid_conflict(enc, entries, capped) -> list[Finding]:
+    """Check 3 — a require and a forbid whose allowed-spaces are jointly
+    UNSAT can never both be satisfied."""
+    if capped:
+        return []
+    findings = []
+    requires = [e for e in entries if e.verb == "require"]
+    forbids = [e for e in entries if e.verb == "forbid"]
+    for r in requires:
+        for f in forbids:
+            status, _ = _run_query(enc, [
+                (r.allowed, _tracked_name(r.index, r.verb)),
+                (f.allowed, _tracked_name(f.index, f.verb)),
+            ])
+            if status == "unsat":
+                findings.append(Finding(
+                    kind="require_forbid_conflict", severity="error",
+                    statements=[r.text, f.text],
+                    explanation=(
+                        f"'{r.text}' and '{f.text}' can never both hold — "
+                        f"any state satisfying one violates the other."
+                    ),
+                ))
+            elif status == "unknown":
+                findings.append(
+                    _inconclusive("require_forbid_conflict", [r.text, f.text])
+                )
+    return findings
+
+
+def _check_unless_swallows_rule(enc, entries):
+    """Check 4 — a statement whose own effect (given its own exception)
+    is UNSAT reads as protection while providing none: the exception
+    fires whenever the rule would. Highest-value finding in the
+    taxonomy; runs before check 2 so its statement is suppressed there.
+    Returns (findings, swallowed_indices)."""
+    findings = []
+    swallowed = set()
+    for e in entries:
+        if e.node.exception is None:
+            continue
+        status, _ = _run_query(enc, [(e.effect, _tracked_name(e.index, e.verb))])
+        if status == "unsat":
+            swallowed.add(e.index)
+            findings.append(Finding(
+                kind="unless_swallows_rule", severity="error", statements=[e.text],
+                explanation=(
+                    f"'{e.text}' can never fire — its own 'unless' exception "
+                    f"holds in every state where the base condition does, so "
+                    f"this rule can never actually enforce anything."
+                ),
+            ))
+        elif status == "unknown":
+            findings.append(_inconclusive("unless_swallows_rule", [e.text]))
+    return findings, swallowed
+
+
+def _check_redundant_forbid(enc, entries, capped) -> list[Finding]:
+    """Check 5 — forbid_1 ∧ ¬forbid_2 UNSAT means forbid_1 is subsumed
+    by forbid_2: whenever the narrower one would fire, the broader one
+    already does."""
+    if capped:
+        return []
+    findings = []
+    forbids = [e for e in entries if e.verb == "forbid"]
+    for e1 in forbids:
+        for e2 in forbids:
+            if e1.index == e2.index:
+                continue
+            status, _ = _run_query(enc, [
+                (e1.effect, _tracked_name(e1.index, e1.verb)),
+                (enc.z3.Not(e2.effect), f"not_{_tracked_name(e2.index, e2.verb)}"),
+            ])
+            if status == "unsat":
+                findings.append(Finding(
+                    kind="redundant_forbid", severity="warning",
+                    statements=[e1.text, e2.text],
+                    explanation=(
+                        f"'{e1.text}' is redundant — whenever it would fire, "
+                        f"'{e2.text}' already fires too."
+                    ),
+                ))
+            elif status == "unknown":
+                findings.append(
+                    _inconclusive("redundant_forbid", [e1.text, e2.text])
+                )
+    return findings
+
+
+def _check_dead_permit(enc, entries) -> list[Finding]:
+    """Check 6 — a permit whose effect can't co-occur with the allowed
+    space of every require/forbid can only ever apply to a state some
+    other rule already blocks."""
+    findings = []
+    permits = [e for e in entries if e.verb == "permit"]
+    if not permits:
+        return findings
+    guards = [e for e in entries if e.verb in ("require", "forbid")]
+    for p in permits:
+        tracked = [(p.effect, _tracked_name(p.index, p.verb))]
+        tracked.extend((g.allowed, _tracked_name(g.index, g.verb)) for g in guards)
+        status, _ = _run_query(enc, tracked)
+        if status == "unsat":
+            findings.append(Finding(
+                kind="dead_permit", severity="warning", statements=[p.text],
+                explanation=(
+                    f"'{p.text}' can never actually apply — every state "
+                    f"where it would grant permission is already blocked "
+                    f"by another require/forbid rule."
+                ),
+            ))
+        elif status == "unknown":
+            findings.append(_inconclusive("dead_permit", [p.text]))
+    return findings
+
+
+def _check_constant_predicate(enc, statements) -> list[Finding]:
+    """Check 7 — for each `define`, is its body a contradiction (always
+    false) or a tautology (always true) for any possible subject?"""
+    findings = []
+    for stmt in _iter_statements(statements):
+        if not isinstance(stmt, DefineNode):
+            continue
+        text = render(stmt)
+        try:
+            body_formula = enc.encode_predicate_body_standalone(
+                stmt.name, stmt.condition
+            )
+        except UnencodableConstruct:
+            findings.append(Finding(
+                kind="inconclusive", severity="info", statements=[text],
+                explanation=(
+                    f"Couldn't determine a subject type for predicate "
+                    f"'{stmt.name}' — check 7 (constant predicate) skipped "
+                    f"for it."
+                ),
+            ))
+            continue
+
+        contradiction, _ = _run_query(
+            enc, [(body_formula, f"predicate_{stmt.name}_body")]
+        )
+        if contradiction == "unsat":
+            findings.append(Finding(
+                kind="constant_predicate", severity="warning", statements=[text],
+                explanation=f"'{text}' is always false — no subject can ever satisfy it.",
+            ))
+            continue
+        if contradiction == "unknown":
+            findings.append(_inconclusive("constant_predicate", [text]))
+            continue
+
+        tautology, _ = _run_query(
+            enc, [(enc.z3.Not(body_formula), f"predicate_{stmt.name}_not_body")]
+        )
+        if tautology == "unsat":
+            findings.append(Finding(
+                kind="constant_predicate", severity="warning", statements=[text],
+                explanation=f"'{text}' is always true — every subject satisfies it.",
+            ))
+        elif tautology == "unknown":
+            findings.append(_inconclusive("constant_predicate", [text]))
+    return findings
 
 def check_agreement(statements, symbol_table) -> CheckResult:
     """Encode `statements` and run the seven core checks.

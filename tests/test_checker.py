@@ -658,3 +658,260 @@ def test_exception_none_collapses_to_false():
     s = z3.Solver()
     s.add(allowed != plain_condition)
     assert s.check() == z3.unsat
+
+
+# ---------------------------------------------------------------------------
+# Phase 6 — the seven core checks
+# ---------------------------------------------------------------------------
+
+
+def _build_checker_context(lines, predicate_names=None):
+    session, results = run_lines(lines)
+    for r in results:
+        assert r.status.name in (
+            "SUCCESS", "REQUIREMENT_NOT_MET", "PROHIBITION_VIOLATED",
+        ), r.message
+    statements = [_parse_line(l, predicate_names=predicate_names) for l in lines]
+    definitions = checker._build_definitions(statements)
+    enc = checker._Encoder(z3, session.symtab, definitions)
+    return enc, statements
+
+
+def _findings_of_kind(findings, kind):
+    return [f for f in findings if f.kind == kind]
+
+
+def test_check1_always_deny_positive():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 50 and amount is below 10",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_always_deny(enc, entries)
+    assert len(findings) == 1
+    assert findings[0].severity == "error"
+
+
+def test_check1_always_deny_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 5",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_always_deny(enc, entries)
+    assert findings == []
+
+
+def test_check2_dead_forbid_positive():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 50 and amount is below 10",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_dead_forbid(enc, entries, swallowed=set())
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+
+
+def test_check2_dead_forbid_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_dead_forbid(enc, entries, swallowed=set())
+    assert findings == []
+
+
+def test_check3_require_forbid_conflict_positive():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 100",
+        "forbid amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_require_forbid_conflict(enc, entries, capped=False)
+    assert len(findings) == 1
+    assert findings[0].severity == "error"
+
+
+def test_check3_require_forbid_conflict_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 100",
+        "forbid amount is above 200",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_require_forbid_conflict(enc, entries, capped=False)
+    assert findings == []
+
+
+def test_check3_skipped_when_capped():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 100",
+        "forbid amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_require_forbid_conflict(enc, entries, capped=True)
+    assert findings == []
+
+
+def test_check4_unless_swallows_rule_positive_forbid():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 1000 unless amount is above 0",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
+    assert len(findings) == 1
+    assert findings[0].severity == "error"
+    assert swallowed == {entries[0].index}
+
+
+def test_check4_unless_swallows_rule_positive_require():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "require amount is above 5 unless amount is below 1000",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
+    assert len(findings) == 1
+    assert swallowed == {entries[0].index}
+
+
+def test_check4_unless_swallows_rule_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 1000 unless amount is above 2000",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
+    assert findings == []
+    assert swallowed == set()
+
+
+def test_check4_suppresses_check2_for_same_statement():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 1000 unless amount is above 0",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    unless_findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
+    dead_forbid_findings = checker._check_dead_forbid(enc, entries, swallowed)
+    assert _findings_of_kind(unless_findings, "unless_swallows_rule")
+    assert dead_forbid_findings == []  # suppressed, not double-reported
+
+
+def test_check5_redundant_forbid_positive():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 100",
+        "forbid amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_redundant_forbid(enc, entries, capped=False)
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+    assert findings[0].statements[0] == entries[0].text  # the narrower one
+
+
+def test_check5_redundant_forbid_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        'remember a string called status with "open"',
+        "forbid amount is above 50",
+        'forbid status is equal to "blocked"',
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_redundant_forbid(enc, entries, capped=False)
+    assert findings == []
+
+
+def test_check5_skipped_when_capped():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 10",
+        "forbid amount is above 100",
+        "forbid amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_redundant_forbid(enc, entries, capped=True)
+    assert findings == []
+
+
+def test_check6_dead_permit_positive():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 5",
+        "require amount is below 10",
+        "permit amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_dead_permit(enc, entries)
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+
+
+def test_check6_dead_permit_negative():
+    enc, statements = _build_checker_context([
+        "remember a number called amount with 5",
+        "require amount is below 100",
+        "permit amount is above 50",
+    ])
+    entries = checker._collect_deontic_entries(enc, statements)
+    findings = checker._check_dead_permit(enc, entries)
+    assert findings == []
+
+
+def test_check7_constant_predicate_contradiction():
+    enc, statements = _build_checker_context([
+        "define impossible: is above 100 and is below 50",
+    ])
+    findings = checker._check_constant_predicate(enc, statements)
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+    assert "never" in findings[0].explanation or "always false" in findings[0].explanation
+
+
+def test_check7_constant_predicate_tautology():
+    enc, statements = _build_checker_context([
+        "define always_big_or_small: is above 0 or is below 1000000",
+    ])
+    findings = checker._check_constant_predicate(enc, statements)
+    assert len(findings) == 1
+    assert findings[0].severity == "warning"
+
+
+def test_check7_constant_predicate_negative_resolves_outer_symbol():
+    enc, statements = _build_checker_context([
+        "remember a number called cutoff with 100",
+        "define big: is above cutoff",
+    ])
+    findings = checker._check_constant_predicate(enc, statements)
+    assert findings == []
+
+
+def test_pairwise_cap_finding_helper():
+    assert checker._cap_finding(200) is None
+    finding = checker._cap_finding(201)
+    assert finding is not None
+    assert finding.severity == "info"
+    assert finding.kind == "inconclusive"
+
+
+def test_run_query_interprets_sat_unsat_unknown():
+    enc, _ = _build_checker_context(["remember a number called amount with 5"])
+    sat_status, _ = checker._run_query(enc, [(z3.BoolVal(True), "t")])
+    assert sat_status == "sat"
+    unsat_status, core = checker._run_query(enc, [(z3.BoolVal(False), "f")])
+    assert unsat_status == "unsat"
+    assert len(core) >= 1
+
+
+def test_interpret_check_result_maps_unknown_to_inconclusive():
+    assert checker._interpret_check_result(z3, z3.sat) == "sat"
+    assert checker._interpret_check_result(z3, z3.unsat) == "unsat"
+    assert checker._interpret_check_result(z3, z3.unknown) == "unknown"
+
+
+def test_solver_timeout_configured_at_5000ms():
+    assert checker._SOLVER_TIMEOUT_MS == 5000
