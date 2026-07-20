@@ -16,7 +16,6 @@ imports z3 at top level — `import liminate.checker` must always succeed.
 The import happens lazily inside the public entry point.
 """
 
-
 from __future__ import annotations
 
 import re
@@ -86,7 +85,6 @@ class CheckResult:
     elapsed_ms: float
     encodable: bool
     skipped_reason: str | None = None
-
 
 
 # ---------------------------------------------------------------------------
@@ -879,13 +877,53 @@ def _check_constant_predicate(enc, statements) -> list[Finding]:
             findings.append(_inconclusive("constant_predicate", [text]))
     return findings
 
+
 def check_agreement(statements, symbol_table) -> CheckResult:
     """Encode `statements` and run the seven core checks.
 
     Input mirrors analyzer.detect_contradictions(statements): a list of
     top-level statement ASTs. Never raises for out-of-fragment input —
-    UnencodableConstruct is caught at this boundary and reported via
-    CheckResult(encodable=False, skipped_reason=...).
+    UnencodableConstruct (and any other encoding failure — invariant 8)
+    is caught at this boundary and reported via
+    CheckResult(encodable=False, skipped_reason=...) rather than a
+    traceback or a false clean bill of health.
     """
-    _import_z3()
-    raise NotImplementedError
+    z3mod = _import_z3()
+    start = time.monotonic()
+    try:
+        definitions = _build_definitions(statements)
+        enc = _Encoder(z3mod, symbol_table, definitions)
+        entries = _collect_deontic_entries(enc, statements)
+
+        findings: list[Finding] = []
+        cap = _cap_finding(len(entries))
+        capped = cap is not None
+        if cap is not None:
+            findings.append(cap)
+
+        unless_findings, swallowed = _check_unless_swallows_rule(enc, entries)
+        findings.extend(unless_findings)
+        findings.extend(_check_always_deny(enc, entries))
+        findings.extend(_check_dead_forbid(enc, entries, swallowed))
+        findings.extend(_check_require_forbid_conflict(enc, entries, capped))
+        findings.extend(_check_redundant_forbid(enc, entries, capped))
+        findings.extend(_check_dead_permit(enc, entries))
+        findings.extend(_check_constant_predicate(enc, statements))
+    except (UnencodableConstruct, NonlinearArithmetic) as exc:
+        return CheckResult(
+            findings=[], checked=0,
+            elapsed_ms=(time.monotonic() - start) * 1000,
+            encodable=False, skipped_reason=str(exc),
+        )
+    except Exception as exc:  # invariant 8 — never let anything escape
+        return CheckResult(
+            findings=[], checked=0,
+            elapsed_ms=(time.monotonic() - start) * 1000,
+            encodable=False, skipped_reason=f"{type(exc).__name__}: {exc}",
+        )
+
+    return CheckResult(
+        findings=findings, checked=len(entries),
+        elapsed_ms=(time.monotonic() - start) * 1000,
+        encodable=True, skipped_reason=None,
+    )

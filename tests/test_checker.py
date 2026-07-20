@@ -915,3 +915,90 @@ def test_interpret_check_result_maps_unknown_to_inconclusive():
 
 def test_solver_timeout_configured_at_5000ms():
     assert checker._SOLVER_TIMEOUT_MS == 5000
+
+
+# ---------------------------------------------------------------------------
+# Phase 7 — public API (Finding / CheckResult / check_agreement)
+# ---------------------------------------------------------------------------
+
+
+def test_check_agreement_clean_program_zero_findings():
+    lines = [
+        "remember a number called amount with 60",
+        "require amount is above 50",
+        "forbid amount is above 1000",
+    ]
+    session, results = run_lines(lines)
+    for r in results:
+        assert r.status.name == "SUCCESS", r.message
+    statements = [_parse_line(l) for l in lines]
+    result = checker.check_agreement(statements, session.symtab)
+    assert result.encodable is True
+    assert result.findings == []
+    assert result.checked == 2
+    assert result.skipped_reason is None
+
+
+def test_check_agreement_out_of_fragment_is_reported_not_crashed():
+    node = checker.RequireNode(
+        condition=checker.ConditionNode(
+            field=checker.EachPronoun(), op="above", value=checker.NumberLiteral(value=5),
+        ),
+        exception=None,
+    )
+    result = checker.check_agreement([node], {})
+    assert result.encodable is False
+    assert result.skipped_reason is not None
+    assert result.findings == []
+
+
+def test_check_agreement_never_raises_for_malformed_symbol_table():
+    result = checker.check_agreement([], None)
+    assert result.encodable is False
+    assert result.skipped_reason is not None
+
+
+def test_check_agreement_ti_q13_integration_rejects_via_encodable_false():
+    """The manual-gate pairing: liminate.run() accepts and enforces this
+    program (see test_KNOWN_GAP_value_indirection_bypasses_the_linearity
+    _restriction in tests/test_arithmetic.py); check_agreement rejects it."""
+    lines = [
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "remember a value called doubled from beta multiplied by beta",
+        "forbid alpha is above doubled",
+    ]
+    session, results = run_lines(lines)
+    assert results[-1].status.name == "PROHIBITION_VIOLATED"
+    statements = [_parse_line(l) for l in lines]
+    result = checker.check_agreement(statements, session.symtab)
+    assert result.encodable is False
+    assert "doubled" in result.skipped_reason
+
+
+def test_check_agreement_finds_unless_swallows_rule_end_to_end():
+    lines = [
+        "remember a number called amount with 10",
+        "forbid amount is above 1000 unless amount is above 0",
+    ]
+    session, results = run_lines(lines)
+    statements = [_parse_line(l) for l in lines]
+    result = checker.check_agreement(statements, session.symtab)
+    assert result.encodable is True
+    kinds = [f.kind for f in result.findings]
+    assert "unless_swallows_rule" in kinds
+    assert "dead_forbid" not in kinds  # suppressed by check 4
+
+
+def test_check_agreement_descends_into_sequence_node():
+    seq = checker.SequenceNode(
+        operations=[
+            _parse_line("remember a number called amount with 10"),
+            _parse_line("require amount is above 5 and amount is below 3"),
+        ],
+        connectors=["and"],
+    )
+    symtab = {"amount": SymbolEntry(name="amount", value=10, type="number")}
+    result = checker.check_agreement([seq], symtab)
+    assert result.encodable is True
+    assert any(f.kind == "always_deny" for f in result.findings)
