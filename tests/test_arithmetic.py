@@ -351,3 +351,244 @@ def test_list_of_negative_numbers_is_numeric():
     ])
     for r in results:
         assert r.status is ResultStatus.SUCCESS, r.message
+
+
+# ---------------------------------------------------------------------------
+# Arithmetic linearity restriction (Fable decidability condition (c)) —
+# `multiplied_by`/`divided_by` reject when both operands are runtime-
+# resolved, but ONLY as the value side of a deontic/choice condition
+# (forbid/require/permit/expect/choose). Outside a condition —
+# `remember ... with/from`, list items, `add <expr> to <list>` — nonlinear
+# arithmetic is unrestricted; it never reaches the Z3 satisfiability
+# encoder (Fable Step 2, not built yet).
+# ---------------------------------------------------------------------------
+
+
+def _semantic_message(results):
+    return results[-1].message or ""
+
+
+# ---------- reject: both operands runtime-resolved, inside a condition ----------
+
+
+def test_forbid_condition_rejects_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    msg = _semantic_message(results)
+    assert "at least one plain number" in msg
+    assert "'beta' and 'beta'" in msg
+
+
+def test_forbid_condition_rejects_fact_divided_by_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta divided by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+def test_forbid_condition_rejects_nested_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta multiplied by beta multiplied by 2",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+def test_require_condition_rejects_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "require alpha is above beta multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+def test_permit_condition_rejects_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "permit alpha is above beta multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+def test_expect_condition_rejects_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "expect alpha is above beta multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+def test_choose_condition_rejects_fact_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        'choose if alpha is above beta multiplied by beta: show "big" otherwise show "small"',
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "at least one plain number" in _semantic_message(results)
+
+
+# ---------- pass: at least one literal operand, inside a condition (unchanged) ----------
+
+
+def test_forbid_condition_allows_literal_times_literal():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "forbid alpha is above 3 multiplied by 4",
+    ])
+    assert results[-1].status is ResultStatus.SUCCESS
+
+
+def test_forbid_condition_allows_fact_times_literal():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta multiplied by 3",
+    ])
+    assert results[-1].status is ResultStatus.PROHIBITION_VIOLATED
+
+
+def test_forbid_condition_allows_literal_times_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above 3 multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.PROHIBITION_VIOLATED
+
+
+def test_forbid_condition_allows_fact_plus_fact():
+    """`plus`/`minus` are linear — no restriction in any operand
+    combination."""
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta plus beta",
+    ])
+    assert results[-1].status is ResultStatus.PROHIBITION_VIOLATED
+
+
+def test_forbid_condition_allows_fact_minus_fact():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta minus beta",
+    ])
+    assert results[-1].status is ResultStatus.PROHIBITION_VIOLATED
+
+
+def test_forbid_condition_allows_all_literal_nested():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "forbid alpha is above 2 multiplied by 3 multiplied by 4",
+    ])
+    assert results[-1].status is ResultStatus.SUCCESS
+
+
+# ---------- boundary pair: the restriction is condition-scoped, not global ----------
+#
+# These two tests document opposite sides of the same boundary and must be
+# read together: the identical `beta multiplied by beta` expression passes
+# outside a condition and rejects inside one. If a future change requires
+# editing either one, it is very likely re-widening (or narrowing) the
+# restriction's scope rather than fixing an unrelated bug — check the other
+# test in the pair before touching either.
+
+
+def test_fact_times_fact_passes_outside_a_condition():
+    """`remember ... with/from` arithmetic never reaches the Z3 encoder,
+    so it stays unrestricted — the non-deontic half of the boundary."""
+    session, results = run_lines([
+        "remember a number called beta with 2",
+        "remember a number called z with beta multiplied by beta",
+    ])
+    for r in results:
+        assert r.status is ResultStatus.SUCCESS, r.message
+
+
+def test_fact_times_fact_rejects_inside_a_condition():
+    """The same expression, as a condition value, rejects — the deontic
+    half of the boundary."""
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "forbid alpha is above beta multiplied by beta",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+
+
+# ---------- type-check precedence: linearity check fires last ----------
+
+
+def test_text_in_condition_arithmetic_still_gives_text_error_not_linearity_error():
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        'forbid alpha is above "text" multiplied by beta',
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    msg = _semantic_message(results)
+    assert "text" in msg.lower()
+    assert "at least one plain number" not in msg
+
+
+# ---------- date arithmetic message parity (untouched) ----------
+
+
+def test_date_arithmetic_rejection_message_is_unchanged():
+    session, results = run_lines([
+        "remember a date called d1 with 2025-01-01",
+        "remember a number called z with d1 multiplied by 2",
+    ])
+    assert results[-1].status is ResultStatus.ERROR_SEMANTIC
+    assert "can't be multiplied or divided" in _semantic_message(results).lower()
+
+
+# ---------------------------------------------------------------------------
+# Known gap — Fable decidability condition (c) remains OPEN. See the PR
+# description / chain addendum for the full record. The restriction above
+# only inspects a condition's own expression tree: it catches
+# `beta multiplied by beta` written directly as a condition value, but not
+# the same nonlinearity introduced through value indirection. Any
+# remember-bound name whose value derives from fact × fact / fact ÷ fact
+# reads as a plain NameRef in the condition AST, so the check never sees
+# the ArithmeticNode. This is the common authoring form, not an edge case —
+# closing it requires value provenance (taint at store time, a definition-
+# site walk at analysis time, or resolving names to their defining
+# expressions inside the future Z3 encoder). None of those are built yet.
+# This test pins the CURRENT behaviour so it is impossible to miss when
+# provenance work lands and this test needs to invert.
+# ---------------------------------------------------------------------------
+
+
+def test_KNOWN_GAP_value_indirection_bypasses_the_linearity_restriction():
+    """Condition (c) is open, not closed. A nonlinear expression computed
+    into a named value and then referenced in a condition currently
+    PASSES analysis and evaluates — the restriction only sees the
+    condition's own AST, which contains a bare NameRef, never the
+    ArithmeticNode that produced it. See the addendum for the candidate
+    provenance approaches under consideration."""
+    session, results = run_lines([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "remember a value called doubled from beta multiplied by beta",
+        "forbid alpha is above doubled",
+    ])
+    for r in results[:-1]:
+        assert r.status is ResultStatus.SUCCESS, r.message
+    assert results[-1].status is ResultStatus.PROHIBITION_VIOLATED
