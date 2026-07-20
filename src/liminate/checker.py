@@ -177,6 +177,191 @@ class _Encoder:
             # get no constant here; predicates are handled by body
             # inlining (§6), not by constant allocation.
 
+    # -----------------------------------------------------------------
+    # Phase 3 — condition encoder (mirrors interpreter._eval_condition)
+    # -----------------------------------------------------------------
+
+    def encode_condition(self, cond):
+        if isinstance(cond, CompoundConditionNode):
+            left = self.encode_condition(cond.left)
+            right = self.encode_condition(cond.right)
+            if cond.connector == "and":
+                return self.z3.And(left, right)
+            return self.z3.Or(left, right)
+        if isinstance(cond, PredicateApplicationNode):
+            return self._encode_predicate_application(cond)
+        if isinstance(cond, ConditionNode):
+            return self._encode_condition_leaf(cond)
+        raise UnencodableConstruct(
+            f"Can't encode condition {type(cond).__name__}."
+        )
+
+    def _encode_predicate_application(self, cond):
+        entry = self.symtab.get(cond.predicate_name)
+        if entry is None or entry.type != "predicate":
+            raise UnencodableConstruct(
+                f"No predicate definition found for '{cond.predicate_name}'."
+            )
+        if self._predicate_depth >= _MAX_PREDICATE_ENCODE_DEPTH:
+            raise UnencodableConstruct(
+                f"Predicate '{cond.predicate_name}' is nested more than "
+                f"{_MAX_PREDICATE_ENCODE_DEPTH} levels deep — this usually "
+                f"means two or more definitions refer back to each other."
+            )
+        substituted = _substitute_each_pronoun(entry.value, cond.subject)
+        self._predicate_depth += 1
+        try:
+            result = self.encode_condition(substituted)
+        finally:
+            self._predicate_depth -= 1
+        return self.z3.Not(result) if cond.negated else result
+
+    def _encode_condition_leaf(self, cond):
+        if cond.op == "within":
+            # §3 correction (1): value is the tolerance, value2 is the
+            # target — mirrors interpreter._eval_condition exactly.
+            field_val = self.encode_field(cond.field)
+            tolerance = self.encode_value(cond.value)
+            target = self.encode_value(cond.value2)
+            return self.z3.And(
+                field_val - target <= tolerance,
+                target - field_val <= tolerance,
+            )
+        if cond.op in ("includes", "not_includes"):
+            return self._encode_membership(cond)
+        field_val = self.encode_field(cond.field)
+        value_val = self.encode_value(cond.value)
+        return _encode_comparison(self.z3, cond.op, field_val, value_val)
+
+    def _encode_membership(self, cond):
+        if not isinstance(cond.field, NameRef) or cond.field.name not in self.lists:
+            label = cond.field.name if isinstance(cond.field, NameRef) else type(cond.field).__name__
+            raise UnencodableConstruct(
+                f"'{cond.op}' needs a statically known list; '{label}' isn't one."
+            )
+        items = self.lists[cond.field.name]
+        elem = self.encode_value(cond.value)
+        if not items:
+            # §6 empty-list edge case: z3.Or()/z3.And() with no arguments
+            # is invalid, so this is special-cased before splatting.
+            return self.z3.BoolVal(cond.op == "not_includes")
+        literals = [self._python_literal(v) for v in items]
+        if cond.op == "includes":
+            return self.z3.Or(*[elem == lit for lit in literals])
+        return self.z3.And(*[elem != lit for lit in literals])
+
+    def _python_literal(self, value):
+        if isinstance(value, bool):
+            raise UnencodableConstruct("Boolean list elements can't be encoded.")
+        if isinstance(value, (int, float)):
+            return self.z3.RealVal(value)
+        if isinstance(value, str):
+            return self.z3.StringVal(value)
+        if isinstance(value, date):
+            return self.z3.IntVal(_date_ordinal(value))
+        raise UnencodableConstruct(f"Can't encode list element {value!r}.")
+
+    def encode_field(self, node):
+        if isinstance(node, NameRef):
+            if node.name in self.constants:
+                return self.constants[node.name]
+            raise UnencodableConstruct(f"'{node.name}' isn't an encodable fact.")
+        if isinstance(node, FieldAccessNode):
+            key = f"{node.record_name}__{node.field}"
+            if key in self.constants:
+                return self.constants[key]
+            raise UnencodableConstruct(
+                f"'{node.field} of {node.record_name}' isn't an encodable fact."
+            )
+        # EachPronoun (outside a predicate body it should already have
+        # been substituted out of) and ExtremaNode (§6: out of scope
+        # this build) both fall through to this generic branch.
+        raise UnencodableConstruct(
+            f"Can't encode field reference {type(node).__name__}."
+        )
+
+    def encode_value(self, node, origin_name=None):
+        if isinstance(node, NumberLiteral):
+            return self.z3.RealVal(node.value)
+        if isinstance(node, DateLiteral):
+            return self.z3.IntVal(_date_ordinal(node.value))
+        if isinstance(node, QuotedString):
+            return self.z3.StringVal(node.content)
+        if isinstance(node, (BareWord, NameRef)):
+            return self._resolve_name_value(node)
+        if isinstance(node, FieldAccessNode):
+            return self.encode_field(node)
+        raise UnencodableConstruct(f"Can't encode value {type(node).__name__}.")
+
+    def _resolve_name_value(self, node):
+        name = node.word if isinstance(node, BareWord) else node.name
+        if name in self.constants:
+            return self.constants[name]
+        if isinstance(node, BareWord):
+            return self.z3.StringVal(node.word)
+        raise UnencodableConstruct(f"'{name}' isn't defined.")
+
+
+# Mirrors interpreter._MAX_PREDICATE_EVAL_DEPTH — belt-and-braces defense
+# against a hand-built symbol table, since PRs #60/#61 already guarantee
+# acyclicity for any program that reached the encoder via the analyzer.
+_MAX_PREDICATE_ENCODE_DEPTH = 64
+
+
+def _substitute_each_pronoun(node, replacement):
+    """Deep-substitute every EachPronoun in a predicate body with the
+    application's subject node (§3 correction 2) — never by name."""
+    if isinstance(node, EachPronoun):
+        return replacement
+    if isinstance(node, CompoundConditionNode):
+        return CompoundConditionNode(
+            left=_substitute_each_pronoun(node.left, replacement),
+            right=_substitute_each_pronoun(node.right, replacement),
+            connector=node.connector,
+        )
+    if isinstance(node, ConditionNode):
+        return ConditionNode(
+            field=_substitute_each_pronoun(node.field, replacement),
+            op=node.op,
+            value=_substitute_each_pronoun(node.value, replacement),
+            value2=(
+                _substitute_each_pronoun(node.value2, replacement)
+                if node.value2 is not None
+                else None
+            ),
+        )
+    if isinstance(node, PredicateApplicationNode):
+        return PredicateApplicationNode(
+            subject=_substitute_each_pronoun(node.subject, replacement),
+            predicate_name=node.predicate_name,
+            negated=node.negated,
+        )
+    if isinstance(node, ArithmeticNode):
+        return ArithmeticNode(
+            left=_substitute_each_pronoun(node.left, replacement),
+            right=_substitute_each_pronoun(node.right, replacement),
+            op=node.op,
+        )
+    return node
+
+
+def _encode_comparison(z3mod, op, lhs, rhs):
+    """Mirrors interpreter._apply_op exactly. not_above/not_below are
+    fused negations (<=/>=), never a structural Not(above)/Not(below)
+    wrapper — §12 failure mode 6."""
+    if op in ("is", "equal_to"):
+        return lhs == rhs
+    if op == "not_equal_to":
+        return lhs != rhs
+    if op == "above":
+        return lhs > rhs
+    if op == "below":
+        return lhs < rhs
+    if op == "not_above":
+        return lhs <= rhs
+    if op == "not_below":
+        return lhs >= rhs
+    raise UnencodableConstruct(f"Unknown comparison operator '{op}'.")
 
 def check_agreement(statements, symbol_table) -> CheckResult:
     """Encode `statements` and run the seven core checks.

@@ -153,3 +153,211 @@ def test_date_ordinal_helper_matches_toordinal():
 
     d = datetime.date(2026, 7, 20)
     assert checker._date_ordinal(d) == d.toordinal()
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — condition encoder
+# ---------------------------------------------------------------------------
+
+
+def _pinned(enc, name, value):
+    """A solver assumption pinning a free constant to a concrete value,
+    so a structurally-free condition formula gets a definite sat/unsat
+    verdict for a specific fact assignment."""
+    return enc.constants[name] == value
+
+
+def _check_with(formula, *assumptions):
+    s = z3.Solver()
+    for a in assumptions:
+        s.add(a)
+    s.add(formula)
+    return s.check()
+
+
+def _number_symtab(**facts):
+    return {name: SymbolEntry(name=name, value=v, type="number") for name, v in facts.items()}
+
+
+def test_op_is_and_equal_to():
+    for line in ("require amount is 50", "require amount is equal to 50"):
+        enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+        formula = enc.encode_condition(_condition_of(line))
+        assert _check_with(formula, _pinned(enc, "amount", 50)) == z3.sat
+        assert _check_with(formula, _pinned(enc, "amount", 51)) == z3.unsat
+
+
+def test_op_not_equal_to():
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    formula = enc.encode_condition(_parse_line("require amount is not equal to 50").condition)
+    assert _check_with(formula, _pinned(enc, "amount", 51)) == z3.sat
+    assert _check_with(formula, _pinned(enc, "amount", 50)) == z3.unsat
+
+
+def test_op_above():
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    formula = enc.encode_condition(_condition_of("require amount is above 50"))
+    assert _check_with(formula, _pinned(enc, "amount", 60)) == z3.sat
+    assert _check_with(formula, _pinned(enc, "amount", 40)) == z3.unsat
+
+
+def test_op_below():
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    formula = enc.encode_condition(_condition_of("require amount is below 50"))
+    assert _check_with(formula, _pinned(enc, "amount", 40)) == z3.sat
+    assert _check_with(formula, _pinned(enc, "amount", 60)) == z3.unsat
+
+
+def test_op_not_above():
+    """not_above is a fused <=, not a structural Not(above) wrapper."""
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    formula = enc.encode_condition(_parse_line("require amount is not above 50").condition)
+    assert _check_with(formula, _pinned(enc, "amount", 50)) == z3.sat  # boundary included
+    assert _check_with(formula, _pinned(enc, "amount", 51)) == z3.unsat
+
+
+def test_op_not_below():
+    """not_below is a fused >=, not a structural Not(below) wrapper."""
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    formula = enc.encode_condition(_parse_line("require amount is not below 50").condition)
+    assert _check_with(formula, _pinned(enc, "amount", 50)) == z3.sat  # boundary included
+    assert _check_with(formula, _pinned(enc, "amount", 49)) == z3.unsat
+
+
+def test_op_within_operand_order_not_swapped():
+    """§3 correction (1): value is tolerance, value2 is target. A swap
+    would make amount=50 satisfiable; the correct encoding must not."""
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    cond = _parse_line("require amount is within 5 of 100").condition
+    formula = enc.encode_condition(cond)
+    assert _check_with(formula, _pinned(enc, "amount", 100)) == z3.sat
+    assert _check_with(formula, _pinned(enc, "amount", 105)) == z3.sat   # boundary
+    assert _check_with(formula, _pinned(enc, "amount", 106)) == z3.unsat
+    assert _check_with(formula, _pinned(enc, "amount", 50)) == z3.unsat  # would be sat if swapped
+
+
+def test_op_includes_present_value_is_satisfiable():
+    symtab = {
+        "tags": SymbolEntry(name="tags", value=["urgent", "normal"], type="list_of_strings"),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+    cond = _parse_line('require tags includes "urgent"').condition
+    formula = enc.encode_condition(cond)
+    assert _check_with(formula) == z3.sat
+
+
+def test_op_includes_absent_value_is_unsatisfiable():
+    symtab = {
+        "tags": SymbolEntry(name="tags", value=["urgent", "normal"], type="list_of_strings"),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+    cond = _parse_line('require tags includes "missing"').condition
+    formula = enc.encode_condition(cond)
+    assert _check_with(formula) == z3.unsat
+
+
+def test_op_not_includes_mirrors_includes():
+    symtab = {
+        "tags": SymbolEntry(name="tags", value=["urgent", "normal"], type="list_of_strings"),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+    present = _parse_line('require tags not includes "urgent"').condition
+    absent = _parse_line('require tags not includes "missing"').condition
+    assert _check_with(enc.encode_condition(present)) == z3.unsat
+    assert _check_with(enc.encode_condition(absent)) == z3.sat
+
+
+def test_op_includes_empty_list_special_case():
+    symtab = {
+        "tags": SymbolEntry(name="tags", value=[], type="list_of_strings"),
+    }
+    enc = checker._Encoder(z3, symtab, {})
+    includes_cond = _parse_line('require tags includes "x"').condition
+    not_includes_cond = _parse_line('require tags not includes "x"').condition
+    assert _check_with(enc.encode_condition(includes_cond)) == z3.unsat
+    assert _check_with(enc.encode_condition(not_includes_cond)) == z3.sat
+
+
+def test_compound_and_or():
+    enc = checker._Encoder(z3, _number_symtab(amount=0), {})
+    and_cond = _parse_line("require amount is above 10 and amount is below 20").condition
+    or_cond = _parse_line("require amount is above 100 or amount is below 5").condition
+    and_formula = enc.encode_condition(and_cond)
+    or_formula = enc.encode_condition(or_cond)
+    assert _check_with(and_formula, _pinned(enc, "amount", 15)) == z3.sat
+    assert _check_with(and_formula, _pinned(enc, "amount", 30)) == z3.unsat
+    assert _check_with(or_formula, _pinned(enc, "amount", 200)) == z3.sat
+    assert _check_with(or_formula, _pinned(enc, "amount", 50)) == z3.unsat
+
+
+def test_predicate_application_substitutes_each_pronoun_and_resolves_outer_symbols():
+    """§3 corrections (2) and (3): the predicate body's implicit field
+    binds to EachPronoun, substituted with the application's subject;
+    every other name in the body (cutoff) resolves normally."""
+    session, results = run_lines([
+        "remember a number called cutoff with 100",
+        "define big: is above cutoff",
+    ])
+    for r in results:
+        assert r.status.name == "SUCCESS", r.message
+    symtab = dict(session.symtab)
+    symtab["amount"] = SymbolEntry(name="amount", value=0, type="number")
+    enc = checker._Encoder(z3, symtab, {})
+    cond = _condition_of("forbid amount is big", predicate_names={"big"})
+    formula = enc.encode_condition(cond)
+    cutoff = _pinned(enc, "cutoff", 100)
+    assert _check_with(formula, cutoff, _pinned(enc, "amount", 150)) == z3.sat
+    assert _check_with(formula, cutoff, _pinned(enc, "amount", 50)) == z3.unsat
+
+
+def test_predicate_application_negated():
+    session, results = run_lines([
+        "remember a number called cutoff with 100",
+        "define big: is above cutoff",
+    ])
+    for r in results:
+        assert r.status.name == "SUCCESS", r.message
+    symtab = dict(session.symtab)
+    symtab["amount"] = SymbolEntry(name="amount", value=0, type="number")
+    enc = checker._Encoder(z3, symtab, {})
+    cond = _condition_of("forbid amount is not big", predicate_names={"big"})
+    formula = enc.encode_condition(cond)
+    cutoff = _pinned(enc, "cutoff", 100)
+    assert _check_with(formula, cutoff, _pinned(enc, "amount", 150)) == z3.unsat
+    assert _check_with(formula, cutoff, _pinned(enc, "amount", 50)) == z3.sat
+
+
+def test_predicate_application_missing_definition_is_unencodable():
+    symtab = _number_symtab(amount=0)
+    enc = checker._Encoder(z3, symtab, {})
+    cond = checker.PredicateApplicationNode(
+        subject=checker.NameRef(name="amount"), predicate_name="ghost", negated=False,
+    )
+    with pytest.raises(checker.UnencodableConstruct):
+        enc.encode_condition(cond)
+
+
+def test_predicate_depth_guard_on_hand_built_cycle():
+    """Belt-and-braces defense (§6) mirroring interpreter's
+    _MAX_PREDICATE_EVAL_DEPTH, exercised via a hand-built symbol table
+    since the analyzer (PR #60/#61) already rejects real self-reference."""
+    symtab = _number_symtab(amount=0)
+    cyclic_body = checker.PredicateApplicationNode(
+        subject=checker.EachPronoun(), predicate_name="loopy", negated=False,
+    )
+    symtab["loopy"] = SymbolEntry(name="loopy", value=cyclic_body, type="predicate")
+    enc = checker._Encoder(z3, symtab, {})
+    cond = checker.PredicateApplicationNode(
+        subject=checker.NameRef(name="amount"), predicate_name="loopy", negated=False,
+    )
+    with pytest.raises(checker.UnencodableConstruct):
+        enc.encode_condition(cond)
+
+
+def test_extrema_and_top_level_each_pronoun_are_unencodable():
+    symtab = _number_symtab(amount=0, cap=0)
+    enc = checker._Encoder(z3, symtab, {})
+    with pytest.raises(checker.UnencodableConstruct):
+        enc.encode_field(checker.EachPronoun())
+    with pytest.raises(checker.UnencodableConstruct):
+        enc.encode_value(checker.EachPronoun())
