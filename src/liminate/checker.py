@@ -50,7 +50,6 @@ from .renderer import render
 from .reorderer import reorder
 from .result import LiminateResult
 from .run import run
-from .vocabulary import TokenType
 
 
 class CheckerUnavailable(Exception):
@@ -941,10 +940,13 @@ def check_agreement(statements, symbol_table) -> CheckResult:
 # liminate-dev PR #89, product findings 1/2)
 # ---------------------------------------------------------------------------
 
-# check_agreement's _VERB_NAMES covers all four deontic verbs — widened
-# from run._collect_deontic_statements's ("require", "forbid"), which only
-# needs two for its narrower contradiction-detection use case.
-_CHECK_DEONTIC_VERBS = ("require", "forbid", "permit", "expect")
+# The statement types check_agreement's seven checks need collected —
+# every deontic verb (for the checks themselves), DefineNode (check 7),
+# and RememberValueNode (value-position name inlining / TI-Q13). Anything
+# else a line parses to (about, show, each, choose, ...) is discarded.
+_CHECK_STATEMENT_TYPES = (
+    RequireNode, ForbidNode, PermitNode, ExpectNode, RememberValueNode,
+)
 
 
 def _collect_checkable_statements(source: str) -> list:
@@ -978,6 +980,19 @@ def _collect_checkable_statements(source: str) -> list:
     program. This is a deliberate duplicate of its scan structure, not a
     shared helper, for exactly that reason.
 
+    Dispatches on the PARSED node's type, not the line's first token.
+    `_parse_one_operation` (parser.py) consumes `starting "<date>"` and/or
+    `until "<date>"` (TokenType.CONNECTIVE) and `inherited`
+    (TokenType.OPERATOR) at statement-initial position, before the verb —
+    so a first-token dispatch on TokenType.VERB silently drops every
+    temporally-prefixed or `inherited`-prefixed statement (found via the
+    Halverson re-run, liminate-dev PR #92: four statements across three
+    documents excluded from every check, with encodable=True still
+    reported — the headline result concealed the under-reporting).
+    Parsing first and dispatching on the resulting AST type is the same
+    pattern check_agreement itself already uses downstream, via
+    _VERB_NAMES and _iter_statements.
+
     Anything that fails to tokenize/reorder/parse is silently skipped —
     this pass is advisory and must never introduce an error check_source's
     own run() call wouldn't also produce. Indented lines (when-block
@@ -996,21 +1011,7 @@ def _collect_checkable_statements(source: str) -> list:
             toks = tokenize(line)
         except LexError:
             continue
-
-        if toks and toks[0].type is TokenType.DECLARATION and toks[0].value == "define":
-            reordered = reorder(toks)
-            if isinstance(reordered, LiminateResult):
-                continue
-            node = parse(reordered, predicate_names=predicate_names)
-            if isinstance(node, DefineNode):
-                predicate_names.add(node.name)
-                statements.append(node)
-            continue
-
-        if not (toks and toks[0].type is TokenType.VERB):
-            continue
-        verb = toks[0].value
-        if verb not in _CHECK_DEONTIC_VERBS and verb != "remember":
+        if not toks:
             continue
 
         reordered = reorder(toks)
@@ -1020,12 +1021,15 @@ def _collect_checkable_statements(source: str) -> list:
         if isinstance(node, LiminateResult):
             continue
 
-        if verb == "remember":
-            if isinstance(node, RememberValueNode):
-                statements.append(node)
-            continue
-
-        statements.append(node)
+        if isinstance(node, DefineNode):
+            # Forward-declaration rule: a name enters predicate_names as
+            # soon as its defining line is seen, before any later line
+            # parses — order of accumulation must match a real program's
+            # top-to-bottom read, unchanged from the prior implementation.
+            predicate_names.add(node.name)
+            statements.append(node)
+        elif isinstance(node, _CHECK_STATEMENT_TYPES):
+            statements.append(node)
     return statements
 
 
