@@ -1002,3 +1002,145 @@ def test_check_agreement_descends_into_sequence_node():
     result = checker.check_agreement([seq], symtab)
     assert result.encodable is True
     assert any(f.kind == "always_deny" for f in result.findings)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8 — check_source: public export + text-in, CheckResult-out
+# ---------------------------------------------------------------------------
+
+
+def test_liminate_package_importable_without_z3():
+    """`import liminate` must succeed even when z3 cannot be imported at
+    all — mirrors test_checker_module_importable_without_z3 above, but for
+    the package root now that it re-exports names from checker.py."""
+    script = (
+        "import sys, builtins\n"
+        "_orig_import = builtins.__import__\n"
+        "def _blocked(name, *a, **k):\n"
+        "    if name == 'z3' or name.startswith('z3.'):\n"
+        "        raise ImportError('z3 not installed (simulated)')\n"
+        "    return _orig_import(name, *a, **k)\n"
+        "builtins.__import__ = _blocked\n"
+        "import liminate\n"
+        "assert callable(liminate.check_agreement)\n"
+        "assert callable(liminate.check_source)\n"
+        "print('IMPORT_OK')\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr
+    assert "IMPORT_OK" in result.stdout
+
+
+def test_check_agreement_and_friends_exported_from_package():
+    import liminate
+
+    assert liminate.check_agreement is checker.check_agreement
+    assert liminate.CheckResult is checker.CheckResult
+    assert liminate.Finding is checker.Finding
+    assert liminate.CheckerUnavailable is checker.CheckerUnavailable
+    assert liminate.check_source is checker.check_source
+    for name in (
+        "CheckerUnavailable", "CheckResult", "Finding",
+        "check_agreement", "check_source",
+    ):
+        assert name in liminate.__all__
+
+
+def test_check_source_finds_unless_swallows_rule():
+    source = "\n".join([
+        "remember a number called amount with 10",
+        "forbid amount is above 1000 unless amount is above 0",
+    ])
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is True
+    kinds = [f.kind for f in result.findings]
+    assert "unless_swallows_rule" in kinds
+
+
+def test_check_source_finds_constant_predicate_regression_for_define_node():
+    """Regression test for the DefineNode trap: a naive collector built on
+    run._collect_deontic_statements tracks `define` names into
+    predicate_names but never appends the DefineNode itself, so check 7
+    (_check_constant_predicate, which iterates DefineNode from the
+    statement list) silently finds nothing. This program has zero
+    require/forbid/permit/expect statements — checked stays 0 — but must
+    still surface the constant_predicate finding for the tautological
+    `define`."""
+    source = "define always_big_or_small: is above 0 or is below 1000000"
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is True
+    assert result.checked == 0
+    kinds = [f.kind for f in result.findings]
+    assert "constant_predicate" in kinds
+
+
+def test_check_source_threads_predicate_names_matches_hand_built_ast():
+    """Both require and forbid apply the named predicate `big` to the same
+    field — proves check_source's collector threads predicate_names the
+    same way a hand-built AST list (built exactly like the rest of this
+    file's tests do, via _parse_line with predicate_names threaded by
+    hand) would, rather than misparsing `is big` as string equality."""
+    lines = [
+        "remember a number called cutoff with 100",
+        "define big: is above cutoff",
+        "remember a number called amount with 150",
+        "require amount is big",
+        "forbid amount is big",
+    ]
+    source = "\n".join(lines)
+    session, results = run_lines(lines)
+    for r in results:
+        assert r.status.name in ("SUCCESS", "PROHIBITION_VIOLATED"), r.message
+
+    predicate_names = set()
+    define_ast = _parse_line(lines[1], predicate_names=predicate_names)
+    predicate_names.add(define_ast.name)
+    hand_built = [
+        define_ast,
+        _parse_line(lines[3], predicate_names=predicate_names),
+        _parse_line(lines[4], predicate_names=predicate_names),
+    ]
+
+    expected = checker.check_agreement(hand_built, session.symtab)
+    actual = checker.check_source(source)
+
+    assert actual.encodable == expected.encodable
+    assert actual.checked == expected.checked
+    assert [(f.kind, f.severity, f.statements) for f in actual.findings] == [
+        (f.kind, f.severity, f.statements) for f in expected.findings
+    ]
+    assert [f.kind for f in actual.findings] == ["require_forbid_conflict"]
+
+
+def test_check_source_out_of_fragment_nonlinear_via_remembered_name():
+    """Doubles as the RememberValueNode-collection regression test: the
+    nonlinearity in `doubled`'s definition (beta multiplied by beta, both
+    runtime names) is only visible to check_agreement if the collector
+    appended `doubled`'s RememberValueNode into the statement list for
+    _build_definitions to find. A collector that only gathers deontic
+    verbs (dropping value-form remember lines) would hand check_agreement
+    a `doubled` that resolves to an opaque, already-allocated constant —
+    missing the nonlinear multiplication entirely and reporting a clean
+    (wrong) bill of health instead of encodable=False."""
+    source = "\n".join([
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "remember a value called doubled from beta multiplied by beta",
+        "forbid alpha is above doubled",
+    ])
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is False
+    assert result.skipped_reason is not None
+    assert "doubled" in result.skipped_reason
+
+
+def test_check_source_unparseable_source_returns_checked_zero_no_raise():
+    result = checker.check_source("gibberish nonsense flarn blorp")
+    assert isinstance(result, checker.CheckResult)
+    assert result.checked == 0
+    assert result.findings == []

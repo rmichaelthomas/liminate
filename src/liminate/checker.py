@@ -23,6 +23,7 @@ import time
 from dataclasses import dataclass
 from datetime import date
 
+from .lexer import LexError, leading_indent, tokenize
 from .parser import (
     ArithmeticNode,
     BareWord,
@@ -42,8 +43,13 @@ from .parser import (
     RememberValueNode,
     RequireNode,
     SequenceNode,
+    parse,
 )
 from .renderer import render
+from .reorderer import reorder
+from .result import LiminateResult
+from .run import run
+from .vocabulary import TokenType
 
 
 class CheckerUnavailable(Exception):
@@ -927,3 +933,130 @@ def check_agreement(statements, symbol_table) -> CheckResult:
         elapsed_ms=(time.monotonic() - start) * 1000,
         encodable=True, skipped_reason=None,
     )
+
+
+# ---------------------------------------------------------------------------
+# check_source — static inspection from contract text (Halverson dry run,
+# liminate-dev PR #89, product findings 1/2)
+# ---------------------------------------------------------------------------
+
+# check_agreement's _VERB_NAMES covers all four deontic verbs — widened
+# from run._collect_deontic_statements's ("require", "forbid"), which only
+# needs two for its narrower contradiction-detection use case.
+_CHECK_DEONTIC_VERBS = ("require", "forbid", "permit", "expect")
+
+
+def _collect_checkable_statements(source: str) -> list:
+    """Best-effort pre-pass collecting the top-level statement ASTs
+    check_agreement needs from raw contract text: every `define`,
+    `require`, `forbid`, `permit`, `expect`, and value-form `remember`
+    line at indent 0.
+
+    Deliberately NOT a thin wrapper around run._collect_deontic_statements
+    — reusing that collector as-is silently breaks two of check_agreement's
+    seven checks:
+
+    1. `define` lines: run._collect_deontic_statements accumulates the
+       name into a local predicate_names set (so later require/forbid
+       applications parse correctly) and then `continue`s WITHOUT
+       appending the DefineNode. check_agreement's check 7
+       (_check_constant_predicate) iterates DefineNode from the statement
+       list — a collector that drops it yields a silent zero-finding
+       result for check 7, not an error.
+    2. `remember ... with/from <value>` lines that parse to a
+       RememberValueNode: _build_definitions scans the statement list for
+       these to build the name -> defining-expression map that
+       value-position name inlining (TI-Q13 closure) depends on. Without
+       them, nonlinear arithmetic reached through a name (e.g. `remember
+       a value called doubled from beta multiplied by beta`, then
+       `forbid x is above doubled`) is silently never caught.
+
+    run._collect_deontic_statements itself is untouched — its output feeds
+    detect_contradictions in the live run() path, and changing what it
+    returns would alter contradiction-detection behavior for every
+    program. This is a deliberate duplicate of its scan structure, not a
+    shared helper, for exactly that reason.
+
+    Anything that fails to tokenize/reorder/parse is silently skipped —
+    this pass is advisory and must never introduce an error check_source's
+    own run() call wouldn't also produce. Indented lines (when-block
+    action lines) are excluded, matching the forward-declaration rule for
+    predicate names run._collect_deontic_statements also follows.
+    """
+    statements: list = []
+    predicate_names: set[str] = set()
+    for line in source.splitlines():
+        stripped = line.lstrip()
+        if not stripped or stripped.startswith("--"):
+            continue
+        try:
+            if leading_indent(line) != 0:
+                continue
+            toks = tokenize(line)
+        except LexError:
+            continue
+
+        if toks and toks[0].type is TokenType.DECLARATION and toks[0].value == "define":
+            reordered = reorder(toks)
+            if isinstance(reordered, LiminateResult):
+                continue
+            node = parse(reordered, predicate_names=predicate_names)
+            if isinstance(node, DefineNode):
+                predicate_names.add(node.name)
+                statements.append(node)
+            continue
+
+        if not (toks and toks[0].type is TokenType.VERB):
+            continue
+        verb = toks[0].value
+        if verb not in _CHECK_DEONTIC_VERBS and verb != "remember":
+            continue
+
+        reordered = reorder(toks)
+        if isinstance(reordered, LiminateResult):
+            continue
+        node = parse(reordered, predicate_names=predicate_names)
+        if isinstance(node, LiminateResult):
+            continue
+
+        if verb == "remember":
+            if isinstance(node, RememberValueNode):
+                statements.append(node)
+            continue
+
+        statements.append(node)
+    return statements
+
+
+def check_source(source: str, *, domain_packs=None) -> CheckResult:
+    """Static inspection of contract text: check_agreement, wired up from
+    source instead of hand-built statements + a symbol table.
+
+    Runs `run(source, domain_packs=domain_packs, enter_phase2=False,
+    auto_confirm_amber=True)` to populate a symbol table without entering
+    Phase 2 (this is static inspection, not execution — no listener, no
+    I/O) and without leaving an amber outcome unresolved. Collects the
+    top-level define/require/forbid/permit/expect/remember statement ASTs
+    from the same source text — see `_collect_checkable_statements`; in
+    particular, `define` and value-form `remember` lines must both be
+    collected, or check 7 and nonlinearity detection silently go inert.
+    Hands both to `check_agreement` and returns its `CheckResult`
+    unchanged — no wrapping, no extra fields. A caller that also needs
+    the symbol table calls `run()` directly instead.
+
+    Never catches `CheckerUnavailable` — it propagates exactly as
+    `check_agreement` raises it (z3 not installed). An out-of-fragment
+    program is not an error either: `check_agreement` reports it as
+    `CheckResult(encodable=False, skipped_reason=...)`, passed through
+    unchanged. A program that fails to parse entirely collects zero
+    statements and reports `checked=0` with no findings — also not an
+    error; a caller wanting parse diagnostics should call `run()`.
+    """
+    contract_result = run(
+        source,
+        domain_packs=domain_packs,
+        enter_phase2=False,
+        auto_confirm_amber=True,
+    )
+    statements = _collect_checkable_statements(source)
+    return check_agreement(statements, contract_result.symbol_table)

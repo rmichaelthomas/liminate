@@ -13,6 +13,7 @@ from .adapter import (
     TestDomainPack,
 )
 from .analyzer import SymbolEntry, analyze
+from .checker import CheckerUnavailable, CheckResult, Finding, check_agreement, check_source
 from .interpreter import execute
 from .listener import listen
 from .lexer import leading_indent, tokenize
@@ -27,8 +28,11 @@ __all__ = [
     "AdapterDone",
     "AdapterFailure",
     "AdapterUpdate",
+    "CheckResult",
+    "CheckerUnavailable",
     "ContractResult",
     "DomainPack",
+    "Finding",
     "LiminateResult",
     "LiveValueDeclaration",
     "LiveValueEntry",
@@ -39,6 +43,8 @@ __all__ = [
     "TestAdapter",
     "TestDomainPack",
     "analyze",
+    "check_agreement",
+    "check_source",
     "execute",
     "leading_indent",
     "listen",
