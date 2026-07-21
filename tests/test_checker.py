@@ -1144,3 +1144,102 @@ def test_check_source_unparseable_source_returns_checked_zero_no_raise():
     assert isinstance(result, checker.CheckResult)
     assert result.checked == 0
     assert result.findings == []
+
+
+# ---------------------------------------------------------------------------
+# Phase 9 — check_source's type-inference pre-pass for unbound rule
+# templates (Halverson dry run, liminate-dev PR #89, finding 1)
+# ---------------------------------------------------------------------------
+
+
+def test_check_source_encodes_unbound_template_and_finds_violation():
+    """Regression test for the whole stage: before the type-inference
+    pre-pass, check_source(source) passed run()'s symbol table straight to
+    check_agreement, and a field no `remember` ever bound (here, `amount`)
+    raised UnencodableConstruct at encode_field, reported as
+    encodable=False. `amount` is only ever referenced, never bound — the
+    inference pass must type it from the literal `5000` and the check must
+    still find the genuine unless_swallows_rule violation."""
+    source = 'forbid amount is above 5000 unless amount is above 0 because "policy"'
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is True
+    assert result.skipped_reason is None
+    kinds = [f.kind for f in result.findings]
+    assert "unless_swallows_rule" in kinds
+
+
+def test_check_source_encodes_real_shipped_vendor_invoice_review_template():
+    """The exact template shipped in liminate-dev's
+    app/agreement_templates.py (AGREEMENT_TEMPLATES, id
+    'vendor_invoice_review'), copied verbatim rather than imported across
+    repos. Every evidence field it references — amount, manager-approval,
+    purchase-order, approval-status — has no `remember` binding it
+    anywhere in the source; this is the exact document finding 1 verified
+    against and must be encodable now."""
+    source = "\n".join([
+        'remember a string called agreement-purpose with "vendor invoice review"',
+        "define large: is above 5000",
+        'require amount is above 0 because "an invoice must have a positive amount"',
+        'forbid amount is large unless manager-approval is equal to "yes" '
+        'because "large invoices need manager sign-off"',
+        'require purchase-order is equal to "matched" because '
+        '"every invoice must match a PO"',
+        'permit approval-status is equal to "ready" because '
+        '"all invoice criteria are met"',
+    ])
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is True
+    assert result.skipped_reason is None
+
+
+def test_check_source_real_remember_not_overwritten_by_inference():
+    """A field bound by a real `remember` (here, `amount` as a number)
+    must win over the inference pass, even when the inferred type from a
+    literal comparison elsewhere in the source would disagree (here,
+    comparing `amount` against a quoted string would infer 'string'). If
+    the placeholder ever overwrote the real binding, this program would
+    encode cleanly as a same-sort string comparison; because the real
+    number binding takes precedence, comparing a Real constant against a
+    StringVal is a genuine sort mismatch and must be reported as
+    encodable=False, not silently swallowed (invariant 8)."""
+    source = "\n".join([
+        "remember a number called amount with 3000",
+        'forbid amount is equal to "five thousand" because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is False
+    assert result.skipped_reason is not None
+
+
+def test_check_source_field_typed_only_via_predicate_application():
+    """`amount` is never compared against a literal directly — its only
+    appearance is `amount is large`, a PredicateApplicationNode. The type
+    must be resolved through `large`'s own body (`is above 5000`, a number
+    comparison) via `_predicate_subject_types`, not left unresolved."""
+    source = "\n".join([
+        "define large: is above 5000",
+        'forbid amount is large because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is True
+    assert result.skipped_reason is None
+    assert result.checked == 1
+
+
+def test_check_source_untypeable_field_stays_encodable_false_no_raise():
+    """`category` is referenced only via `includes`, whose target must be
+    a statically known list (a real list_of_* symbol-table entry) — the
+    inference pass only ever produces scalar (number/string/date)
+    placeholders, so `category` stays untypeable for this purpose and the
+    program must still surface as encodable=False through check_agreement's
+    normal UnencodableConstruct boundary, never raise."""
+    source = 'forbid category includes "restricted" because "policy"'
+    result = checker.check_source(source)
+    assert isinstance(result, checker.CheckResult)
+    assert result.encodable is False
+    assert result.skipped_reason is not None
+    assert result.findings == []

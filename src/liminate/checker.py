@@ -23,6 +23,7 @@ import time
 from dataclasses import dataclass
 from datetime import date
 
+from .analyzer import SymbolEntry
 from .lexer import LexError, leading_indent, tokenize
 from .parser import (
     ArithmeticNode,
@@ -1028,6 +1029,129 @@ def _collect_checkable_statements(source: str) -> list:
     return statements
 
 
+# ---------------------------------------------------------------------------
+# check_source's type-inference pre-pass — unbound rule templates
+# ---------------------------------------------------------------------------
+#
+# A Translate draft — and every shipped agreement template in
+# liminate-dev's app/agreement_templates.py — is an *unbound rule
+# template* by design: it references evidence fields (amount,
+# manager-approval, ...) that no `remember` binds, so run()'s symbol table
+# has no entry for them. _build_constants then allocates nothing for the
+# missing name, and encode_field raises UnencodableConstruct the first
+# time a condition actually touches it, so check_source reported
+# encodable=False for every such template (Halverson dry run, liminate-dev
+# PR #89, finding 1).
+#
+# This pass synthesizes type-only placeholder SymbolEntry objects
+# (value=None — the Z3 encoder only reads the type, in _build_constants,
+# to allocate a free constant) for referenced-but-unbound fields, inferred
+# from how each field is used: a literal it's directly compared against,
+# or, for `<subject> is <predicate>`, the predicate's own body. A field
+# typed by neither path stays unresolved and still raises
+# UnencodableConstruct at check time — that is invariant 8 working
+# correctly, not a gap to paper over. A real `remember`/`define` binding
+# always wins over an inferred placeholder (see the `name not in
+# symbol_table` guard in check_source below).
+#
+# Ported from case-studies/halverson/check-output/check_harness.py in
+# liminate-dev (the working prototype), adapted to checker.py's naming.
+#
+# Known limit: the heuristic below is exercised against the Halverson
+# corpus's condition shapes only. FieldAccessNode on records, and the
+# `within` / `includes` operators, were never hit by that corpus and are
+# not covered here — a field reached only through one of those shapes
+# stays unresolved. Generalizing beyond what that corpus proved is
+# separate work.
+
+
+def _condition_leaves(node):
+    """Yield every ConditionNode/PredicateApplicationNode leaf inside a
+    condition tree, descending CompoundConditionNode's and/or shape."""
+    if isinstance(node, CompoundConditionNode):
+        yield from _condition_leaves(node.left)
+        yield from _condition_leaves(node.right)
+    elif isinstance(node, (ConditionNode, PredicateApplicationNode)):
+        yield node
+
+
+def _literal_type(value_node) -> str | None:
+    if isinstance(value_node, NumberLiteral):
+        return "number"
+    if isinstance(value_node, DateLiteral):
+        return "date"
+    if isinstance(value_node, (QuotedString, BareWord)):
+        return "string"
+    return None
+
+
+def _predicate_subject_types(statements: list) -> dict[str, str]:
+    """For each `define <name>: <condition>`, infer the scalar type a
+    subject must have to be applied to it via `<subject> is <name>` —
+    mirrors _Encoder._value_sort_hint / _infer_subject_sort (used by check
+    7's standalone predicate-body encoding), but runs pre-encoding on raw
+    ASTs rather than during Z3 constant allocation. E.g. `define large: is
+    above 5000` implies a number subject."""
+    subject_types: dict[str, str] = {}
+
+    def hint(cond) -> str | None:
+        if isinstance(cond, CompoundConditionNode):
+            return hint(cond.left) or hint(cond.right)
+        if isinstance(cond, ConditionNode) and isinstance(cond.field, EachPronoun):
+            t = _literal_type(cond.value)
+            if t is None and cond.value2 is not None:
+                t = _literal_type(cond.value2)
+            return t
+        return None
+
+    for stmt in statements:
+        if isinstance(stmt, DefineNode):
+            t = hint(stmt.condition)
+            if t is not None:
+                subject_types[stmt.name] = t
+    return subject_types
+
+
+_INFERABLE_DEONTIC_TYPES = (RequireNode, ForbidNode, PermitNode, ExpectNode)
+
+
+def _infer_field_types(statements: list) -> dict[str, str]:
+    """Walk every deontic condition, exception, and define body for a bare
+    NameRef field and infer a scalar type — from the literal it's directly
+    compared against, or, for a predicate application (`<subject> is
+    <name>`), from the predicate's own body via `_predicate_subject_types`.
+    First inference wins; a field typed by neither path is simply absent
+    from the result and stays unresolved (raises UnencodableConstruct at
+    check time, same as any other out-of-fragment reference)."""
+    types: dict[str, str] = {}
+    subject_types = _predicate_subject_types(statements)
+
+    def note(name: str, scalar_type: str | None) -> None:
+        if scalar_type is not None:
+            types.setdefault(name, scalar_type)
+
+    def walk_condition(cond) -> None:
+        for leaf in _condition_leaves(cond):
+            if isinstance(leaf, ConditionNode) and isinstance(leaf.field, NameRef):
+                note(leaf.field.name, _literal_type(leaf.value))
+                if leaf.value2 is not None:
+                    note(leaf.field.name, _literal_type(leaf.value2))
+            elif isinstance(leaf, PredicateApplicationNode) and isinstance(
+                leaf.subject, NameRef
+            ):
+                note(leaf.subject.name, subject_types.get(leaf.predicate_name))
+
+    for stmt in statements:
+        if isinstance(stmt, DefineNode):
+            walk_condition(stmt.condition)
+        elif isinstance(stmt, _INFERABLE_DEONTIC_TYPES):
+            walk_condition(stmt.condition)
+            if stmt.exception is not None:
+                walk_condition(stmt.exception)
+
+    return types
+
+
 def check_source(source: str, *, domain_packs=None) -> CheckResult:
     """Static inspection of contract text: check_agreement, wired up from
     source instead of hand-built statements + a symbol table.
@@ -1040,9 +1164,21 @@ def check_source(source: str, *, domain_packs=None) -> CheckResult:
     from the same source text — see `_collect_checkable_statements`; in
     particular, `define` and value-form `remember` lines must both be
     collected, or check 7 and nonlinearity detection silently go inert.
-    Hands both to `check_agreement` and returns its `CheckResult`
-    unchanged — no wrapping, no extra fields. A caller that also needs
-    the symbol table calls `run()` directly instead.
+
+    A contract source is very often an *unbound rule template* — it
+    references evidence fields no `remember` in the source ever binds, so
+    run()'s symbol table has no entry for them. Before handing off to
+    check_agreement, this function adds a type-only placeholder
+    SymbolEntry (see `_infer_field_types`) for every referenced-but-unbound
+    field it can infer a scalar type for; a real binding from `run()`
+    always takes precedence. A field neither bound nor inferable is left
+    alone and still surfaces as `encodable=False` from check_agreement's
+    own UnencodableConstruct boundary.
+
+    Hands the (possibly widened) symbol table and the collected statements
+    to `check_agreement` and returns its `CheckResult` unchanged — no
+    wrapping, no extra fields. A caller that also needs the real symbol
+    table calls `run()` directly instead.
 
     Never catches `CheckerUnavailable` — it propagates exactly as
     `check_agreement` raises it (z3 not installed). An out-of-fragment
@@ -1059,4 +1195,8 @@ def check_source(source: str, *, domain_packs=None) -> CheckResult:
         auto_confirm_amber=True,
     )
     statements = _collect_checkable_statements(source)
-    return check_agreement(statements, contract_result.symbol_table)
+    symbol_table = dict(contract_result.symbol_table)
+    for name, scalar_type in _infer_field_types(statements).items():
+        if name not in symbol_table:
+            symbol_table[name] = SymbolEntry(name=name, value=None, type=scalar_type)
+    return check_agreement(statements, symbol_table)
