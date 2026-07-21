@@ -15,7 +15,15 @@ import pytest
 
 from liminate.cli import Session
 from liminate.lexer import tokenize
-from liminate.parser import parse
+from liminate.parser import (
+    DefineNode,
+    ExpectNode,
+    ForbidNode,
+    PermitNode,
+    RememberValueNode,
+    RequireNode,
+    parse,
+)
 from liminate.analyzer import SymbolEntry
 from liminate.reorderer import reorder
 from liminate.result import LiminateResult
@@ -1243,3 +1251,188 @@ def test_check_source_untypeable_field_stays_encodable_false_no_raise():
     assert result.encodable is False
     assert result.skipped_reason is not None
     assert result.findings == []
+
+
+# ---------------------------------------------------------------------------
+# Phase 10 — collector dispatch on parsed type, not first token (Halverson
+# re-run, liminate-dev PR #92: starting/until/inherited are CONNECTIVE/
+# OPERATOR tokens, never VERB, so a first-token dispatch silently dropped
+# every temporally-prefixed or inherited-prefixed statement)
+# ---------------------------------------------------------------------------
+
+
+def test_check_source_starting_prefixed_forbid_is_checked():
+    """The regression test for the whole stage: before the fix, checked
+    was 0, not 1 — the statement never reached check_agreement at all."""
+    source = 'starting "2025-01-01" forbid amount is above 5000 because "policy"'
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+def test_check_source_until_prefixed_forbid_is_checked():
+    source = 'until "2025-12-31" forbid amount is above 5000 because "policy"'
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+def test_check_source_starting_until_prefixed_forbid_is_checked():
+    """Canonical order: starting before until, both before the verb."""
+    source = (
+        'starting "2025-01-01" until "2025-12-31" '
+        'forbid amount is above 5000 because "policy"'
+    )
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+def test_check_source_inherited_prefixed_forbid_is_checked():
+    """The untested sibling: `inherited` is TokenType.OPERATOR, consumed
+    statement-initial exactly like starting/until, and shared the same
+    first-token-dispatch defect — never exercised by any corpus."""
+    source = 'inherited forbid amount is above 5000 because "policy"'
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+def test_check_source_full_canonical_prefix_stack_is_checked():
+    """starting ... until ... inherited <verb> ... — the full stack."""
+    source = (
+        'starting "2025-01-01" until "2025-12-31" inherited '
+        'forbid amount is above 5000 because "policy"'
+    )
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+def test_check_source_temporally_prefixed_statement_reaches_findings():
+    """Proves the statement reaches the checks, not just the collected
+    list: a starting-prefixed forbid whose own unless swallows it must
+    still produce unless_swallows_rule."""
+    source = (
+        'starting "2025-01-01" forbid amount is above 5000 '
+        'unless amount is above 0 because "policy"'
+    )
+    result = checker.check_source(source)
+    assert result.encodable is True
+    kinds = [f.kind for f in result.findings]
+    assert "unless_swallows_rule" in kinds
+
+
+def test_check_source_define_on_temporally_prefixed_line_registers_predicate():
+    """A `define` declared on a temporally-prefixed line must still enter
+    predicate_names for later lines — otherwise `amount is large` on the
+    next line misparses as a string-equality comparison against the
+    bareword "large" instead of a PredicateApplicationNode."""
+    source = "\n".join([
+        'starting "2025-01-01" define large: is above 5000',
+        'forbid amount is large because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.skipped_reason is None
+    assert result.checked == 1
+
+
+def test_check_source_unprefixed_checked_count_unchanged():
+    """No prefixes: checked count must match exactly what check_agreement
+    would report for the same statements hand-built — no double-counting
+    from the new parse-first dispatch, and no non-deontic top-level lines
+    (about, remember-list, show) newly swept in."""
+    source = "\n".join([
+        'about "test contract"',
+        "remember a number called amount with 3000",
+        "remember a list called tags with 1 and 2 and 3",
+        "show amount",
+        'forbid amount is above 5000 because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 1
+
+
+# ---------------------------------------------------------------------------
+# Phase 11 (D3) — collector coverage vs. the parser's accepted statement
+# shapes. Hand-written, not derived from parser.py internals: this table
+# is a specification of intended coverage, not a mirror of the
+# implementation. If a future prefix is added to the grammar and nobody
+# adds a row here, that is a gap this test should be *able* to expose
+# once someone notices, not one it silently absorbs.
+# ---------------------------------------------------------------------------
+
+_COLLECTOR_COVERAGE_TABLE = [
+    # (label, source line, expected collected node type)
+    ("require, bare", 'require amount is above 0 because "r"', RequireNode),
+    ("require, starting", 'starting "2025-01-01" require amount is above 0 because "r"', RequireNode),
+    ("require, until", 'until "2025-12-31" require amount is above 0 because "r"', RequireNode),
+    ("require, starting+until", 'starting "2025-01-01" until "2025-12-31" require amount is above 0 because "r"', RequireNode),
+    ("require, inherited", 'inherited require amount is above 0 because "r"', RequireNode),
+    ("require, starting+inherited", 'starting "2025-01-01" inherited require amount is above 0 because "r"', RequireNode),
+    ("require, full stack", 'starting "2025-01-01" until "2025-12-31" inherited require amount is above 0 because "r"', RequireNode),
+
+    ("forbid, bare", 'forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, starting", 'starting "2025-01-01" forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, until", 'until "2025-12-31" forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, starting+until", 'starting "2025-01-01" until "2025-12-31" forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, inherited", 'inherited forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, starting+inherited", 'starting "2025-01-01" inherited forbid amount is above 5000 because "f"', ForbidNode),
+    ("forbid, full stack", 'starting "2025-01-01" until "2025-12-31" inherited forbid amount is above 5000 because "f"', ForbidNode),
+
+    ("permit, bare", 'permit amount is below 100 because "p"', PermitNode),
+    ("permit, starting", 'starting "2025-01-01" permit amount is below 100 because "p"', PermitNode),
+    ("permit, until", 'until "2025-12-31" permit amount is below 100 because "p"', PermitNode),
+    ("permit, starting+until", 'starting "2025-01-01" until "2025-12-31" permit amount is below 100 because "p"', PermitNode),
+    ("permit, inherited", 'inherited permit amount is below 100 because "p"', PermitNode),
+    ("permit, starting+inherited", 'starting "2025-01-01" inherited permit amount is below 100 because "p"', PermitNode),
+    ("permit, full stack", 'starting "2025-01-01" until "2025-12-31" inherited permit amount is below 100 because "p"', PermitNode),
+
+    ("expect, bare", 'expect amount is above 0 because "e"', ExpectNode),
+    ("expect, starting", 'starting "2025-01-01" expect amount is above 0 because "e"', ExpectNode),
+    ("expect, until", 'until "2025-12-31" expect amount is above 0 because "e"', ExpectNode),
+    ("expect, starting+until", 'starting "2025-01-01" until "2025-12-31" expect amount is above 0 because "e"', ExpectNode),
+    ("expect, inherited", 'inherited expect amount is above 0 because "e"', ExpectNode),
+    ("expect, starting+inherited", 'starting "2025-01-01" inherited expect amount is above 0 because "e"', ExpectNode),
+    ("expect, full stack", 'starting "2025-01-01" until "2025-12-31" inherited expect amount is above 0 because "e"', ExpectNode),
+
+    ("define, bare", "define large: is above 5000", DefineNode),
+    ("define, starting", 'starting "2025-01-01" define large: is above 5000', DefineNode),
+    ("define, until", 'until "2025-12-31" define large: is above 5000', DefineNode),
+    ("define, starting+until", 'starting "2025-01-01" until "2025-12-31" define large: is above 5000', DefineNode),
+    ("define, inherited", "inherited define large: is above 5000", DefineNode),
+    ("define, starting+inherited", 'starting "2025-01-01" inherited define large: is above 5000', DefineNode),
+    ("define, full stack", 'starting "2025-01-01" until "2025-12-31" inherited define large: is above 5000', DefineNode),
+
+    ("remember (value), bare", "remember a number called amount with 100", RememberValueNode),
+    ("remember (value), starting", 'starting "2025-01-01" remember a number called amount with 100', RememberValueNode),
+    ("remember (value), until", 'until "2025-12-31" remember a number called amount with 100', RememberValueNode),
+    ("remember (value), starting+until", 'starting "2025-01-01" until "2025-12-31" remember a number called amount with 100', RememberValueNode),
+    ("remember (value), inherited", "inherited remember a number called amount with 100", RememberValueNode),
+    ("remember (value), starting+inherited", 'starting "2025-01-01" inherited remember a number called amount with 100', RememberValueNode),
+    ("remember (value), full stack", 'starting "2025-01-01" until "2025-12-31" inherited remember a number called amount with 100', RememberValueNode),
+]
+
+
+@pytest.mark.parametrize(
+    "label,source,expected_type",
+    _COLLECTOR_COVERAGE_TABLE,
+    ids=[row[0] for row in _COLLECTOR_COVERAGE_TABLE],
+)
+def test_collector_coverage_matches_parser_accepted_shapes(label, source, expected_type):
+    """The collector's dispatch must track the parser's accepted statement
+    shapes — every deontic verb, `define`, and value-form `remember`, each
+    under every prefix combination `_parse_one_operation` accepts. This
+    table is the checkpoint: it caught the starting/until gap and the
+    inherited sibling once, by construction rather than by luck, and is
+    meant to be extended by hand the next time the grammar grows a new
+    statement-initial prefix."""
+    from liminate.checker import _collect_checkable_statements
+
+    statements = _collect_checkable_statements(source)
+    assert len(statements) == 1, f"{label}: expected exactly 1 statement, got {len(statements)}"
+    assert isinstance(statements[0], expected_type), (
+        f"{label}: expected {expected_type.__name__}, got {type(statements[0]).__name__}"
+    )
