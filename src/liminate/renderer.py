@@ -70,6 +70,7 @@ from .parser import (
     WhenNode,
 )
 from .vocabulary import ALL_RESERVED
+from .lexer import _DATE_RE, _NUMBER_RE
 
 
 # v3a §110: action lines inside a `when` block are indented by two spaces
@@ -623,10 +624,22 @@ def _emit_string(s: str) -> str:
         as a verb/connective/etc.), or
       - the value differs from its lowercased form (case would be lost
         because the lexer normalizes unquoted words; quoted content is
-        preserved verbatim).
+        preserved verbatim), or
+      - the value is number-shaped or date-shaped (bare form would
+        re-lex as a NUMBER or DATE token — a self-typing lexical shape —
+        instead of a string, per lexer._classify's resolution order;
+        _NUMBER_RE / _DATE_RE are imported from the lexer so this stays
+        in lockstep with the literal grammar it mirrors).
     `with status as active` stays bare; `with status as "Active"` keeps
-    its quotes.
+    its quotes; a string value `"2025-07-01"` or `"75"` now keeps its
+    quotes so it round-trips as a string, not a date/number.
     """
-    if " " in s or s in ALL_RESERVED or s != s.lower():
+    if (
+        " " in s
+        or s in ALL_RESERVED
+        or s != s.lower()
+        or _NUMBER_RE.match(s)
+        or _DATE_RE.match(s)
+    ):
         return f'"{s}"'
     return s
