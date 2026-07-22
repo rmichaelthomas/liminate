@@ -10,6 +10,8 @@ Verifies:
      round-trips through `parse_when_block` (split-by-indent).
 """
 
+from datetime import date
+
 import pytest
 
 from liminate.lexer import tokenize
@@ -20,6 +22,7 @@ from liminate.parser import (
     CompoundConditionNode,
     ConditionNode,
     CountNode,
+    DateLiteral,
     EachNode,
     EachPronoun,
     FilterNode,
@@ -39,7 +42,7 @@ from liminate.parser import (
     parse,
     parse_when_block,
 )
-from liminate.renderer import render, render_with_explicit_precedence
+from liminate.renderer import _emit_string, render, render_with_explicit_precedence
 from liminate.reorderer import reorder
 from liminate.result import LiminateResult, ResultStatus
 
@@ -77,6 +80,19 @@ def test_render_bareword_with_uppercase_keeps_quotes():
     """Same rule applies to BareWord nodes — if the stored value carries
     case that would be lost on re-lex, emit it quoted."""
     assert render(BareWord("Active")) == '"Active"'
+
+
+def test_emit_string_quotes_number_and_date_shaped_content():
+    """A string value whose content is number- or date-shaped must stay
+    quoted — bare emission would re-lex as a NUMBER/DATE token (the
+    lexer's self-typing lexical shapes), not a string. `-3.5` guards the
+    full _NUMBER_RE shape (sign + decimal), not just plain digits.
+    Safe bare strings (single lowercase non-reserved, non-numeric word)
+    are unaffected."""
+    assert _emit_string("2025-07-01") == '"2025-07-01"'
+    assert _emit_string("75") == '"75"'
+    assert _emit_string("-3.5") == '"-3.5"'
+    assert _emit_string("active") == "active"
 
 
 def test_render_show():
@@ -323,6 +339,12 @@ ROUND_TRIP_SENTENCES = [
     ),
     # `of` on the left side of a condition (v2d §100)
     ('choose if total of o1 is above 50: show "big order"', None),
+    # _emit_string round-trip gap: a string value shaped like a NUMBER or
+    # DATE literal must keep its quotes so it re-parses as a string, not
+    # a NumberLiteral/DateLiteral.
+    ('remember a value called d with "2025-07-01"', None),
+    ('remember a value called n with "75"', None),
+    ('remember a value called n with "-3.5"', None),
 ]
 
 
@@ -340,6 +362,64 @@ def test_round_trip(line, comps):
         f"round-trip mismatch:\n  original: {line!r}\n  canonical: {rendered!r}\n"
         f"  first AST: {first_ast}\n  second AST: {second_ast}"
     )
+
+
+# ---------- _emit_string round-trip gap: number/date-shaped strings ----------
+
+
+def test_date_shaped_string_value_round_trips_as_string_not_date_literal():
+    """A QuotedString whose content is date-shaped must stay a string
+    through render + re-parse, not collapse into a DateLiteral."""
+    line = 'remember a value called d with "2025-07-01"'
+    first_ast = _parse(line)
+    assert isinstance(first_ast, RememberValueNode)
+    assert isinstance(first_ast.value, QuotedString)
+
+    rendered = render(first_ast)
+    assert rendered == 'remember a value called d with "2025-07-01"'
+
+    second_ast = _parse(rendered)
+    assert isinstance(second_ast.value, QuotedString)
+    assert second_ast == first_ast
+
+
+def test_number_shaped_string_value_round_trips_as_string_not_number_literal():
+    """A QuotedString whose content is number-shaped must stay a string
+    through render + re-parse, not collapse into a NumberLiteral."""
+    line = 'remember a value called n with "75"'
+    first_ast = _parse(line)
+    assert isinstance(first_ast, RememberValueNode)
+    assert isinstance(first_ast.value, QuotedString)
+
+    rendered = render(first_ast)
+    assert rendered == 'remember a value called n with "75"'
+
+    second_ast = _parse(rendered)
+    assert isinstance(second_ast.value, QuotedString)
+    assert second_ast == first_ast
+
+
+def test_negative_decimal_number_shaped_string_value_stays_quoted():
+    """Guards the full _NUMBER_RE shape (leading '-' and a decimal
+    point), not just a plain-digits case."""
+    line = 'remember a value called n with "-3.5"'
+    first_ast = _parse(line)
+    assert isinstance(first_ast.value, QuotedString)
+
+    rendered = render(first_ast)
+    assert rendered == 'remember a value called n with "-3.5"'
+
+    second_ast = _parse(rendered)
+    assert second_ast == first_ast
+
+
+def test_real_number_and_date_literals_still_render_bare():
+    """Regression guard: this fix is confined to _emit_string (string
+    nodes). Genuine NumberLiteral/DateLiteral values must keep rendering
+    bare — the fix must not make real numbers/dates start quoting."""
+    assert render(NumberLiteral(75)) == "75"
+    assert render(NumberLiteral(-3.5)) == "-3.5"
+    assert render(DateLiteral(value=date(2025, 7, 1))) == "2025-07-01"
 
 
 # ---------- mixed-precedence amber still produces a canonical rendering ----------
