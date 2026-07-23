@@ -694,7 +694,7 @@ def test_check1_always_deny_positive():
         "remember a number called amount with 10",
         "require amount is above 50 and amount is below 10",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_always_deny(enc, entries)
     assert len(findings) == 1
     assert findings[0].severity == "error"
@@ -705,7 +705,7 @@ def test_check1_always_deny_negative():
         "remember a number called amount with 10",
         "require amount is above 5",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_always_deny(enc, entries)
     assert findings == []
 
@@ -715,7 +715,7 @@ def test_check2_dead_forbid_positive():
         "remember a number called amount with 10",
         "forbid amount is above 50 and amount is below 10",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_dead_forbid(enc, entries, swallowed=set())
     assert len(findings) == 1
     assert findings[0].severity == "warning"
@@ -726,7 +726,7 @@ def test_check2_dead_forbid_negative():
         "remember a number called amount with 10",
         "forbid amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_dead_forbid(enc, entries, swallowed=set())
     assert findings == []
 
@@ -737,7 +737,7 @@ def test_check3_require_forbid_conflict_positive():
         "require amount is above 100",
         "forbid amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_require_forbid_conflict(enc, entries, capped=False)
     assert len(findings) == 1
     assert findings[0].severity == "error"
@@ -749,7 +749,7 @@ def test_check3_require_forbid_conflict_negative():
         "require amount is above 100",
         "forbid amount is above 200",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_require_forbid_conflict(enc, entries, capped=False)
     assert findings == []
 
@@ -760,7 +760,7 @@ def test_check3_skipped_when_capped():
         "require amount is above 100",
         "forbid amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_require_forbid_conflict(enc, entries, capped=True)
     assert findings == []
 
@@ -770,7 +770,7 @@ def test_check4_unless_swallows_rule_positive_forbid():
         "remember a number called amount with 10",
         "forbid amount is above 1000 unless amount is above 0",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
     assert len(findings) == 1
     assert findings[0].severity == "error"
@@ -782,7 +782,7 @@ def test_check4_unless_swallows_rule_positive_require():
         "remember a number called amount with 10",
         "require amount is above 5 unless amount is below 1000",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
     assert len(findings) == 1
     assert swallowed == {entries[0].index}
@@ -793,7 +793,7 @@ def test_check4_unless_swallows_rule_negative():
         "remember a number called amount with 10",
         "forbid amount is above 1000 unless amount is above 2000",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
     assert findings == []
     assert swallowed == set()
@@ -804,7 +804,7 @@ def test_check4_suppresses_check2_for_same_statement():
         "remember a number called amount with 10",
         "forbid amount is above 1000 unless amount is above 0",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     unless_findings, swallowed = checker._check_unless_swallows_rule(enc, entries)
     dead_forbid_findings = checker._check_dead_forbid(enc, entries, swallowed)
     assert _findings_of_kind(unless_findings, "unless_swallows_rule")
@@ -817,7 +817,7 @@ def test_check5_redundant_forbid_positive():
         "forbid amount is above 100",
         "forbid amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_redundant_forbid(enc, entries, capped=False)
     assert len(findings) == 1
     assert findings[0].severity == "warning"
@@ -831,7 +831,7 @@ def test_check5_redundant_forbid_negative():
         "forbid amount is above 50",
         'forbid status is equal to "blocked"',
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_redundant_forbid(enc, entries, capped=False)
     assert findings == []
 
@@ -842,7 +842,7 @@ def test_check5_skipped_when_capped():
         "forbid amount is above 100",
         "forbid amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_redundant_forbid(enc, entries, capped=True)
     assert findings == []
 
@@ -853,7 +853,7 @@ def test_check6_dead_permit_positive():
         "require amount is below 10",
         "permit amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_dead_permit(enc, entries)
     assert len(findings) == 1
     assert findings[0].severity == "warning"
@@ -865,7 +865,7 @@ def test_check6_dead_permit_negative():
         "require amount is below 100",
         "permit amount is above 50",
     ])
-    entries = checker._collect_deontic_entries(enc, statements)
+    entries, _ = checker._collect_deontic_entries(enc, statements)
     findings = checker._check_dead_permit(enc, entries)
     assert findings == []
 
@@ -874,7 +874,7 @@ def test_check7_constant_predicate_contradiction():
     enc, statements = _build_checker_context([
         "define impossible: is above 100 and is below 50",
     ])
-    findings = checker._check_constant_predicate(enc, statements)
+    findings, _ = checker._check_constant_predicate(enc, statements)
     assert len(findings) == 1
     assert findings[0].severity == "warning"
     assert "never" in findings[0].explanation or "always false" in findings[0].explanation
@@ -884,7 +884,7 @@ def test_check7_constant_predicate_tautology():
     enc, statements = _build_checker_context([
         "define always_big_or_small: is above 0 or is below 1000000",
     ])
-    findings = checker._check_constant_predicate(enc, statements)
+    findings, _ = checker._check_constant_predicate(enc, statements)
     assert len(findings) == 1
     assert findings[0].severity == "warning"
 
@@ -894,7 +894,7 @@ def test_check7_constant_predicate_negative_resolves_outer_symbol():
         "remember a number called cutoff with 100",
         "define big: is above cutoff",
     ])
-    findings = checker._check_constant_predicate(enc, statements)
+    findings, _ = checker._check_constant_predicate(enc, statements)
     assert findings == []
 
 
@@ -981,7 +981,9 @@ def test_check_agreement_ti_q13_integration_rejects_via_encodable_false():
     statements = [_parse_line(l) for l in lines]
     result = checker.check_agreement(statements, session.symtab)
     assert result.encodable is False
-    assert "doubled" in result.skipped_reason
+    assert result.checked == 0
+    assert len(result.unencodable) == 1
+    assert "doubled" in result.unencodable[0].reason
 
 
 def test_check_agreement_finds_unless_swallows_rule_end_to_end():
@@ -1010,6 +1012,128 @@ def test_check_agreement_descends_into_sequence_node():
     result = checker.check_agreement([seq], symtab)
     assert result.encodable is True
     assert any(f.kind == "always_deny" for f in result.findings)
+
+
+# ---------------------------------------------------------------------------
+# Phase 7b — per-statement encodability (TI-Q15, LOCKED): a statement that
+# fails to encode is recorded in CheckResult.unencodable and excluded, while
+# every remaining statement still proceeds through all seven checks.
+# ---------------------------------------------------------------------------
+
+
+def test_check_agreement_clean_contract_regression_unencodable_empty():
+    """A fully encodable contract behaves byte-identically to pre-change
+    output, plus the new field defaults to empty."""
+    lines = [
+        "remember a number called amount with 60",
+        "require amount is above 50",
+        "forbid amount is above 1000",
+    ]
+    session, results = run_lines(lines)
+    for r in results:
+        assert r.status.name == "SUCCESS", r.message
+    statements = [_parse_line(l) for l in lines]
+    result = checker.check_agreement(statements, session.symtab)
+    assert result.encodable is True
+    assert result.findings == []
+    assert result.checked == 2
+    assert result.skipped_reason is None
+    assert result.unencodable == []
+
+
+def test_check_source_partial_encodability_excludes_one_checks_the_rest():
+    """Three encodable deontics plus one referencing an unresolvable field
+    ('category' is only ever compared via 'includes', which the
+    type-inference pass can't type) — the unresolvable one is excluded,
+    the other three still run through all seven checks."""
+    source = "\n".join([
+        "remember a number called amount with 60",
+        'require amount is above 5000 and amount is below 10 because "policy"',
+        'forbid amount is above 100000 because "policy"',
+        'permit amount is below 200 because "policy"',
+        'forbid category includes "restricted" because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 3
+    assert len(result.unencodable) == 1
+    assert result.unencodable[0].verb == "forbid"
+    assert any(f.kind == "always_deny" for f in result.findings)
+
+
+def test_check_source_total_failure_all_unencodable():
+    """Every statement unencodable: encodable is False, checked is 0, and
+    skipped_reason is set — but unencodable is populated per statement
+    rather than the whole contract going dark with zero information."""
+    source = "\n".join([
+        'forbid category includes "restricted" because "policy"',
+        'require flavor includes "premium" because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is False
+    assert result.checked == 0
+    assert result.skipped_reason is not None
+    assert len(result.unencodable) == 2
+
+
+def test_check_agreement_nonlinear_excluded_clean_forbid_still_checks():
+    """The nonlinear statement (doubled = beta * beta, both runtime names)
+    lands in unencodable with a reason mentioning nonlinearity; a separate
+    clean forbid alongside it still gets checked."""
+    lines = [
+        "remember a number called alpha with 10",
+        "remember a number called beta with 2",
+        "remember a value called doubled from beta multiplied by beta",
+        "forbid alpha is above doubled",
+        "forbid alpha is above 1000",
+    ]
+    session, results = run_lines(lines)
+    statements = [_parse_line(l) for l in lines]
+    result = checker.check_agreement(statements, session.symtab)
+    assert result.encodable is True
+    assert result.checked == 1
+    assert len(result.unencodable) == 1
+    assert result.unencodable[0].verb == "forbid"
+    assert "nonlinear" in result.unencodable[0].reason.lower()
+
+
+def test_check_source_index_density_middle_exclusion_no_tracked_name_collision():
+    """The second of four deontics is unencodable — the three surviving
+    entries must still produce findings without a Z3 tracked-name
+    collision (a collision would surface as a solver error, not a
+    silently wrong result)."""
+    source = "\n".join([
+        "remember a number called amount with 60",
+        'require amount is above 5000 and amount is below 10 because "policy"',
+        'forbid category includes "restricted" because "policy"',
+        'forbid amount is above 100000 because "policy"',
+        'permit amount is below 200 because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.checked == 3
+    assert len(result.unencodable) == 1
+    assert any(f.kind == "always_deny" for f in result.findings)
+
+
+def test_check_source_unencodable_define_lands_in_unencodable_and_still_emits_inconclusive():
+    """A `define` whose subject type can't be inferred (its body compares
+    the implicit subject to a name that resolves to no known scalar type)
+    appears in unencodable with verb == 'define', and check 7 still emits
+    its existing inconclusive finding — the new field is additive."""
+    source = "\n".join([
+        "remember a number called amount with 60",
+        "define weird: is equal to placeholder",
+        'require amount is above 10 because "policy"',
+    ])
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert any(
+        f.kind == "inconclusive" and f.severity == "info" for f in result.findings
+    )
+    define_entries = [u for u in result.unencodable if u.verb == "define"]
+    assert len(define_entries) == 1
+    assert "subject type" in define_entries[0].reason
 
 
 # ---------------------------------------------------------------------------
@@ -1074,13 +1198,15 @@ def test_check_source_finds_constant_predicate_regression_for_define_node():
     predicate_names but never appends the DefineNode itself, so check 7
     (_check_constant_predicate, which iterates DefineNode from the
     statement list) silently finds nothing. This program has zero
-    require/forbid/permit/expect statements — checked stays 0 — but must
-    still surface the constant_predicate finding for the tautological
-    `define`."""
+    require/forbid/permit/expect statements — checked (a count of encoded
+    deontic entries) stays 0, and per TI-Q15's encodable === (checked > 0)
+    invariant, encodable is therefore False even though the define's own
+    check still ran and found its finding — findings is not gated on
+    encodable/checked, only on what the seven checks actually produced."""
     source = "define always_big_or_small: is above 0 or is below 1000000"
     result = checker.check_source(source)
     assert isinstance(result, checker.CheckResult)
-    assert result.encodable is True
+    assert result.encodable is False
     assert result.checked == 0
     kinds = [f.kind for f in result.findings]
     assert "constant_predicate" in kinds
@@ -1144,7 +1270,8 @@ def test_check_source_out_of_fragment_nonlinear_via_remembered_name():
     assert isinstance(result, checker.CheckResult)
     assert result.encodable is False
     assert result.skipped_reason is not None
-    assert "doubled" in result.skipped_reason
+    assert len(result.unencodable) == 1
+    assert "doubled" in result.unencodable[0].reason
 
 
 def test_check_source_unparseable_source_returns_checked_zero_no_raise():
