@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import re
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from .analyzer import SymbolEntry
@@ -85,12 +85,20 @@ class Finding:
 
 
 @dataclass
+class UnencodableStatement:
+    text: str        # render(node) — the canonical rendering
+    reason: str      # str(exc) from the caught exception
+    verb: str        # "require" | "forbid" | "permit" | "expect" | "define"
+
+
+@dataclass
 class CheckResult:
     findings: list[Finding]
     checked: int
     elapsed_ms: float
     encodable: bool
     skipped_reason: str | None = None
+    unencodable: list[UnencodableStatement] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -610,18 +618,27 @@ class _DeonticEntry:
     text: str
 
 
-def _collect_deontic_entries(enc, statements) -> list[_DeonticEntry]:
+def _collect_deontic_entries(
+    enc, statements
+) -> tuple[list[_DeonticEntry], list[UnencodableStatement]]:
     entries = []
+    unencodable = []
     for stmt in _iter_statements(statements):
         verb = _VERB_NAMES.get(type(stmt))
         if verb is None:
             continue
-        effect, allowed = enc.encode_deontic(stmt)
+        try:
+            effect, allowed = enc.encode_deontic(stmt)
+        except (UnencodableConstruct, NonlinearArithmetic) as exc:
+            unencodable.append(UnencodableStatement(
+                text=render(stmt), reason=str(exc), verb=verb,
+            ))
+            continue
         entries.append(_DeonticEntry(
             index=len(entries), verb=verb, node=stmt,
             effect=effect, allowed=allowed, text=render(stmt),
         ))
-    return entries
+    return entries, unencodable
 
 
 def _tracked_name(index, verb) -> str:
@@ -835,10 +852,13 @@ def _check_dead_permit(enc, entries) -> list[Finding]:
     return findings
 
 
-def _check_constant_predicate(enc, statements) -> list[Finding]:
+def _check_constant_predicate(
+    enc, statements
+) -> tuple[list[Finding], list[UnencodableStatement]]:
     """Check 7 — for each `define`, is its body a contradiction (always
     false) or a tautology (always true) for any possible subject?"""
     findings = []
+    unencodable = []
     for stmt in _iter_statements(statements):
         if not isinstance(stmt, DefineNode):
             continue
@@ -847,7 +867,7 @@ def _check_constant_predicate(enc, statements) -> list[Finding]:
             body_formula = enc.encode_predicate_body_standalone(
                 stmt.name, stmt.condition
             )
-        except UnencodableConstruct:
+        except UnencodableConstruct as exc:
             findings.append(Finding(
                 kind="inconclusive", severity="info", statements=[text],
                 explanation=(
@@ -855,6 +875,9 @@ def _check_constant_predicate(enc, statements) -> list[Finding]:
                     f"'{stmt.name}' — check 7 (constant predicate) skipped "
                     f"for it."
                 ),
+            ))
+            unencodable.append(UnencodableStatement(
+                text=text, reason=str(exc), verb="define",
             ))
             continue
 
@@ -881,7 +904,7 @@ def _check_constant_predicate(enc, statements) -> list[Finding]:
             ))
         elif tautology == "unknown":
             findings.append(_inconclusive("constant_predicate", [text]))
-    return findings
+    return findings, unencodable
 
 
 def check_agreement(statements, symbol_table) -> CheckResult:
@@ -899,7 +922,7 @@ def check_agreement(statements, symbol_table) -> CheckResult:
     try:
         definitions = _build_definitions(statements)
         enc = _Encoder(z3mod, symbol_table, definitions)
-        entries = _collect_deontic_entries(enc, statements)
+        entries, unencodable = _collect_deontic_entries(enc, statements)
 
         findings: list[Finding] = []
         cap = _cap_finding(len(entries))
@@ -914,24 +937,34 @@ def check_agreement(statements, symbol_table) -> CheckResult:
         findings.extend(_check_require_forbid_conflict(enc, entries, capped))
         findings.extend(_check_redundant_forbid(enc, entries, capped))
         findings.extend(_check_dead_permit(enc, entries))
-        findings.extend(_check_constant_predicate(enc, statements))
+        predicate_findings, predicate_unencodable = _check_constant_predicate(
+            enc, statements
+        )
+        findings.extend(predicate_findings)
+        unencodable.extend(predicate_unencodable)
     except (UnencodableConstruct, NonlinearArithmetic) as exc:
         return CheckResult(
             findings=[], checked=0,
             elapsed_ms=(time.monotonic() - start) * 1000,
-            encodable=False, skipped_reason=str(exc),
+            encodable=False, skipped_reason=str(exc), unencodable=[],
         )
     except Exception as exc:  # invariant 8 — never let anything escape
         return CheckResult(
             findings=[], checked=0,
             elapsed_ms=(time.monotonic() - start) * 1000,
             encodable=False, skipped_reason=f"{type(exc).__name__}: {exc}",
+            unencodable=[],
         )
 
     return CheckResult(
-        findings=findings, checked=len(entries),
+        findings=findings,
+        checked=len(entries),
         elapsed_ms=(time.monotonic() - start) * 1000,
-        encodable=True, skipped_reason=None,
+        encodable=len(entries) > 0,
+        skipped_reason=(
+            None if entries else "No statement in this contract could be encoded."
+        ),
+        unencodable=unencodable,
     )
 
 
