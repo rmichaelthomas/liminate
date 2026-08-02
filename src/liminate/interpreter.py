@@ -1937,6 +1937,27 @@ def _condition_actual_values(
             return ""
         field_text = render(cond.field)
         return f"{field_text} is {_format_scalar(field_val)}."
+    if isinstance(cond, PredicateApplicationNode):
+        # A predicate application (`is <predicate-name>`) reported no
+        # actual value at all — the ConditionNode branch above formats
+        # "<field> is <value>.", but this branch fell through to "",
+        # so a violation like `forbid income is over-limit` named the
+        # field and the predicate but never the number that tripped it.
+        try:
+            subject_val = _eval_field(cond.subject, current_item, symtab)
+        except _RuntimeError:
+            return ""
+        parts = [f"{render(cond.subject)} is {_format_scalar(subject_val)}."]
+        entry = symtab.get(cond.predicate_name)
+        if entry is not None and entry.type == "predicate":
+            # The predicate body's field is an implicit EachPronoun
+            # ("each is above 58320"); "each" is parser plumbing, not
+            # anything meaningful to report, so it's stripped here.
+            body_text = render(entry.value)
+            if body_text.startswith("each "):
+                body_text = body_text[len("each "):]
+            parts.append(f"{cond.predicate_name}: {body_text}.")
+        return " ".join(parts)
     return ""
 
 

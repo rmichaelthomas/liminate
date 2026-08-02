@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from liminate.analyzer import SymbolEntry, analyze
 from liminate.cli import Session
+from liminate.interpreter import _condition_actual_values
 from liminate.interpreter import execute as _execute
 from liminate.lexer import tokenize
 from liminate.parser import (
@@ -542,3 +543,120 @@ def test_predicate_named_after_an_unrelated_fact_still_works():
     s.run_line('remember a string called status with "p"')
     r = s.run_line("define matches-p: is p")
     assert r.status is ResultStatus.SUCCESS
+
+
+# ---------------------------------------------------------------------------
+# Actual-value reporting on predicate violations
+#
+# `_condition_actual_values` handled ConditionNode but fell through to ""
+# for PredicateApplicationNode, so a violation of `forbid <field> is
+# <predicate>` named the field and the predicate but never the value that
+# tripped it (e.g. "household-income-at-move-in is initial-income-over-limit."
+# with no mention of the actual income). Equality-style conditions already
+# reported their value; this closes the gap for named predicates.
+# ---------------------------------------------------------------------------
+
+
+def test_predicate_violation_in_forbid_reports_actual_value():
+    s = Session()
+    s.run_line("define over-limit: is above 58320")
+    s.run_line("remember a number called household-income-at-move-in with 65000")
+    r = s.run_line("forbid household-income-at-move-in is over-limit")
+    assert r.status is ResultStatus.PROHIBITION_VIOLATED
+    assert r.message == (
+        "Prohibition violated: household-income-at-move-in is over-limit. "
+        "household-income-at-move-in is 65000. over-limit: is above 58320."
+    )
+    assert r.metadata["actual"] == (
+        "household-income-at-move-in is 65000. over-limit: is above 58320."
+    )
+
+
+def test_predicate_violation_in_require_reports_actual_value():
+    s = Session()
+    s.run_line("define adult: is above 17")
+    s.run_line("remember a number called applicant-age with 15")
+    r = s.run_line("require applicant-age is adult")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.message == (
+        "Requirement not met: applicant-age is adult. "
+        "applicant-age is 15. adult: is above 17."
+    )
+
+
+def test_predicate_actual_value_on_unset_subject_returns_empty_and_does_not_raise():
+    # Mirrors the pre-existing ConditionNode try/except immediately above
+    # it in _condition_actual_values: a subject _eval_field can't resolve
+    # degrades to "" rather than raising out of a message-formatting helper.
+    s = Session()
+    s.run_line("define over-limit: is above 100")
+    cond = PredicateApplicationNode(
+        subject=NameRef(name="ghost-field"), predicate_name="over-limit"
+    )
+    result = _condition_actual_values(cond, {}, s.symtab)
+    assert result == ""
+
+
+def test_negated_predicate_violation_still_reports_actual_value():
+    s = Session()
+    s.run_line("define minor: is below 18")
+    s.run_line("remember a number called applicant-age with 25")
+    r = s.run_line("forbid applicant-age is not minor")
+    assert r.status is ResultStatus.PROHIBITION_VIOLATED
+    assert r.message == (
+        "Prohibition violated: applicant-age is not minor. "
+        "applicant-age is 25. minor: is below 18."
+    )
+
+
+def test_compound_condition_reports_condition_node_branch_when_it_fails():
+    # `and` short-circuits on the left; when the plain ConditionNode branch
+    # is the one that failed, _condition_actual_values must still report it
+    # (the pre-existing, unmodified path), regardless of the predicate
+    # branch sitting beside it.
+    s = Session()
+    s.run_line("define high-risk: is above 50")
+    s.run_line("remember a number called flags with 2")
+    s.run_line("remember a number called score with 80")
+    r = s.run_line("require flags is above 5 and score is high-risk")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.message == (
+        "Requirement not met: flags is above 5 and score is high-risk. "
+        "flags is 2."
+    )
+
+
+def test_compound_condition_reports_predicate_application_branch_when_it_fails():
+    # Same compound condition, but this time the left (ConditionNode)
+    # branch passes and the right (PredicateApplicationNode) branch is the
+    # one that failed — the new code path must be the one that reports.
+    s = Session()
+    s.run_line("define high-risk: is above 50")
+    s.run_line("remember a number called flags with 10")
+    s.run_line("remember a number called score with 20")
+    r = s.run_line("require flags is above 5 and score is high-risk")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.message == (
+        "Requirement not met: flags is above 5 and score is high-risk. "
+        "score is 20. high-risk: is above 50."
+    )
+
+
+def test_condition_node_forbid_message_unchanged():
+    # Regression: the ConditionNode branch of _condition_actual_values is
+    # untouched by this fix. Pins the exact pre-existing message so a
+    # future change to that branch is caught here, not just in the new
+    # PredicateApplicationNode branch's tests above.
+    s = Session()
+    s.run_line("remember a number called total with 150")
+    r = s.run_line("forbid total is above 100")
+    assert r.status is ResultStatus.PROHIBITION_VIOLATED
+    assert r.message == "Prohibition violated: total is above 100. total is 150."
+
+
+def test_condition_node_require_message_unchanged():
+    s = Session()
+    s.run_line("remember a number called total with 50")
+    r = s.run_line("require total is above 100")
+    assert r.status is ResultStatus.REQUIREMENT_NOT_MET
+    assert r.message == "Requirement not met: total is above 100. total is 50."
