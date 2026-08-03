@@ -45,6 +45,36 @@ def test_deleting_generated_files_has_no_effect_on_the_interpreter():
 
 
 class TestGenerateRules:
+    def test_simple_condition_surface_names_both_inclusive_operators(self):
+        """C.3's regression guard for the whole build this docstring pass
+        exists because of: the projection generated today must actually
+        surface the language's real inclusive operators, not just claim to
+        have a docstring at all. Mechanical, not a review step."""
+        doc = grammar_gen.generate_rules()
+        simple_condition = next(
+            f for f in doc["forms"] if f["parser_method"] == "_parse_simple_condition"
+        )
+        assert simple_condition["surface"] is not None
+        assert "is not above" in simple_condition["surface"]
+        assert "is not below" in simple_condition["surface"]
+
+    def test_condition_chain_is_fully_documented(self):
+        """C.3: 100% docstring coverage on the condition chain specifically
+        (_parse_or_condition, _parse_and_condition, _parse_simple_condition,
+        _parse_within_tolerance) -- checked independently of the ≥80%
+        overall-coverage test below, since a build could hit 80% overall
+        while still leaving a chain member undocumented."""
+        doc = grammar_gen.generate_rules()
+        by_method = {f["parser_method"]: f for f in doc["forms"]}
+        for method in ("_parse_or_condition", "_parse_and_condition",
+                       "_parse_simple_condition", "_parse_within_tolerance"):
+            assert by_method[method]["surface"] is not None, f"{method} has no docstring"
+
+    def test_docstring_coverage_is_at_least_80_percent(self):
+        doc = grammar_gen.generate_rules()
+        coverage = doc["docstring_count"] / doc["count"]
+        assert coverage >= 0.80, f"docstring coverage is {coverage:.1%}, below the 80% floor"
+
     def test_every_form_has_the_required_fields(self):
         doc = grammar_gen.generate_rules()
         assert doc["count"] == len(doc["forms"]) > 0

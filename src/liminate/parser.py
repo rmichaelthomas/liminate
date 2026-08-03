@@ -1386,6 +1386,20 @@ def _starts_operation(tok: Token | None) -> bool:
 def _parse_operation_sequence(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> ASTNode:
+    """`<operation> [and <operation> | then <operation> ...]` — one or more
+    operations chained on a single line, the top of the per-line grammar.
+
+    A single operation returns unwrapped (the caller sees the bare
+    `_parse_one_operation` result); two or more return a `SequenceNode`
+    carrying both the operations and the connector used between each pair.
+
+    `and` sequences only when the token after it starts a new operation
+    (`_starts_operation`) — otherwise `and` belongs to a condition being
+    parsed elsewhere (e.g. `where x is above 1 and y is below 2`), and this
+    function stops and lets the caller handle it. `then` always sequences;
+    unlike `and` it has no other meaning, so anything after it that isn't
+    the start of an operation is a hard parse error, not a silent stop.
+    """
     first = _parse_one_operation(stream, comp, preds)
     operations: list[ASTNode] = [first]
     connectors: list[str] = []
@@ -1627,6 +1641,17 @@ def _try_consume_inherited_from(stream: TokenStream) -> str | None:
 def _parse_one_operation(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> ASTNode:
+    """One full statement: optional `starting`/`until` dates, optional
+    `inherited`, the operation itself (delegated to
+    `_parse_one_operation_inner`), an optional trailing `because "<reason>"`,
+    and — only when `inherited` was present — a trailing `from <agent>`.
+
+    This is the chokepoint that attaches rationale to whatever statement
+    node was just parsed, in every calling context (top-level, `and`/`then`
+    sequences, `choose` branches, `each` bodies), without each verb parser
+    handling `because` itself. `starting`/`until` dates are inert metadata,
+    never read by execution — only rendered back out in canonical order.
+    """
     # Statement-initial `starting`/`until` temporal modifiers
     # (Temporal-Boundary Era, DT-Q4). Consumed before `inherited` so the
     # canonical order is `starting ... until ... inherited <verb> ...`.
@@ -1678,6 +1703,17 @@ def _parse_one_operation(
 def _parse_one_operation_inner(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> ASTNode:
+    """Dispatch on the next token's type to the right operation parser:
+    a VERB token routes to `_parse_verb_statement`; an UNKNOWN token that
+    names a known composition (`comp`) becomes a `CompositionCallNode`
+    (with an optional `from <name>` parameter); a DECLARATION token routes
+    to `_parse_define` when it's `define`, and is otherwise a parse error
+    (declarations besides `define` are first-line-only and handled before
+    the normal pipeline reaches here). `when`, `unless`, and any other
+    unrecognized token each raise a specific parse error naming why that
+    token can't start an operation here, rather than falling through to a
+    generic message.
+    """
     t = stream.peek()
     if t is None:
         raise _ParseError("I expected an operation here.")
@@ -1742,6 +1778,18 @@ def _parse_one_operation_inner(
 def _parse_verb_statement(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> ASTNode:
+    """Dispatch table over a leading VERB token's value to that verb's own
+    parse function — the second-level fan-out beneath `_parse_verb_statement`
+    for every base-language verb (`remember`, `show`, `filter`, `keep`,
+    `count`, `gather`, `sum`, `each`, `choose`, `add`, `remove`, `weakens`,
+    `require`, `forbid`, `permit`, `assign`, `expect`, `sort`, `compare`,
+    `transform`, `finish`). A verb not in this fixed set falls through to
+    `get_active_pack_verb` — a domain pack may have registered it — and
+    only raises `Unknown verb` if neither the base language nor an active
+    pack recognizes it. `finish` is the one slot-less verb: it parses to a
+    bare `FinishNode` here, with context validity (only inside an action
+    block) deferred to the analyzer.
+    """
     verb = stream.consume()
     if verb.value == "remember":
         return _parse_remember(stream, comp, preds)
@@ -1980,6 +2028,16 @@ def _parse_remember(
 def _parse_composition_definition(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> RememberCompositionNode:
+    """`how to <name> [from <param>]: <body>` — registers a named,
+    reusable operation sequence, optionally taking one parameter.
+
+    `<name>` follows the same reserved-word-excluded, hyphen-allowed rules
+    as every other user-defined name (`_consume_name`). The optional
+    `from <param>` sits between the name and the colon and accepts at most
+    one parameter — anything else there, including a second `from`, is a
+    parse error. The body is a full `_parse_operation_sequence`, so a
+    composition can itself sequence multiple operations with `and`/`then`.
+    """
     stream.consume()  # how
     to = stream.consume()
     if not (to and to.type is TokenType.CONNECTIVE and to.value == "to"):
@@ -2083,6 +2141,23 @@ def _consume_remember_intro(stream: TokenStream) -> tuple[str | None, bool]:
 def _parse_remember_with(
     stream: TokenStream, name: str, descriptor: str | None, saw_list: bool,
 ) -> ASTNode:
+    """The tail of `remember a <descriptor> called <name> with ...` —
+    three shapes decided by lookahead on the tokens after `with`:
+
+        with <field> as <value> [and <field> as <value> ...]  -> record
+        with <value> and <value> [and <value> ...]             -> list
+        with <value>                                           -> scalar
+
+    Record vs. value/list is disambiguated up front: an UNKNOWN token
+    immediately followed by `as` means a record (delegated to
+    `_parse_record_fields`); anything else parses as one or more values
+    via `_parse_value`, becoming a `RememberListNode` if `and` chains more
+    than one value or the caller already saw a `[...]` list literal
+    (`saw_list`), otherwise a plain `RememberValueNode`. As in
+    `_parse_operation_sequence`, `and` stops chaining when the token after
+    it starts a new operation — that `and` belongs to the next statement,
+    not this list.
+    """
     first = stream.peek()
     if first is None:
         raise _ParseError(f"I expected a value after 'with'.")
@@ -2127,6 +2202,14 @@ def _parse_remember_with(
 
 
 def _parse_record_fields(stream: TokenStream) -> list[tuple[str, ASTNode]]:
+    """One or more `<field> as <value>` pairs, `and`-separated — the body
+    of a record literal (`remember a record called r with x as 1 and y as
+    2`). Delegates each pair to `_parse_record_field`; stops chaining on an
+    `and` that starts a new operation, the same rule `_parse_record_fields`'
+    sibling collectors (`_parse_operation_sequence`, `_parse_remember_with`)
+    use for the same reason: a trailing `and require ...` belongs to the
+    next statement, not this field list.
+    """
     fields: list[tuple[str, ASTNode]] = []
     fields.append(_parse_record_field(stream))
     while True:
@@ -2142,6 +2225,12 @@ def _parse_record_fields(stream: TokenStream) -> list[tuple[str, ASTNode]]:
 
 
 def _parse_record_field(stream: TokenStream) -> tuple[str, ASTNode]:
+    """`<field> as <value>` — one field of a record literal. `<field>` must
+    be an unquoted, non-reserved name (a quoted field name is a specific
+    parse error pointing at the hyphenated form instead, since field names
+    can't contain spaces); the value after `as` is a full `_parse_value`
+    expression, so a field may hold arithmetic, not just a bare literal.
+    """
     field_tok = stream.consume()
     if field_tok is None:
         raise _ParseError("I expected a field name.")
@@ -2239,6 +2328,26 @@ def _name_ref_for_from(node: ASTNode) -> ASTNode:
 
 
 def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
+    """`show [<target>]` — the display verb, with the widest fan-out of
+    target shapes of any verb parser:
+
+        show                          -> current iterator item (target=None)
+        show highest/lowest ...       -> delegates to _parse_extrema
+        show "<text>"                 -> literal display (QuotedString)
+        show <field>                  -> a remembered name
+        show <field> of <record>      -> single field access
+        show <field> and <field> ...  -> multi-field (only inside `each`)
+        show each                     -> current item, `each`-as-pronoun form
+
+    `in_each` gates two shapes that only make sense inside an `each` body:
+    multi-field display (`and`-chained field names collecting into
+    `extra_fields`, itself stopping the same way `_parse_operation_sequence`
+    does when the next `and` starts a new statement) and the `each` pronoun
+    target. Every quoted-string target position that could plausibly be a
+    field name instead raises the same "field names can't have spaces, try
+    a hyphenated name" error the record and condition parsers raise for the
+    identical mistake.
+    """
     _consume_optional_article(stream)
     peek = stream.peek()
     # An optional target — if missing or followed by a sequencing `and verb`,
@@ -2373,12 +2482,20 @@ def _parse_show(stream: TokenStream, *, in_each: bool = False) -> ShowNode:
 
 
 def _parse_count(stream: TokenStream) -> CountNode:
+    """`count [a/an/the] <target>` — the number of items in a list.
+    `_consume_optional_article` eats a leading `a`/`an`/`the` if present
+    (purely cosmetic, e.g. `count the orders`); the target name itself is
+    resolved by `_consume_target`, shared with `sum`/`sort`/`compare`/etc.
+    """
     _consume_optional_article(stream)
     target = _consume_target(stream, verb="count")
     return CountNode(target=target)
 
 
 def _parse_sum(stream: TokenStream) -> SumNode:
+    """`sum [a/an/the] <target>` — the arithmetic total of a numeric list.
+    Same optional-article and target-resolution shape as `_parse_count`.
+    """
     _consume_optional_article(stream)
     target = _consume_target(stream, verb="sum")
     return SumNode(target=target)
@@ -2891,6 +3008,13 @@ def _parse_transform(stream: TokenStream) -> TransformNode:
 
 
 def _parse_gather(stream: TokenStream) -> GatherNode:
+    """`gather [a/an/the] <name> from <number> to <number> [by <number>]` —
+    generates a numeric list bound to `<name>`. `from`/`to` bounds are
+    required NUMBER tokens; the optional `by <number>` step must be
+    strictly positive — direction comes from whether `from` or `to` is
+    larger, not from the step's sign, so a non-positive step is rejected
+    with an error naming that constraint rather than silently reversing.
+    """
     _consume_optional_article(stream)
     name_tok = stream.consume()
     if name_tok is None:
@@ -2950,6 +3074,14 @@ def _parse_gather(stream: TokenStream) -> GatherNode:
 def _parse_each(
     stream: TokenStream, comp: set[str], preds: set[str],
 ) -> EachNode:
+    """`each [a/an/the] <collection> <action>` — iterates `<collection>`,
+    running `<action>` (one full operation, via `_parse_one_operation`) per
+    item. Pushes the `"each"` clause context around the action parse so
+    downstream parsers can detect they're inside an `each` body —
+    `_parse_show`'s multi-field and `each`-pronoun target forms, and
+    `_parse_simple_condition`'s implicit-subject elision, both key off this
+    flag rather than a separate parameter threaded through every call.
+    """
     _consume_optional_article(stream)
     coll_tok = stream.consume()
     if coll_tok is None:
@@ -3053,6 +3185,11 @@ def _parse_choose_branch(
 
 
 def _parse_filter(stream: TokenStream, preds: set[str]) -> FilterNode:
+    """`filter [a/an/the] <target> where <condition>` — delegates entirely
+    to `_parse_filter_shape`, the shape `filter` and `keep` share
+    structurally at parse time (v2a §67); the two verbs differ only in
+    the interpreter, not in what's parsed here.
+    """
     target, condition = _parse_filter_shape(stream, preds, verb="filter")
     return FilterNode(target=target, condition=condition)
 
@@ -3085,6 +3222,20 @@ def _parse_filter_shape(
 
 
 def _parse_or_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
+    """`<condition> or <condition> [or <condition> ...]` — the loosest level
+    of the condition grammar; the entry point every `where`/`keep`/`filter`/
+    `require`/`require each`/`forbid`/`permit`/`expect`/`choose if`/`when`/
+    `unless`/`define` body condition parses through.
+
+    Left-associative: builds a left-leaning chain of `CompoundConditionNode`s
+    with `connector="or"` over one or more `_parse_and_condition` operands,
+    so `and` (parsed one level down) always binds tighter than `or` — an
+    `or` clause never straddles an `and` boundary. Stops before a following
+    `or` when the token after it is a VERB, since that shape is operation
+    sequencing (`... or require ...`), not a further condition operand.
+    Mixing `and` and `or` within one clause is legal to parse but resolved
+    by the amber confirmation flow at the caller (v1a §30), not decided here.
+    """
     left = _parse_and_condition(stream, preds)
     while True:
         peek = stream.peek()
@@ -3100,6 +3251,17 @@ def _parse_or_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
 
 
 def _parse_and_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
+    """`<condition> and <condition> [and <condition> ...]` — the middle level
+    of the condition grammar, called only from `_parse_or_condition`.
+
+    Left-associative, the same shape as `_parse_or_condition` one level up:
+    builds a left-leaning chain of `CompoundConditionNode`s with
+    `connector="and"` over one or more `_parse_simple_condition` operands —
+    the leaves. Binds tighter than `or` purely by virtue of being the level
+    `_parse_or_condition` delegates to before looking for its own connective.
+    Stops before a following `and` when the token after it is a VERB, the
+    same operation-sequencing guard `_parse_or_condition` applies for `or`.
+    """
     left = _parse_simple_condition(stream, preds)
     while True:
         peek = stream.peek()
@@ -3115,6 +3277,49 @@ def _parse_and_condition(stream: TokenStream, preds: set[str]) -> ASTNode:
 
 
 def _parse_simple_condition(stream: TokenStream, preds: set[str]) -> ConditionNode:
+    """`<subject> is <comparison>` — the leaf of the condition grammar.
+
+    Shared by `where`, `keep`, `filter`, `require`, `require each`, `forbid`,
+    `permit`, `expect`, `choose if`, `when`, `unless`, and `define` bodies.
+    The subject may be a field name, `each` (the iterator pronoun), or a
+    `<field> of <record>` access. Inside a `define` body or `require each`,
+    the subject may be elided and binds to the implicit `each` pronoun.
+
+    Comparison forms, with boundary behavior stated because it is the thing
+    most often gotten wrong:
+
+        is <value>              equality (bare `is`, no following operator)
+        is equal to <value>     equality, explicit
+        is not equal to <value> inequality
+        is above <n>            STRICT >  — FALSE at exactly <n>
+        is below <n>            STRICT <  — FALSE at exactly <n>
+        is not above <n>        INCLUSIVE <= — TRUE at exactly <n>
+        is not below <n>        INCLUSIVE >= — TRUE at exactly <n>
+        is within <n> of <m>    |subject - <m>| <= <n>; the bound is inclusive
+        <list> includes <v>     membership
+        <list> not includes <v> non-membership
+        is <predicate>          applies a `define`d predicate
+        is not <predicate>      applies its negation
+
+    There is no `is above or equal to`. `is not above` IS that operator, and
+    `is not below` is its mirror. An inclusive threshold must be written with
+    the inclusive operator and the source's own number — never by shifting the
+    number by one. `is above <n-1>` is equivalent to `is not below <n>` only
+    when the field is integer-valued, and the parser cannot know that it is.
+
+    Ordered comparisons require both operands to be the same ordered type;
+    numbers and dates each compare within their own type and never across.
+    `is within` measures whole days when the subject is a date.
+
+    A `define`d predicate is never a standalone condition: it is always applied
+    as `<subject> is <name>` or `<subject> is not <name>`, including after
+    `unless`. A bare predicate name where a condition is expected is a parse
+    error.
+
+    Compound conditions are assembled by the callers `_parse_or_condition` and
+    `_parse_and_condition`; `and` binds tighter than `or`, and mixing them in
+    one clause raises the amber confirmation prompt rather than guessing.
+    """
     # Field reference or `each` pronoun (v1b §37).
     head = stream.peek()
     if head is None:
@@ -3361,6 +3566,12 @@ def _parse_value(stream: TokenStream) -> ASTNode:
 
 
 def _parse_additive(stream: TokenStream) -> ASTNode:
+    """Tier 1 (loosest) arithmetic: `plus`/`minus`, left-associative over
+    one or more `_parse_multiplicative` operands. Called only from
+    `_parse_value`; see that function's docstring for the full precedence
+    table. `_ADDITIVE_OPS` is the operator-token value set this level
+    matches on.
+    """
     left = _parse_multiplicative(stream)
     while True:
         peek = stream.peek()
@@ -3377,6 +3588,12 @@ def _parse_additive(stream: TokenStream) -> ASTNode:
 
 
 def _parse_multiplicative(stream: TokenStream) -> ASTNode:
+    """Tier 2 (tightest) arithmetic: `multiplied by`/`divided by`,
+    left-associative over one or more `_parse_atom` operands — binds
+    tighter than `_parse_additive` purely by sitting one level below it in
+    this same recursive-descent chain. `_MULTIPLICATIVE_OPS` is the
+    operator-token value set this level matches on.
+    """
     left = _parse_atom(stream)
     while True:
         peek = stream.peek()
@@ -3541,6 +3758,13 @@ def _maybe_field_access(stream: TokenStream, first_unknown: str) -> ASTNode:
 
 
 def _parse_number(s: str) -> int | float:
+    """Convert a NUMBER token's raw text to a Python `int` or `float` — a
+    decimal point in the source text is the sole signal for `float`; any
+    other numeric text (including scientific-notation forms without a
+    literal `.`) becomes `int`. Not itself a grammar production — it
+    takes a plain string, not a `TokenStream`, and every caller has
+    already matched a NUMBER token before reaching here.
+    """
     return float(s) if "." in s else int(s)
 
 

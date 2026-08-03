@@ -347,18 +347,20 @@ def _is_parse_function_name(name):
 
 
 def _parse_function_docstring_surface(node):
-    """The function's own first paragraph (up to the first blank line),
-    joined onto one line. None (never invented) when there is no
-    docstring at all -- e.g. _parse_simple_condition at the time this
-    generator was written (parser.py:3117 in the 0.18.1 line), the exact
-    function Build C exists to fix."""
+    """The function's own full docstring, stripped, exactly as written --
+    never truncated to a first paragraph or summary line. A function's
+    docstring here (e.g. _parse_simple_condition's) states its one-line
+    summary in the first paragraph but states the actual comparison
+    operators and their boundary behavior several paragraphs further down;
+    truncating to "the first paragraph" the way an early version of this
+    generator did would have silently dropped exactly the content an
+    agent reading this file needs. None (never invented) when there is no
+    docstring at all."""
     doc = ast.get_docstring(node)
     if not doc:
         return None
     doc = doc.strip()
-    paragraph = doc.split("\n\n", 1)[0]
-    joined = " ".join(line.strip() for line in paragraph.split("\n")).strip()
-    return joined or None
+    return doc or None
 
 
 def _calls_within(node, known_names):
