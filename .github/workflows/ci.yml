@@ -22,6 +22,18 @@ jobs:
       - name: Run tests
         run: pytest tests/ -v
 
+  grammar-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Check grammar/ projections are up to date
+        run: python3 grammar_gen.py --check
+
   pack-sync:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,765 @@
+{
+  "format": 1,
+  "generated_by": "grammar_gen.py",
+  "note": "A form inventory, not a formal grammar -- deriving a true BNF from recursive-descent code is not mechanical. One entry per function in src/liminate/parser.py whose bare name (stripping at most one leading underscore) is 'parse' or starts with 'parse_' -- see _is_parse_function_name in this generator for the exact rule and why _parse_number is included despite taking a plain string, not a token stream.",
+  "count": 48,
+  "docstring_count": 28,
+  "precedence_note": "The binding order of one chain of forms, loosest first, derived by walking `calls` from the named start and following the single-successor edge at each step -- the one structure an agent needs that an unordered call graph does not carry. It is not a grammar: it says which level binds tighter than which, and nothing about what either level accepts. The walk stops where a form's successors stop being exactly one, so the last level named is the tightest one on a linear chain, not necessarily the last form the parser has. If a chain ever branches this entire ladder is ABSENT rather than wrong, with the reason stated -- a guessed ladder would be the hand-written grammar ruling D2 declined, reached by a different route. Liminate has two independent chains (conditions, values); they are two separate entries below, never merged into one ladder.",
+  "precedence": [
+    {
+      "name": "conditions",
+      "derived_from": "calls",
+      "start": "_parse_or_condition",
+      "loosest_first": [
+        "parse_or_condition",
+        "parse_and_condition",
+        "parse_simple_condition"
+      ],
+      "emitted": true
+    },
+    {
+      "name": "values",
+      "derived_from": "calls",
+      "start": "_parse_value",
+      "loosest_first": [
+        "parse_value",
+        "parse_additive",
+        "parse_multiplicative",
+        "parse_atom"
+      ],
+      "emitted": true
+    }
+  ],
+  "forms": [
+    {
+      "form": "parse",
+      "parser_method": "parse",
+      "opens_with": [],
+      "produces": "LiminateResult",
+      "calls": [
+        "_contains_mixed_precedence",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:1071",
+      "surface": "Parse a canonically-ordered token list into an AST."
+    },
+    {
+      "form": "parse_about",
+      "parser_method": "parse_about",
+      "opens_with": [
+        "QUOTED_STRING",
+        "DECLARATION"
+      ],
+      "produces": "AboutNode",
+      "calls": [],
+      "source": "parser.py:1132",
+      "surface": "Parse an `about` declaration from the first non-blank, non-comment line of a program."
+    },
+    {
+      "form": "parse_when_block",
+      "parser_method": "parse_when_block",
+      "opens_with": [
+        "OPERATOR",
+        "CONNECTIVE",
+        "DELIMITER"
+      ],
+      "produces": "LiminateResult",
+      "calls": [
+        "_contains_mixed_precedence",
+        "_parse_or_condition",
+        "parse",
+        "_try_consume_inherited_from"
+      ],
+      "source": "parser.py:1181",
+      "surface": "Parse a `when <cond> [unless <guard>] [:]` header plus its indented action block (v3a \u00a7108/\u00a7109/\u00a7110)."
+    },
+    {
+      "form": "parse_operation_sequence",
+      "parser_method": "_parse_operation_sequence",
+      "opens_with": [],
+      "produces": "SequenceNode",
+      "calls": [
+        "_parse_one_operation",
+        "_starts_operation"
+      ],
+      "source": "parser.py:1386",
+      "surface": null
+    },
+    {
+      "form": "parse_one_operation",
+      "parser_method": "_parse_one_operation",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_try_consume_starting_until",
+        "_parse_one_operation_inner",
+        "_try_consume_because",
+        "_try_consume_inherited_from"
+      ],
+      "source": "parser.py:1627",
+      "surface": null
+    },
+    {
+      "form": "parse_one_operation_inner",
+      "parser_method": "_parse_one_operation_inner",
+      "opens_with": [
+        "VERB",
+        "UNKNOWN",
+        "DECLARATION",
+        "CONNECTIVE"
+      ],
+      "produces": "CompositionCallNode",
+      "calls": [
+        "_parse_verb_statement",
+        "_parse_define",
+        "_consume_parameter_arg"
+      ],
+      "source": "parser.py:1678",
+      "surface": null
+    },
+    {
+      "form": "parse_verb_statement",
+      "parser_method": "_parse_verb_statement",
+      "opens_with": [],
+      "produces": "FinishNode",
+      "calls": [
+        "_parse_remember",
+        "_parse_show",
+        "_parse_filter",
+        "_parse_keep",
+        "_parse_count",
+        "_parse_gather",
+        "_parse_sum",
+        "_parse_each",
+        "_parse_choose",
+        "_parse_add",
+        "_parse_remove",
+        "_parse_weakens",
+        "_parse_require",
+        "_parse_forbid",
+        "_parse_permit",
+        "_parse_assign",
+        "_parse_expect",
+        "_parse_sort",
+        "_parse_compare",
+        "_parse_transform",
+        "_parse_pack_verb"
+      ],
+      "source": "parser.py:1742",
+      "surface": null
+    },
+    {
+      "form": "parse_pack_verb",
+      "parser_method": "_parse_pack_verb",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "PackVerbNode",
+      "calls": [
+        "_parse_pack_slot_value",
+        "_pack_verb_missing_slot_error"
+      ],
+      "source": "parser.py:1813",
+      "surface": "Fill the pack verb's slots in source order."
+    },
+    {
+      "form": "parse_pack_slot_value",
+      "parser_method": "_parse_pack_slot_value",
+      "opens_with": [
+        "QUOTED_STRING",
+        "VERB"
+      ],
+      "produces": [
+        "NameRef",
+        "EachPronoun"
+      ],
+      "calls": [
+        "_parse_value",
+        "_pack_verb_missing_slot_error",
+        "_hyphenate"
+      ],
+      "source": "parser.py:1857",
+      "surface": "v2 \u2014 consume one slot value per the slot's `value_type`."
+    },
+    {
+      "form": "parse_remember",
+      "parser_method": "_parse_remember",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "RememberListNode",
+      "calls": [
+        "_consume_remember_intro",
+        "_consume_name",
+        "_parse_remember_from",
+        "_parse_composition_definition",
+        "_parse_remember_with"
+      ],
+      "source": "parser.py:1942",
+      "surface": "remember <body>, where <body> is one of: how to <name> : <statement>             (composition definition) <article>? <descriptor>* called <name> with <value-expr> <article>? <descriptor>* called <name> with <list-construct> <article>? <descriptor>* called <name> with <record-fields> <article>? <descriptor>* called <name> from <name> <article>? <descriptor>* called <name> from <verb-phrase>"
+    },
+    {
+      "form": "parse_composition_definition",
+      "parser_method": "_parse_composition_definition",
+      "opens_with": [
+        "CONNECTIVE",
+        "DELIMITER"
+      ],
+      "produces": "RememberCompositionNode",
+      "calls": [
+        "_consume_name",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:1980",
+      "surface": null
+    },
+    {
+      "form": "parse_define",
+      "parser_method": "_parse_define",
+      "opens_with": [
+        "DELIMITER"
+      ],
+      "produces": "DefineNode",
+      "calls": [
+        "_consume_name",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:2013",
+      "surface": "`define <name>: <condition>` \u2014 registers a named, reusable predicate."
+    },
+    {
+      "form": "parse_remember_with",
+      "parser_method": "_parse_remember_with",
+      "opens_with": [
+        "UNKNOWN",
+        "CONNECTIVE",
+        "VERB"
+      ],
+      "produces": [
+        "RememberValueNode",
+        "RememberRecordNode",
+        "RememberListNode"
+      ],
+      "calls": [
+        "_parse_value",
+        "_parse_record_fields"
+      ],
+      "source": "parser.py:2083",
+      "surface": null
+    },
+    {
+      "form": "parse_record_fields",
+      "parser_method": "_parse_record_fields",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_record_field"
+      ],
+      "source": "parser.py:2129",
+      "surface": null
+    },
+    {
+      "form": "parse_record_field",
+      "parser_method": "_parse_record_field",
+      "opens_with": [
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_value",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2144",
+      "surface": null
+    },
+    {
+      "form": "parse_remember_from",
+      "parser_method": "_parse_remember_from",
+      "opens_with": [
+        "VERB",
+        "UNKNOWN",
+        "CONNECTIVE"
+      ],
+      "produces": "RememberValueNode",
+      "calls": [
+        "_parse_value",
+        "_name_ref_for_from",
+        "_parse_verb_statement",
+        "_consume_parameter_arg"
+      ],
+      "source": "parser.py:2176",
+      "surface": "`from` in `remember` (v1b \u00a743): next token is VERB        -> result capture via recursive descent next token is a known comp -> composition call (with optional param) otherwise                 -> value expression, which may include arithmetic (Infrastructure Era)"
+    },
+    {
+      "form": "parse_show",
+      "parser_method": "_parse_show",
+      "opens_with": [
+        "QUOTED_STRING",
+        "UNKNOWN",
+        "CONNECTIVE",
+        "OPERATOR",
+        "VERB"
+      ],
+      "produces": "ShowNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_extrema",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2241",
+      "surface": null
+    },
+    {
+      "form": "parse_count",
+      "parser_method": "_parse_count",
+      "opens_with": [],
+      "produces": "CountNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2375",
+      "surface": null
+    },
+    {
+      "form": "parse_sum",
+      "parser_method": "_parse_sum",
+      "opens_with": [],
+      "produces": "SumNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2381",
+      "surface": null
+    },
+    {
+      "form": "parse_add",
+      "parser_method": "_parse_add",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "AddNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_value",
+        "_consume_target"
+      ],
+      "source": "parser.py:2392",
+      "surface": "`add [article]? <item-value> to [article]? <list-name>`."
+    },
+    {
+      "form": "parse_remove",
+      "parser_method": "_parse_remove",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "RemoveNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_value",
+        "_consume_target"
+      ],
+      "source": "parser.py:2416",
+      "surface": "`remove [article]? <item-value> from [article]? <list-name>`."
+    },
+    {
+      "form": "parse_weakens",
+      "parser_method": "_parse_weakens",
+      "opens_with": [
+        "CONNECTIVE",
+        "NUMBER"
+      ],
+      "produces": "WeakensNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_number"
+      ],
+      "source": "parser.py:2444",
+      "surface": "`weakens [article]? <subject-name> over <number>`."
+    },
+    {
+      "form": "parse_require",
+      "parser_method": "_parse_require",
+      "opens_with": [
+        "VERB"
+      ],
+      "produces": "RequireNode",
+      "calls": [
+        "_parse_require_each",
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2480",
+      "surface": "`require <condition>` \u2014 enforcement verb."
+    },
+    {
+      "form": "parse_require_each",
+      "parser_method": "_parse_require_each",
+      "opens_with": [
+        "UNKNOWN"
+      ],
+      "produces": "RequireEachNode",
+      "calls": [
+        "_consume_name",
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:2515",
+      "surface": "Parse `require each {name} in {list} {condition}` (v8a \u00a749)."
+    },
+    {
+      "form": "parse_forbid",
+      "parser_method": "_parse_forbid",
+      "opens_with": [],
+      "produces": "ForbidNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2576",
+      "surface": "`forbid <condition>` \u2014 prohibition verb."
+    },
+    {
+      "form": "parse_permit",
+      "parser_method": "_parse_permit",
+      "opens_with": [],
+      "produces": "PermitNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2602",
+      "surface": "`permit <condition>` \u2014 explicit permission verb."
+    },
+    {
+      "form": "parse_assign",
+      "parser_method": "_parse_assign",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "AssignNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_value"
+      ],
+      "source": "parser.py:2628",
+      "surface": "`assign [article]? <item-name> to <recipient-value>`."
+    },
+    {
+      "form": "parse_expect",
+      "parser_method": "_parse_expect",
+      "opens_with": [],
+      "produces": "ExpectNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2660",
+      "surface": "`expect <condition>` \u2014 tracked anticipation verb."
+    },
+    {
+      "form": "parse_sort",
+      "parser_method": "_parse_sort",
+      "opens_with": [
+        "QUOTED_STRING",
+        "UNKNOWN",
+        "CONNECTIVE",
+        "OPERATOR"
+      ],
+      "produces": "SortNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2686",
+      "surface": "`sort [article]? <target> by <field> [in]? [reverse]?`."
+    },
+    {
+      "form": "parse_compare",
+      "parser_method": "_parse_compare",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "CompareNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2768",
+      "surface": "`compare [article]? <left> to [article]? <right>`."
+    },
+    {
+      "form": "parse_transform",
+      "parser_method": "_parse_transform",
+      "opens_with": [
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": "TransformNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_value",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2800",
+      "surface": "`transform <field> of <target> by <expression>`  (record-field mode) or `transform <target> by <expression>`             (scalar-list mode)."
+    },
+    {
+      "form": "parse_gather",
+      "parser_method": "_parse_gather",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "GatherNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_number"
+      ],
+      "source": "parser.py:2893",
+      "surface": null
+    },
+    {
+      "form": "parse_each",
+      "parser_method": "_parse_each",
+      "opens_with": [],
+      "produces": "EachNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_one_operation"
+      ],
+      "source": "parser.py:2950",
+      "surface": null
+    },
+    {
+      "form": "parse_choose",
+      "parser_method": "_parse_choose",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "ChooseNode",
+      "calls": [
+        "_parse_choose_branch",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:2986",
+      "surface": "Parse `choose if <cond>: <action> [otherwise [if <cond>:] <action>]*`."
+    },
+    {
+      "form": "parse_choose_branch",
+      "parser_method": "_parse_choose_branch",
+      "opens_with": [
+        "DELIMITER"
+      ],
+      "produces": "ChooseBranch",
+      "calls": [
+        "_parse_operation_sequence",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:3029",
+      "surface": "Parse `<condition>: <action>` for a single `choose` branch. The `leader` argument feeds the error message so the user sees whether they were inside the initial `choose if` or a chained `otherwise if`."
+    },
+    {
+      "form": "parse_filter",
+      "parser_method": "_parse_filter",
+      "opens_with": [],
+      "produces": "FilterNode",
+      "calls": [
+        "_parse_filter_shape"
+      ],
+      "source": "parser.py:3055",
+      "surface": null
+    },
+    {
+      "form": "parse_keep",
+      "parser_method": "_parse_keep",
+      "opens_with": [],
+      "produces": "KeepNode",
+      "calls": [
+        "_parse_filter_shape"
+      ],
+      "source": "parser.py:3060",
+      "surface": "v2a \u00a767. Shares the target + where + condition shape with filter."
+    },
+    {
+      "form": "parse_filter_shape",
+      "parser_method": "_parse_filter_shape",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:3066",
+      "surface": "Shared parser for the filter/keep shape: optional article + target + 'where' + condition. v2a \u00a767 keeps the two verbs structurally identical at parse time; the difference lives in the interpreter."
+    },
+    {
+      "form": "parse_or_condition",
+      "parser_method": "_parse_or_condition",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_and_condition"
+      ],
+      "source": "parser.py:3087",
+      "surface": null
+    },
+    {
+      "form": "parse_and_condition",
+      "parser_method": "_parse_and_condition",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_simple_condition"
+      ],
+      "source": "parser.py:3102",
+      "surface": null
+    },
+    {
+      "form": "parse_simple_condition",
+      "parser_method": "_parse_simple_condition",
+      "opens_with": [
+        "OPERATOR",
+        "VERB",
+        "UNKNOWN",
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_finish_simple_condition",
+        "_parse_extrema",
+        "_hyphenate"
+      ],
+      "source": "parser.py:3117",
+      "surface": null
+    },
+    {
+      "form": "parse_within_tolerance",
+      "parser_method": "_parse_within_tolerance",
+      "opens_with": [
+        "NUMBER",
+        "DATE",
+        "UNKNOWN"
+      ],
+      "produces": [
+        "NumberLiteral",
+        "BareWord"
+      ],
+      "calls": [
+        "_parse_number"
+      ],
+      "source": "parser.py:3303",
+      "surface": "Parse the tolerance operand of `is within <amount> of <target>` (issue #19) as a single bare atom \u2014 a number literal or a name."
+    },
+    {
+      "form": "parse_value",
+      "parser_method": "_parse_value",
+      "opens_with": [],
+      "produces": [],
+      "calls": [
+        "_parse_additive"
+      ],
+      "source": "parser.py:3348",
+      "surface": "Parse a value expression, which may include arithmetic."
+    },
+    {
+      "form": "parse_additive",
+      "parser_method": "_parse_additive",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_multiplicative"
+      ],
+      "source": "parser.py:3363",
+      "surface": null
+    },
+    {
+      "form": "parse_multiplicative",
+      "parser_method": "_parse_multiplicative",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_atom"
+      ],
+      "source": "parser.py:3379",
+      "surface": null
+    },
+    {
+      "form": "parse_extrema",
+      "parser_method": "_parse_extrema",
+      "opens_with": [
+        "CONNECTIVE",
+        "UNKNOWN"
+      ],
+      "produces": "ExtremaNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:3395",
+      "surface": "v25 VW-Q1/Q2 \u2014 `highest`/`lowest` list-extrema selector."
+    },
+    {
+      "form": "parse_atom",
+      "parser_method": "_parse_atom",
+      "opens_with": [
+        "NUMBER",
+        "DATE",
+        "UNKNOWN",
+        "QUOTED_STRING",
+        "OPERATOR",
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [
+        "NumberLiteral",
+        "DateLiteral",
+        "QuotedString",
+        "EachPronoun"
+      ],
+      "calls": [
+        "_parse_extrema",
+        "_maybe_field_access",
+        "_parse_number",
+        "_validate_calendar_date",
+        "_hyphenate"
+      ],
+      "source": "parser.py:3441",
+      "surface": "Consume a single value token (NUMBER, UNKNOWN, or QUOTED_STRING), optionally extended by `of <record>` for field access (v2b \u00a777)."
+    },
+    {
+      "form": "parse_number",
+      "parser_method": "_parse_number",
+      "opens_with": [],
+      "produces": [],
+      "calls": [],
+      "source": "parser.py:3543",
+      "surface": null
+    }
+  ]
+}
