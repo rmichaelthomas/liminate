@@ -1,0 +1,765 @@
+{
+  "format": 1,
+  "generated_by": "grammar_gen.py",
+  "note": "A form inventory, not a formal grammar -- deriving a true BNF from recursive-descent code is not mechanical. One entry per function in src/liminate/parser.py whose bare name (stripping at most one leading underscore) is 'parse' or starts with 'parse_' -- see _is_parse_function_name in this generator for the exact rule and why _parse_number is included despite taking a plain string, not a token stream.",
+  "count": 48,
+  "docstring_count": 48,
+  "precedence_note": "The binding order of one chain of forms, loosest first, derived by walking `calls` from the named start and following the single-successor edge at each step -- the one structure an agent needs that an unordered call graph does not carry. It is not a grammar: it says which level binds tighter than which, and nothing about what either level accepts. The walk stops where a form's successors stop being exactly one, so the last level named is the tightest one on a linear chain, not necessarily the last form the parser has. If a chain ever branches this entire ladder is ABSENT rather than wrong, with the reason stated -- a guessed ladder would be the hand-written grammar ruling D2 declined, reached by a different route. Liminate has two independent chains (conditions, values); they are two separate entries below, never merged into one ladder.",
+  "precedence": [
+    {
+      "name": "conditions",
+      "derived_from": "calls",
+      "start": "_parse_or_condition",
+      "loosest_first": [
+        "parse_or_condition",
+        "parse_and_condition",
+        "parse_simple_condition"
+      ],
+      "emitted": true
+    },
+    {
+      "name": "values",
+      "derived_from": "calls",
+      "start": "_parse_value",
+      "loosest_first": [
+        "parse_value",
+        "parse_additive",
+        "parse_multiplicative",
+        "parse_atom"
+      ],
+      "emitted": true
+    }
+  ],
+  "forms": [
+    {
+      "form": "parse",
+      "parser_method": "parse",
+      "opens_with": [],
+      "produces": "LiminateResult",
+      "calls": [
+        "_contains_mixed_precedence",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:1071",
+      "surface": "Parse a canonically-ordered token list into an AST.\n\nReturns:\n    - ASTNode on success.\n    - LiminateResult with status AMBER_PRECEDENCE if a `where` clause\n      uses both `and` and `or` (v1a \u00a730). The pending AST is attached\n      so the caller can resume after confirmation.\n    - LiminateResult with status ERROR_PARSE on any other parse failure."
+    },
+    {
+      "form": "parse_about",
+      "parser_method": "parse_about",
+      "opens_with": [
+        "QUOTED_STRING",
+        "DECLARATION"
+      ],
+      "produces": "AboutNode",
+      "calls": [],
+      "source": "parser.py:1132",
+      "surface": "Parse an `about` declaration from the first non-blank, non-comment\nline of a program.\n\nReturns AboutNode if the line is an `about` declaration, None if it\nis not (the line should then be fed to the normal parse pipeline).\nRaises _ParseError (surfaced as ERROR_PARSE by the caller) if the\nline starts with `about` but has malformed content.\n\nDesign: single, first-line-only (MS-Q1). The CLI calls this on the\nfirst eligible line; if it returns an AboutNode, the line is consumed\nand not passed to the normal pipeline. If it returns None, the line\nis a normal statement."
+    },
+    {
+      "form": "parse_when_block",
+      "parser_method": "parse_when_block",
+      "opens_with": [
+        "OPERATOR",
+        "CONNECTIVE",
+        "DELIMITER"
+      ],
+      "produces": "LiminateResult",
+      "calls": [
+        "_contains_mixed_precedence",
+        "_parse_or_condition",
+        "parse",
+        "_try_consume_inherited_from"
+      ],
+      "source": "parser.py:1181",
+      "surface": "Parse a `when <cond> [unless <guard>] [:]` header plus its\nindented action block (v3a \u00a7108/\u00a7109/\u00a7110).\n\n`header_tokens` is the reordered token sequence for the `when` line\n(must begin with the `when` connective). `action_token_lists` is one\nreordered token list per indented action line; blank lines have been\nelided by the caller (v1c \u00a748 / v3a \u00a7110). Indentation has already\nbeen validated at the CLI boundary \u2014 `parse_when_block` itself does\nnot see leading whitespace.\n\nReturns:\n    - WhenNode on success.\n    - LiminateResult AMBER_PRECEDENCE if any condition or action\n      sub-statement contains mixed `and`/`or` (v3a \u00a7123).\n    - LiminateResult ERROR_PARSE on grammar errors."
+    },
+    {
+      "form": "parse_operation_sequence",
+      "parser_method": "_parse_operation_sequence",
+      "opens_with": [],
+      "produces": "SequenceNode",
+      "calls": [
+        "_parse_one_operation",
+        "_starts_operation"
+      ],
+      "source": "parser.py:1386",
+      "surface": "`<operation> [and <operation> | then <operation> ...]` \u2014 one or more\noperations chained on a single line, the top of the per-line grammar.\n\nA single operation returns unwrapped (the caller sees the bare\n`_parse_one_operation` result); two or more return a `SequenceNode`\ncarrying both the operations and the connector used between each pair.\n\n`and` sequences only when the token after it starts a new operation\n(`_starts_operation`) \u2014 otherwise `and` belongs to a condition being\nparsed elsewhere (e.g. `where x is above 1 and y is below 2`), and this\nfunction stops and lets the caller handle it. `then` always sequences;\nunlike `and` it has no other meaning, so anything after it that isn't\nthe start of an operation is a hard parse error, not a silent stop."
+    },
+    {
+      "form": "parse_one_operation",
+      "parser_method": "_parse_one_operation",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_try_consume_starting_until",
+        "_parse_one_operation_inner",
+        "_try_consume_because",
+        "_try_consume_inherited_from"
+      ],
+      "source": "parser.py:1641",
+      "surface": "One full statement: optional `starting`/`until` dates, optional\n`inherited`, the operation itself (delegated to\n`_parse_one_operation_inner`), an optional trailing `because \"<reason>\"`,\nand \u2014 only when `inherited` was present \u2014 a trailing `from <agent>`.\n\nThis is the chokepoint that attaches rationale to whatever statement\nnode was just parsed, in every calling context (top-level, `and`/`then`\nsequences, `choose` branches, `each` bodies), without each verb parser\nhandling `because` itself. `starting`/`until` dates are inert metadata,\nnever read by execution \u2014 only rendered back out in canonical order."
+    },
+    {
+      "form": "parse_one_operation_inner",
+      "parser_method": "_parse_one_operation_inner",
+      "opens_with": [
+        "VERB",
+        "UNKNOWN",
+        "DECLARATION",
+        "CONNECTIVE"
+      ],
+      "produces": "CompositionCallNode",
+      "calls": [
+        "_parse_verb_statement",
+        "_parse_define",
+        "_consume_parameter_arg"
+      ],
+      "source": "parser.py:1703",
+      "surface": "Dispatch on the next token's type to the right operation parser:\na VERB token routes to `_parse_verb_statement`; an UNKNOWN token that\nnames a known composition (`comp`) becomes a `CompositionCallNode`\n(with an optional `from <name>` parameter); a DECLARATION token routes\nto `_parse_define` when it's `define`, and is otherwise a parse error\n(declarations besides `define` are first-line-only and handled before\nthe normal pipeline reaches here). `when`, `unless`, and any other\nunrecognized token each raise a specific parse error naming why that\ntoken can't start an operation here, rather than falling through to a\ngeneric message."
+    },
+    {
+      "form": "parse_verb_statement",
+      "parser_method": "_parse_verb_statement",
+      "opens_with": [],
+      "produces": "FinishNode",
+      "calls": [
+        "_parse_remember",
+        "_parse_show",
+        "_parse_filter",
+        "_parse_keep",
+        "_parse_count",
+        "_parse_gather",
+        "_parse_sum",
+        "_parse_each",
+        "_parse_choose",
+        "_parse_add",
+        "_parse_remove",
+        "_parse_weakens",
+        "_parse_require",
+        "_parse_forbid",
+        "_parse_permit",
+        "_parse_assign",
+        "_parse_expect",
+        "_parse_sort",
+        "_parse_compare",
+        "_parse_transform",
+        "_parse_pack_verb"
+      ],
+      "source": "parser.py:1778",
+      "surface": "Dispatch table over a leading VERB token's value to that verb's own\nparse function \u2014 the second-level fan-out beneath `_parse_verb_statement`\nfor every base-language verb (`remember`, `show`, `filter`, `keep`,\n`count`, `gather`, `sum`, `each`, `choose`, `add`, `remove`, `weakens`,\n`require`, `forbid`, `permit`, `assign`, `expect`, `sort`, `compare`,\n`transform`, `finish`). A verb not in this fixed set falls through to\n`get_active_pack_verb` \u2014 a domain pack may have registered it \u2014 and\nonly raises `Unknown verb` if neither the base language nor an active\npack recognizes it. `finish` is the one slot-less verb: it parses to a\nbare `FinishNode` here, with context validity (only inside an action\nblock) deferred to the analyzer."
+    },
+    {
+      "form": "parse_pack_verb",
+      "parser_method": "_parse_pack_verb",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "PackVerbNode",
+      "calls": [
+        "_parse_pack_slot_value",
+        "_pack_verb_missing_slot_error"
+      ],
+      "source": "parser.py:1861",
+      "surface": "Fill the pack verb's slots in source order.\n\nv2 (pack verb contract extension):\n- Positional slots (`connective is None`) consume the next value\n  token directly. `value_type` determines what's accepted.\n- Connective-introduced slots peek for the connective; if found,\n  consume it then the value per `value_type`.\n- `value_type == \"value\"` routes through `_parse_value` (NUMBER,\n  UNKNOWN, QUOTED_STRING, FieldAccessNode).\n- `value_type == \"name\"` consumes a single UNKNOWN as NameRef."
+    },
+    {
+      "form": "parse_pack_slot_value",
+      "parser_method": "_parse_pack_slot_value",
+      "opens_with": [
+        "QUOTED_STRING",
+        "VERB"
+      ],
+      "produces": [
+        "NameRef",
+        "EachPronoun"
+      ],
+      "calls": [
+        "_parse_value",
+        "_pack_verb_missing_slot_error",
+        "_hyphenate"
+      ],
+      "source": "parser.py:1905",
+      "surface": "v2 \u2014 consume one slot value per the slot's `value_type`."
+    },
+    {
+      "form": "parse_remember",
+      "parser_method": "_parse_remember",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "RememberListNode",
+      "calls": [
+        "_consume_remember_intro",
+        "_consume_name",
+        "_parse_remember_from",
+        "_parse_composition_definition",
+        "_parse_remember_with"
+      ],
+      "source": "parser.py:1990",
+      "surface": "remember <body>, where <body> is one of:\nhow to <name> : <statement>             (composition definition)\n<article>? <descriptor>* called <name> with <value-expr>\n<article>? <descriptor>* called <name> with <list-construct>\n<article>? <descriptor>* called <name> with <record-fields>\n<article>? <descriptor>* called <name> from <name>\n<article>? <descriptor>* called <name> from <verb-phrase>"
+    },
+    {
+      "form": "parse_composition_definition",
+      "parser_method": "_parse_composition_definition",
+      "opens_with": [
+        "CONNECTIVE",
+        "DELIMITER"
+      ],
+      "produces": "RememberCompositionNode",
+      "calls": [
+        "_consume_name",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:2028",
+      "surface": "`how to <name> [from <param>]: <body>` \u2014 registers a named,\nreusable operation sequence, optionally taking one parameter.\n\n`<name>` follows the same reserved-word-excluded, hyphen-allowed rules\nas every other user-defined name (`_consume_name`). The optional\n`from <param>` sits between the name and the colon and accepts at most\none parameter \u2014 anything else there, including a second `from`, is a\nparse error. The body is a full `_parse_operation_sequence`, so a\ncomposition can itself sequence multiple operations with `and`/`then`."
+    },
+    {
+      "form": "parse_define",
+      "parser_method": "_parse_define",
+      "opens_with": [
+        "DELIMITER"
+      ],
+      "produces": "DefineNode",
+      "calls": [
+        "_consume_name",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:2071",
+      "surface": "`define <name>: <condition>` \u2014 registers a named, reusable predicate.\n\nMirrors `_parse_composition_definition`'s name + ':' handling exactly\n(same name-consumption rules: UNKNOWN token, hyphens allowed, reserved\nwords rejected). The body is a condition (not an operation sequence)\nparsed with the `define-body` clause pushed so a field-elided leaf\n(`define big: is above 100`) binds to an implicit `each` pronoun,\nexactly like `require-each` (v31 \u00a790 \u2014 see the elision guard in\n`_parse_simple_condition`)."
+    },
+    {
+      "form": "parse_remember_with",
+      "parser_method": "_parse_remember_with",
+      "opens_with": [
+        "UNKNOWN",
+        "CONNECTIVE",
+        "VERB"
+      ],
+      "produces": [
+        "RememberValueNode",
+        "RememberRecordNode",
+        "RememberListNode"
+      ],
+      "calls": [
+        "_parse_value",
+        "_parse_record_fields"
+      ],
+      "source": "parser.py:2141",
+      "surface": "The tail of `remember a <descriptor> called <name> with ...` \u2014\nthree shapes decided by lookahead on the tokens after `with`:\n\n    with <field> as <value> [and <field> as <value> ...]  -> record\n    with <value> and <value> [and <value> ...]             -> list\n    with <value>                                           -> scalar\n\nRecord vs. value/list is disambiguated up front: an UNKNOWN token\nimmediately followed by `as` means a record (delegated to\n`_parse_record_fields`); anything else parses as one or more values\nvia `_parse_value`, becoming a `RememberListNode` if `and` chains more\nthan one value or the caller already saw a `[...]` list literal\n(`saw_list`), otherwise a plain `RememberValueNode`. As in\n`_parse_operation_sequence`, `and` stops chaining when the token after\nit starts a new operation \u2014 that `and` belongs to the next statement,\nnot this list."
+    },
+    {
+      "form": "parse_record_fields",
+      "parser_method": "_parse_record_fields",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_record_field"
+      ],
+      "source": "parser.py:2204",
+      "surface": "One or more `<field> as <value>` pairs, `and`-separated \u2014 the body\nof a record literal (`remember a record called r with x as 1 and y as\n2`). Delegates each pair to `_parse_record_field`; stops chaining on an\n`and` that starts a new operation, the same rule `_parse_record_fields`'\nsibling collectors (`_parse_operation_sequence`, `_parse_remember_with`)\nuse for the same reason: a trailing `and require ...` belongs to the\nnext statement, not this field list."
+    },
+    {
+      "form": "parse_record_field",
+      "parser_method": "_parse_record_field",
+      "opens_with": [
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_value",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2227",
+      "surface": "`<field> as <value>` \u2014 one field of a record literal. `<field>` must\nbe an unquoted, non-reserved name (a quoted field name is a specific\nparse error pointing at the hyphenated form instead, since field names\ncan't contain spaces); the value after `as` is a full `_parse_value`\nexpression, so a field may hold arithmetic, not just a bare literal."
+    },
+    {
+      "form": "parse_remember_from",
+      "parser_method": "_parse_remember_from",
+      "opens_with": [
+        "VERB",
+        "UNKNOWN",
+        "CONNECTIVE"
+      ],
+      "produces": "RememberValueNode",
+      "calls": [
+        "_parse_value",
+        "_name_ref_for_from",
+        "_parse_verb_statement",
+        "_consume_parameter_arg"
+      ],
+      "source": "parser.py:2265",
+      "surface": "`from` in `remember` (v1b \u00a743):\nnext token is VERB        -> result capture via recursive descent\nnext token is a known comp -> composition call (with optional param)\notherwise                 -> value expression, which may include\n                             arithmetic (Infrastructure Era)"
+    },
+    {
+      "form": "parse_show",
+      "parser_method": "_parse_show",
+      "opens_with": [
+        "QUOTED_STRING",
+        "UNKNOWN",
+        "CONNECTIVE",
+        "OPERATOR",
+        "VERB"
+      ],
+      "produces": "ShowNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_extrema",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2330",
+      "surface": "`show [<target>]` \u2014 the display verb, with the widest fan-out of\ntarget shapes of any verb parser:\n\n    show                          -> current iterator item (target=None)\n    show highest/lowest ...       -> delegates to _parse_extrema\n    show \"<text>\"                 -> literal display (QuotedString)\n    show <field>                  -> a remembered name\n    show <field> of <record>      -> single field access\n    show <field> and <field> ...  -> multi-field (only inside `each`)\n    show each                     -> current item, `each`-as-pronoun form\n\n`in_each` gates two shapes that only make sense inside an `each` body:\nmulti-field display (`and`-chained field names collecting into\n`extra_fields`, itself stopping the same way `_parse_operation_sequence`\ndoes when the next `and` starts a new statement) and the `each` pronoun\ntarget. Every quoted-string target position that could plausibly be a\nfield name instead raises the same \"field names can't have spaces, try\na hyphenated name\" error the record and condition parsers raise for the\nidentical mistake."
+    },
+    {
+      "form": "parse_count",
+      "parser_method": "_parse_count",
+      "opens_with": [],
+      "produces": "CountNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2484",
+      "surface": "`count [a/an/the] <target>` \u2014 the number of items in a list.\n`_consume_optional_article` eats a leading `a`/`an`/`the` if present\n(purely cosmetic, e.g. `count the orders`); the target name itself is\nresolved by `_consume_target`, shared with `sum`/`sort`/`compare`/etc."
+    },
+    {
+      "form": "parse_sum",
+      "parser_method": "_parse_sum",
+      "opens_with": [],
+      "produces": "SumNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2495",
+      "surface": "`sum [a/an/the] <target>` \u2014 the arithmetic total of a numeric list.\nSame optional-article and target-resolution shape as `_parse_count`."
+    },
+    {
+      "form": "parse_add",
+      "parser_method": "_parse_add",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "AddNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_value",
+        "_consume_target"
+      ],
+      "source": "parser.py:2509",
+      "surface": "`add [article]? <item-value> to [article]? <list-name>`."
+    },
+    {
+      "form": "parse_remove",
+      "parser_method": "_parse_remove",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "RemoveNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_value",
+        "_consume_target"
+      ],
+      "source": "parser.py:2533",
+      "surface": "`remove [article]? <item-value> from [article]? <list-name>`."
+    },
+    {
+      "form": "parse_weakens",
+      "parser_method": "_parse_weakens",
+      "opens_with": [
+        "CONNECTIVE",
+        "NUMBER"
+      ],
+      "produces": "WeakensNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_number"
+      ],
+      "source": "parser.py:2561",
+      "surface": "`weakens [article]? <subject-name> over <number>`."
+    },
+    {
+      "form": "parse_require",
+      "parser_method": "_parse_require",
+      "opens_with": [
+        "VERB"
+      ],
+      "produces": "RequireNode",
+      "calls": [
+        "_parse_require_each",
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2597",
+      "surface": "`require <condition>` \u2014 enforcement verb.\n\nThe condition uses the same parser path as `choose if` /\n`where` \u2014 `_parse_or_condition`, which supports compound\n`and`/`or`, `not`, `includes`, field access via `of`, and the\nfull set of comparison operators. The clause-context stack is\npushed so condition sub-parsers can see they're inside a\n`require` clause if they ever need to.\n\nv8a \u00a749 \u2014 a second parse shape, `require each {name} in {list}\n{condition}`, is selected when the next token is the `each` verb."
+    },
+    {
+      "form": "parse_require_each",
+      "parser_method": "_parse_require_each",
+      "opens_with": [
+        "UNKNOWN"
+      ],
+      "produces": "RequireEachNode",
+      "calls": [
+        "_consume_name",
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:2632",
+      "surface": "Parse `require each {name} in {list} {condition}` (v8a \u00a749).\n\n`each` has been peeked but not consumed. Consume it, then the\nbinding name (UNKNOWN, reserved-word-excluded), the positional `in`\n(UNKNOWN token, not a connective), the collection name, and finally\nthe condition via the unified `_parse_or_condition` path.\n\nThe `require-each` clause is pushed so `_parse_simple_condition`\ntreats a field-elided condition (one that begins with `is` /\n`includes`) as referring to the current element via `EachPronoun`."
+    },
+    {
+      "form": "parse_forbid",
+      "parser_method": "_parse_forbid",
+      "opens_with": [],
+      "produces": "ForbidNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2693",
+      "surface": "`forbid <condition>` \u2014 prohibition verb.\n\nSame condition grammar as `require`. The difference is purely\nin runtime behavior: `require` halts on false, `forbid` halts\non true."
+    },
+    {
+      "form": "parse_permit",
+      "parser_method": "_parse_permit",
+      "opens_with": [],
+      "produces": "PermitNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2719",
+      "surface": "`permit <condition>` \u2014 explicit permission verb.\n\nSame condition grammar as `require`/`forbid`. The difference\nis purely in runtime behavior: `permit` emits on true, never\nhalts."
+    },
+    {
+      "form": "parse_assign",
+      "parser_method": "_parse_assign",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "AssignNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_value"
+      ],
+      "source": "parser.py:2745",
+      "surface": "`assign [article]? <item-name> to <recipient-value>`."
+    },
+    {
+      "form": "parse_expect",
+      "parser_method": "_parse_expect",
+      "opens_with": [],
+      "produces": "ExpectNode",
+      "calls": [
+        "_parse_or_condition",
+        "_try_consume_unless_exception"
+      ],
+      "source": "parser.py:2777",
+      "surface": "`expect <condition>` \u2014 tracked anticipation verb.\n\nSame condition grammar as `require`. The difference is purely\nin runtime behavior: `require` halts on failure, `expect` reports\nand continues."
+    },
+    {
+      "form": "parse_sort",
+      "parser_method": "_parse_sort",
+      "opens_with": [
+        "QUOTED_STRING",
+        "UNKNOWN",
+        "CONNECTIVE",
+        "OPERATOR"
+      ],
+      "produces": "SortNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2803",
+      "surface": "`sort [article]? <target> by <field> [in]? [reverse]?`.\n\nThe optional `in` before `reverse` is NOT a reserved word \u2014 the\nparser consumes it as an UNKNOWN token only when `reverse` follows.\nThis keeps the natural English phrasing (`sort by total in reverse`)\nwhile leaving `in` available as a user variable name elsewhere."
+    },
+    {
+      "form": "parse_compare",
+      "parser_method": "_parse_compare",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "CompareNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:2885",
+      "surface": "`compare [article]? <left> to [article]? <right>`."
+    },
+    {
+      "form": "parse_transform",
+      "parser_method": "_parse_transform",
+      "opens_with": [
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": "TransformNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_value",
+        "_hyphenate"
+      ],
+      "source": "parser.py:2917",
+      "surface": "`transform <field> of <target> by <expression>`  (record-field mode)\nor `transform <target> by <expression>`             (scalar-list mode).\n\nDisambiguation: after consuming the first name, peek for `of`. If\npresent, the first name is the field and the name after `of` is the\ntarget (record-field mode). If absent, the first name is the target\n(scalar-list mode)."
+    },
+    {
+      "form": "parse_gather",
+      "parser_method": "_parse_gather",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "GatherNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_number"
+      ],
+      "source": "parser.py:3010",
+      "surface": "`gather [a/an/the] <name> from <number> to <number> [by <number>]` \u2014\ngenerates a numeric list bound to `<name>`. `from`/`to` bounds are\nrequired NUMBER tokens; the optional `by <number>` step must be\nstrictly positive \u2014 direction comes from whether `from` or `to` is\nlarger, not from the step's sign, so a non-positive step is rejected\nwith an error naming that constraint rather than silently reversing."
+    },
+    {
+      "form": "parse_each",
+      "parser_method": "_parse_each",
+      "opens_with": [],
+      "produces": "EachNode",
+      "calls": [
+        "_consume_optional_article",
+        "_parse_one_operation"
+      ],
+      "source": "parser.py:3074",
+      "surface": "`each [a/an/the] <collection> <action>` \u2014 iterates `<collection>`,\nrunning `<action>` (one full operation, via `_parse_one_operation`) per\nitem. Pushes the `\"each\"` clause context around the action parse so\ndownstream parsers can detect they're inside an `each` body \u2014\n`_parse_show`'s multi-field and `each`-pronoun target forms, and\n`_parse_simple_condition`'s implicit-subject elision, both key off this\nflag rather than a separate parameter threaded through every call."
+    },
+    {
+      "form": "parse_choose",
+      "parser_method": "_parse_choose",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": "ChooseNode",
+      "calls": [
+        "_parse_choose_branch",
+        "_parse_operation_sequence"
+      ],
+      "source": "parser.py:3118",
+      "surface": "Parse `choose if <cond>: <action> [otherwise [if <cond>:] <action>]*`.\n\nThe colon is the context switch between condition mode and action\nmode (\u00a7101). Conditions reuse the where-clause condition path\n(`_parse_or_condition`) so `and`/`or` compose as in `where` \u2014 they\nterminate at `:`. Actions reuse `_parse_operation_sequence` so `and\n<verb>` sequences operations within a branch \u2014 it terminates at\n`otherwise` and at end of input."
+    },
+    {
+      "form": "parse_choose_branch",
+      "parser_method": "_parse_choose_branch",
+      "opens_with": [
+        "DELIMITER"
+      ],
+      "produces": "ChooseBranch",
+      "calls": [
+        "_parse_operation_sequence",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:3161",
+      "surface": "Parse `<condition>: <action>` for a single `choose` branch. The\n`leader` argument feeds the error message so the user sees whether\nthey were inside the initial `choose if` or a chained `otherwise if`."
+    },
+    {
+      "form": "parse_filter",
+      "parser_method": "_parse_filter",
+      "opens_with": [],
+      "produces": "FilterNode",
+      "calls": [
+        "_parse_filter_shape"
+      ],
+      "source": "parser.py:3187",
+      "surface": "`filter [a/an/the] <target> where <condition>` \u2014 delegates entirely\nto `_parse_filter_shape`, the shape `filter` and `keep` share\nstructurally at parse time (v2a \u00a767); the two verbs differ only in\nthe interpreter, not in what's parsed here."
+    },
+    {
+      "form": "parse_keep",
+      "parser_method": "_parse_keep",
+      "opens_with": [],
+      "produces": "KeepNode",
+      "calls": [
+        "_parse_filter_shape"
+      ],
+      "source": "parser.py:3197",
+      "surface": "v2a \u00a767. Shares the target + where + condition shape with filter."
+    },
+    {
+      "form": "parse_filter_shape",
+      "parser_method": "_parse_filter_shape",
+      "opens_with": [
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target",
+        "_parse_or_condition"
+      ],
+      "source": "parser.py:3203",
+      "surface": "Shared parser for the filter/keep shape: optional article + target\n+ 'where' + condition. v2a \u00a767 keeps the two verbs structurally\nidentical at parse time; the difference lives in the interpreter."
+    },
+    {
+      "form": "parse_or_condition",
+      "parser_method": "_parse_or_condition",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_and_condition"
+      ],
+      "source": "parser.py:3224",
+      "surface": "`<condition> or <condition> [or <condition> ...]` \u2014 the loosest level\nof the condition grammar; the entry point every `where`/`keep`/`filter`/\n`require`/`require each`/`forbid`/`permit`/`expect`/`choose if`/`when`/\n`unless`/`define` body condition parses through.\n\nLeft-associative: builds a left-leaning chain of `CompoundConditionNode`s\nwith `connector=\"or\"` over one or more `_parse_and_condition` operands,\nso `and` (parsed one level down) always binds tighter than `or` \u2014 an\n`or` clause never straddles an `and` boundary. Stops before a following\n`or` when the token after it is a VERB, since that shape is operation\nsequencing (`... or require ...`), not a further condition operand.\nMixing `and` and `or` within one clause is legal to parse but resolved\nby the amber confirmation flow at the caller (v1a \u00a730), not decided here."
+    },
+    {
+      "form": "parse_and_condition",
+      "parser_method": "_parse_and_condition",
+      "opens_with": [
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_simple_condition"
+      ],
+      "source": "parser.py:3253",
+      "surface": "`<condition> and <condition> [and <condition> ...]` \u2014 the middle level\nof the condition grammar, called only from `_parse_or_condition`.\n\nLeft-associative, the same shape as `_parse_or_condition` one level up:\nbuilds a left-leaning chain of `CompoundConditionNode`s with\n`connector=\"and\"` over one or more `_parse_simple_condition` operands \u2014\nthe leaves. Binds tighter than `or` purely by virtue of being the level\n`_parse_or_condition` delegates to before looking for its own connective.\nStops before a following `and` when the token after it is a VERB, the\nsame operation-sequencing guard `_parse_or_condition` applies for `or`."
+    },
+    {
+      "form": "parse_simple_condition",
+      "parser_method": "_parse_simple_condition",
+      "opens_with": [
+        "OPERATOR",
+        "VERB",
+        "UNKNOWN",
+        "QUOTED_STRING",
+        "CONNECTIVE"
+      ],
+      "produces": [],
+      "calls": [
+        "_finish_simple_condition",
+        "_parse_extrema",
+        "_hyphenate"
+      ],
+      "source": "parser.py:3279",
+      "surface": "`<subject> is <comparison>` \u2014 the leaf of the condition grammar.\n\nShared by `where`, `keep`, `filter`, `require`, `require each`, `forbid`,\n`permit`, `expect`, `choose if`, `when`, `unless`, and `define` bodies.\nThe subject may be a field name, `each` (the iterator pronoun), or a\n`<field> of <record>` access. Inside a `define` body or `require each`,\nthe subject may be elided and binds to the implicit `each` pronoun.\n\nComparison forms, with boundary behavior stated because it is the thing\nmost often gotten wrong:\n\n    is <value>              equality (bare `is`, no following operator)\n    is equal to <value>     equality, explicit\n    is not equal to <value> inequality\n    is above <n>            STRICT >  \u2014 FALSE at exactly <n>\n    is below <n>            STRICT <  \u2014 FALSE at exactly <n>\n    is not above <n>        INCLUSIVE <= \u2014 TRUE at exactly <n>\n    is not below <n>        INCLUSIVE >= \u2014 TRUE at exactly <n>\n    is within <n> of <m>    |subject - <m>| <= <n>; the bound is inclusive\n    <list> includes <v>     membership\n    <list> not includes <v> non-membership\n    is <predicate>          applies a `define`d predicate\n    is not <predicate>      applies its negation\n\nThere is no `is above or equal to`. `is not above` IS that operator, and\n`is not below` is its mirror. An inclusive threshold must be written with\nthe inclusive operator and the source's own number \u2014 never by shifting the\nnumber by one. `is above <n-1>` is equivalent to `is not below <n>` only\nwhen the field is integer-valued, and the parser cannot know that it is.\n\nOrdered comparisons require both operands to be the same ordered type;\nnumbers and dates each compare within their own type and never across.\n`is within` measures whole days when the subject is a date.\n\nA `define`d predicate is never a standalone condition: it is always applied\nas `<subject> is <name>` or `<subject> is not <name>`, including after\n`unless`. A bare predicate name where a condition is expected is a parse\nerror.\n\nCompound conditions are assembled by the callers `_parse_or_condition` and\n`_parse_and_condition`; `and` binds tighter than `or`, and mixing them in\none clause raises the amber confirmation prompt rather than guessing."
+    },
+    {
+      "form": "parse_within_tolerance",
+      "parser_method": "_parse_within_tolerance",
+      "opens_with": [
+        "NUMBER",
+        "DATE",
+        "UNKNOWN"
+      ],
+      "produces": [
+        "NumberLiteral",
+        "BareWord"
+      ],
+      "calls": [
+        "_parse_number"
+      ],
+      "source": "parser.py:3508",
+      "surface": "Parse the tolerance operand of `is within <amount> of <target>`\n(issue #19) as a single bare atom \u2014 a number literal or a name.\n\nThis deliberately does NOT go through `_parse_value`: that would let\n`_maybe_field_access` swallow the structural `of` (reading the\ntolerance and target as a single `<name> of <record>` field access),\nso `within tol of target` would lose its `of`. A name resolves to its\nnumeric value at evaluation time (a `BareWord`, like any other\nright-hand condition operand)."
+    },
+    {
+      "form": "parse_value",
+      "parser_method": "_parse_value",
+      "opens_with": [],
+      "produces": [],
+      "calls": [
+        "_parse_additive"
+      ],
+      "source": "parser.py:3553",
+      "surface": "Parse a value expression, which may include arithmetic.\n\nPrecedence (Infrastructure Era \u2014 PEMDAS):\n  Tier 1 (lowest):  plus, minus                \u2014 left-associative\n  Tier 2 (highest): multiplied_by, divided_by  \u2014 left-associative\n  Atoms: NUMBER, UNKNOWN (with optional `of`), QUOTED_STRING\n\nEvery call site that previously consumed a single value via\n`_parse_value` now transparently supports arithmetic expressions in\nthat position."
+    },
+    {
+      "form": "parse_additive",
+      "parser_method": "_parse_additive",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_multiplicative"
+      ],
+      "source": "parser.py:3568",
+      "surface": "Tier 1 (loosest) arithmetic: `plus`/`minus`, left-associative over\none or more `_parse_multiplicative` operands. Called only from\n`_parse_value`; see that function's docstring for the full precedence\ntable. `_ADDITIVE_OPS` is the operator-token value set this level\nmatches on."
+    },
+    {
+      "form": "parse_multiplicative",
+      "parser_method": "_parse_multiplicative",
+      "opens_with": [
+        "OPERATOR"
+      ],
+      "produces": [],
+      "calls": [
+        "_parse_atom"
+      ],
+      "source": "parser.py:3590",
+      "surface": "Tier 2 (tightest) arithmetic: `multiplied by`/`divided by`,\nleft-associative over one or more `_parse_atom` operands \u2014 binds\ntighter than `_parse_additive` purely by sitting one level below it in\nthis same recursive-descent chain. `_MULTIPLICATIVE_OPS` is the\noperator-token value set this level matches on."
+    },
+    {
+      "form": "parse_extrema",
+      "parser_method": "_parse_extrema",
+      "opens_with": [
+        "CONNECTIVE",
+        "UNKNOWN"
+      ],
+      "produces": "ExtremaNode",
+      "calls": [
+        "_consume_optional_article",
+        "_consume_target"
+      ],
+      "source": "parser.py:3612",
+      "surface": "v25 VW-Q1/Q2 \u2014 `highest`/`lowest` list-extrema selector.\n\nForm A (flat lists):   highest of <list>\nForm B (record lists): highest <field> of <list>\n\nThe OPERATOR token (`highest`/`lowest`) has been peeked, not\nconsumed, by the caller."
+    },
+    {
+      "form": "parse_atom",
+      "parser_method": "_parse_atom",
+      "opens_with": [
+        "NUMBER",
+        "DATE",
+        "UNKNOWN",
+        "QUOTED_STRING",
+        "OPERATOR",
+        "VERB",
+        "CONNECTIVE"
+      ],
+      "produces": [
+        "NumberLiteral",
+        "DateLiteral",
+        "QuotedString",
+        "EachPronoun"
+      ],
+      "calls": [
+        "_parse_extrema",
+        "_maybe_field_access",
+        "_parse_number",
+        "_validate_calendar_date",
+        "_hyphenate"
+      ],
+      "source": "parser.py:3658",
+      "surface": "Consume a single value token (NUMBER, UNKNOWN, or QUOTED_STRING),\noptionally extended by `of <record>` for field access (v2b \u00a777).\n\nVocabulary words in value position are rejected per v1c \u00a746 (extended\nby v2c \u00a789 \u2014 the error message now suggests quoting as the fix)."
+    },
+    {
+      "form": "parse_number",
+      "parser_method": "_parse_number",
+      "opens_with": [],
+      "produces": [],
+      "calls": [],
+      "source": "parser.py:3760",
+      "surface": "Convert a NUMBER token's raw text to a Python `int` or `float` \u2014 a\ndecimal point in the source text is the sole signal for `float`; any\nother numeric text (including scientific-notation forms without a\nliteral `.`) becomes `int`. Not itself a grammar production \u2014 it\ntakes a plain string, not a `TokenStream`, and every caller has\nalready matched a NUMBER token before reaching here."
+    }
+  ]
+}

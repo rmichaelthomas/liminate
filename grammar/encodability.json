@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "generated_by": "grammar_gen.py",
+  "note": "What src/liminate/checker.py's Z3 satisfiability checker (check_source / check_agreement) can and cannot encode. rules.json describes what the parser ACCEPTS; this file describes what the checker can ENCODE -- a narrower, later-stage question. Neither file says anything about what a condition MEANS at runtime (that is interpreter.py, not covered by any file in grammar/).",
+  "finding_kinds": [
+    {
+      "kind": "inconclusive",
+      "source": "checker.py:671"
+    },
+    {
+      "kind": "inconclusive",
+      "source": "checker.py:683"
+    },
+    {
+      "kind": "always_deny",
+      "source": "checker.py:703"
+    },
+    {
+      "kind": "dead_forbid",
+      "source": "checker.py:726"
+    },
+    {
+      "kind": "require_forbid_conflict",
+      "source": "checker.py:754"
+    },
+    {
+      "kind": "unless_swallows_rule",
+      "source": "checker.py:783"
+    },
+    {
+      "kind": "redundant_forbid",
+      "source": "checker.py:813"
+    },
+    {
+      "kind": "dead_permit",
+      "source": "checker.py:842"
+    },
+    {
+      "kind": "inconclusive",
+      "source": "checker.py:871"
+    },
+    {
+      "kind": "constant_predicate",
+      "source": "checker.py:888"
+    },
+    {
+      "kind": "constant_predicate",
+      "source": "checker.py:901"
+    }
+  ],
+  "finding_kinds_missing_from_source": [],
+  "encoder_exceptions": [
+    {
+      "class": "UnencodableConstruct",
+      "defined_at": "checker.py:59",
+      "raised_at": [
+        "checker.py:207",
+        "checker.py:214",
+        "checker.py:218",
+        "checker.py:251",
+        "checker.py:267",
+        "checker.py:274",
+        "checker.py:280",
+        "checker.py:285",
+        "checker.py:291",
+        "checker.py:318",
+        "checker.py:343",
+        "checker.py:382",
+        "checker.py:431",
+        "checker.py:452",
+        "checker.py:593"
+      ]
+    },
+    {
+      "class": "NonlinearArithmetic",
+      "defined_at": "checker.py:63",
+      "raised_at": [
+        "checker.py:371"
+      ]
+    }
+  ],
+  "unencodable_reason_is_not_a_bounded_vocabulary": {
+    "source": "checker.py:90",
+    "explanation": "checker.py's own UnencodableStatement.reason field is declared `reason: str  # str(exc) from the caught exception` -- the reason recorded for a statement the checker could not encode is a stringified Python exception message, not a value drawn from a fixed set. This file cannot enumerate the possible reasons because the source does not define a bounded set of them: every `raised_at` site below constructs its message from an f-string built at the point of failure (interpolating the actual node, name, or operator involved), so the same raise site produces a different reason string for every different unencodable construct it sees. An agent consuming this file should treat `reason` as free text to display, never as a value to match against a known list."
+  }
+}

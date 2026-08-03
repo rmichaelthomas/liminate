@@ -1,0 +1,3567 @@
+{
+  "format": 1,
+  "generated_by": "grammar_gen.py",
+  "note": "Every construction of _ParseError, _SemanticError, _RuntimeError, BuildError, LexError, ValueError, RuntimeError, or TypeError found by walking the AST of every .py file directly under src/liminate/. Liminate's errors carry no tag field -- unlike Planes' errors.json, there is no tags index here grouping entries by a shared identifier, because there is no shared identifier to group by. An id is assigned per entry (file.class.function[-N]) purely so a reader has something stable to point at; it is not a tag the source declares.",
+  "count": 360,
+  "literal_message_count": 91,
+  "entries": [
+    {
+      "id": "adapter.ValueError._parse_execution",
+      "class": "ValueError",
+      "source": "adapter.py:275",
+      "raised_in": "_parse_execution",
+      "template": "Unknown execution type '{exec_type}'. Supported: set_value, substring_check, append_to_list, set_field, compare_values, numeric_extract_compare, range_check, conformance_check.",
+      "slots": [
+        "exec_type"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-1",
+      "class": "ValueError",
+      "source": "adapter.py:293",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' has multiple positional slots. Only one direct-object slot is allowed, and it must be first.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-2",
+      "class": "ValueError",
+      "source": "adapter.py:298",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' has a positional slot at position {positional_indices[0]}. The positional slot must be the first slot in the signature.",
+      "slots": [
+        "word",
+        "positional_indices[0]"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-3",
+      "class": "ValueError",
+      "source": "adapter.py:310",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' has two slots using the connective '{s.connective}'. Each slot needs a unique connective.",
+      "slots": [
+        "word",
+        "s.connective"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-4",
+      "class": "ValueError",
+      "source": "adapter.py:319",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' slot '{s.name}' has unknown value_type '{s.value_type}'. Use 'name' or 'value'.",
+      "slots": [
+        "word",
+        "s.name",
+        "s.value_type"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-5",
+      "class": "ValueError",
+      "source": "adapter.py:334",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' specifies both target_name and target_slot. Use one or the other.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-6",
+      "class": "ValueError",
+      "source": "adapter.py:339",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' needs either target_name or target_slot.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-7",
+      "class": "ValueError",
+      "source": "adapter.py:346",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' specifies both source_slot and literal_value. Use one or the other.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-8",
+      "class": "ValueError",
+      "source": "adapter.py:351",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' needs either source_slot or literal_value.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-9",
+      "class": "ValueError",
+      "source": "adapter.py:359",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' uses unknown comparison '{execution.comparison}'. Use 'equality' or 'structural'.",
+      "slots": [
+        "word",
+        "execution.comparison"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-10",
+      "class": "ValueError",
+      "source": "adapter.py:364",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' uses unknown on_mismatch '{execution.on_mismatch}'. Use 'error' or 'flag'.",
+      "slots": [
+        "word",
+        "execution.on_mismatch"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-11",
+      "class": "ValueError",
+      "source": "adapter.py:372",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}': structural comparison requires a 'details_target' field.",
+      "slots": [
+        "word"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-12",
+      "class": "ValueError",
+      "source": "adapter.py:380",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' uses unknown on_mismatch '{execution.on_mismatch}'. Use 'error' or 'flag'.",
+      "slots": [
+        "word",
+        "execution.on_mismatch"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-13",
+      "class": "ValueError",
+      "source": "adapter.py:387",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}': '{field_name}' must be a non-empty string.",
+      "slots": [
+        "word",
+        "field_name"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-14",
+      "class": "ValueError",
+      "source": "adapter.py:395",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' uses unknown on_mismatch '{execution.on_mismatch}'. Use 'error' or 'flag'.",
+      "slots": [
+        "word",
+        "execution.on_mismatch"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-15",
+      "class": "ValueError",
+      "source": "adapter.py:405",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}': '{field_name}' must be a non-empty string.",
+      "slots": [
+        "word",
+        "field_name"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-16",
+      "class": "ValueError",
+      "source": "adapter.py:413",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}' uses unknown on_mismatch '{execution.on_mismatch}'. Use 'error' or 'flag'.",
+      "slots": [
+        "word",
+        "execution.on_mismatch"
+      ]
+    },
+    {
+      "id": "adapter.ValueError._validate_pack_verb_signature-17",
+      "class": "ValueError",
+      "source": "adapter.py:423",
+      "raised_in": "_validate_pack_verb_signature",
+      "template": "Pack verb '{word}': '{field_name}' must be a non-empty string.",
+      "slots": [
+        "word",
+        "field_name"
+      ]
+    },
+    {
+      "id": "adapter.RuntimeError.start",
+      "class": "RuntimeError",
+      "source": "adapter.py:506",
+      "raised_in": "start",
+      "template": "TestAdapter.start() called before attach_queue().",
+      "slots": []
+    },
+    {
+      "id": "adapter.ValueError.declare",
+      "class": "ValueError",
+      "source": "adapter.py:636",
+      "raised_in": "declare",
+      "template": "live value '{decl.name}' was already declared by '{self._entries[decl.name].adapter_name}' \u2014 v3a \u00a7116 disallows multiple adapters providing the same name.",
+      "slots": [
+        "decl.name",
+        "self._entries[decl.name].adapter_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check",
+      "class": "_SemanticError",
+      "source": "analyzer.py:588",
+      "raised_in": "_check",
+      "template": "unsupported AST node {type(node).__name__}",
+      "slots": [
+        "type(node).__name__"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_live_value_remember",
+      "class": "_SemanticError",
+      "source": "analyzer.py:626",
+      "raised_in": "_check_live_value_remember",
+      "template": "'{name}' is a live value provided by the domain pack and cannot be overwritten during listener mode.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_value_expr-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:647",
+      "raised_in": "_check_value_expr",
+      "template": "I can't find '{value_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "value_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_value_expr-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:672",
+      "raised_in": "_check_value_expr",
+      "template": "Composition '{value_node.name}' doesn't return a value \u2014 its last operation is '{verb}', which only has side effects.",
+      "slots": [
+        "value_node.name",
+        "verb"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic",
+      "class": "_SemanticError",
+      "source": "analyzer.py:819",
+      "raised_in": "_check_arithmetic",
+      "template": "Multiplication and division need at least one plain number. '{render(node.left)}' and '{render(node.right)}' are both values that vary at run time.",
+      "slots": [
+        "render(node.left)",
+        "render(node.right)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic_operand-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:854",
+      "raised_in": "_check_arithmetic_operand",
+      "template": "Arithmetic only works with numbers, not text. '{operand.content}' is text.",
+      "slots": [
+        "operand.content"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic_operand-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:868",
+      "raised_in": "_check_arithmetic_operand",
+      "template": "Arithmetic only works with numbers, but '{operand.field} of {operand.record_name}' is {_singular(ftype)}.",
+      "slots": [
+        "operand.field",
+        "operand.record_name",
+        "_singular(ftype)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic_operand-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:880",
+      "raised_in": "_check_arithmetic_operand",
+      "template": "I can't find '{operand.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "operand.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic_operand-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:886",
+      "raised_in": "_check_arithmetic_operand",
+      "template": "Arithmetic only works with numbers and dates, but '{operand.name}' is {_singular(t)}.",
+      "slots": [
+        "operand.name",
+        "_singular(t)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_arithmetic_operand-5",
+      "class": "_SemanticError",
+      "source": "analyzer.py:900",
+      "raised_in": "_check_arithmetic_operand",
+      "template": "Unexpected operand in arithmetic expression: {type(operand).__name__}.",
+      "slots": [
+        "type(operand).__name__"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_field_access-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:915",
+      "raised_in": "_check_field_access",
+      "template": "I can't find '{node.record_name}'. You might need to 'remember' it first.",
+      "slots": [
+        "node.record_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_field_access-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:922",
+      "raised_in": "_check_field_access",
+      "template": "'of' needs a single record. '{node.record_name}' is a list of records \u2014 did you mean: each the {node.record_name} show {node.field}?",
+      "slots": [
+        "node.record_name",
+        "node.record_name",
+        "node.field"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_field_access-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:927",
+      "raised_in": "_check_field_access",
+      "template": "'of' needs a record. '{node.record_name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.record_name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_field_access-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:932",
+      "raised_in": "_check_field_access",
+      "template": "'{node.record_name}' doesn't have a field called '{node.field}'.",
+      "slots": [
+        "node.record_name",
+        "node.field"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_remember_list-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:960",
+      "raised_in": "_check_remember_list",
+      "template": "A list can't mix {_plural(first)} and {_plural(t)}. '{first_ex}' is {_singular(first)} but '{examples[i]}' is {_singular(t)}.",
+      "slots": [
+        "_plural(first)",
+        "_plural(t)",
+        "first_ex",
+        "_singular(first)",
+        "examples[i]",
+        "_singular(t)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_remember_list-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:967",
+      "raised_in": "_check_remember_list",
+      "template": "v1 lists may only contain numbers, text, records, or dates. '{examples[0]}' is {_singular(only)}.",
+      "slots": [
+        "examples[0]",
+        "_singular(only)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._infer_item_type",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1003",
+      "raised_in": "_infer_item_type",
+      "template": "Unexpected list item {type(item).__name__}.",
+      "slots": [
+        "type(item).__name__"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_remember_record",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1020",
+      "raised_in": "_check_remember_record",
+      "template": "A record needs at least one field.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1040",
+      "raised_in": "_check_show",
+      "template": "I need something to show.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1050",
+      "raised_in": "_check_show",
+      "template": "Unexpected target for 'show'.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1057",
+      "raised_in": "_check_show",
+      "template": "I can't find '{node.record_name}'. You might need to 'remember' it first.",
+      "slots": [
+        "node.record_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1068",
+      "raised_in": "_check_show",
+      "template": "'of' needs a single record. '{node.record_name}' is a list of records \u2014 did you mean: each the {node.record_name} show {name}?",
+      "slots": [
+        "node.record_name",
+        "node.record_name",
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-5",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1073",
+      "raised_in": "_check_show",
+      "template": "'of' needs a record. '{node.record_name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.record_name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-6",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1078",
+      "raised_in": "_check_show",
+      "template": "'{node.record_name}' doesn't have a field called '{name}'.",
+      "slots": [
+        "node.record_name",
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-7",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1097",
+      "raised_in": "_check_show",
+      "template": "You listed '{fname}' twice in this show. Did you mean another field?",
+      "slots": [
+        "fname"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-8",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1108",
+      "raised_in": "_check_show",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-9",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1119",
+      "raised_in": "_check_show",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-10",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1132",
+      "raised_in": "_check_show",
+      "template": "Multiple fields in 'show' only work inside an 'each' loop over a list of records.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_show-11",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1138",
+      "raised_in": "_check_show",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_weakens-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1164",
+      "raised_in": "_check_weakens",
+      "template": "'{name}' is a live value provided by the domain pack \u2014 you can't apply decay to it directly.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_weakens-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1169",
+      "raised_in": "_check_weakens",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_weakens-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1175",
+      "raised_in": "_check_weakens",
+      "template": "'weakens' only works on numbers \u2014 '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_weakens-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1180",
+      "raised_in": "_check_weakens",
+      "template": "The decay period must be a positive number, not {_fmt_number(node.period.value)}.",
+      "slots": [
+        "_fmt_number(node.period.value)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_assign",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1204",
+      "raised_in": "_check_assign",
+      "template": "'{node.item.name}' is a live value provided by the domain pack \u2014 you can't assign it directly.",
+      "slots": [
+        "node.item.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_filter",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1225",
+      "raised_in": "_check_filter",
+      "template": "'{name}' is a live value provided by the domain pack. 'filter' is destructive and can't modify it \u2014 use 'keep' to read items without changing the source.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sort-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1254",
+      "raised_in": "_check_sort",
+      "template": "'{name}' is a live value provided by the domain pack. 'sort' is destructive and can't modify it.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sort-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1259",
+      "raised_in": "_check_sort",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sort-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1267",
+      "raised_in": "_check_sort",
+      "template": "I can only sort a list. '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sort-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1275",
+      "raised_in": "_check_sort",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._check_transform-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1301",
+      "raised_in": "_check_transform",
+      "template": "'{name}' is a live value provided by the domain pack. 'transform' is destructive and can't modify it.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_transform-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1306",
+      "raised_in": "_check_transform",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_transform-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1314",
+      "raised_in": "_check_transform",
+      "template": "I can only transform a list. '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_transform-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1322",
+      "raised_in": "_check_transform",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._check_compare",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1339",
+      "raised_in": "_check_compare",
+      "template": "I can't find '{ref.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "ref.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_condition-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1367",
+      "raised_in": "_check_condition",
+      "template": "Unexpected condition shape.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_condition-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1398",
+      "raised_in": "_check_condition",
+      "template": "Unknown comparison operator '{cond.op}'.",
+      "slots": [
+        "cond.op"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._require_comparable",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1406",
+      "raised_in": "_require_comparable",
+      "template": "'{op}' requires numbers or dates, but '{label}' is {_singular(t)}.",
+      "slots": [
+        "op",
+        "label",
+        "_singular(t)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_field-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1466",
+      "raised_in": "_resolve_field",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_field-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1474",
+      "raised_in": "_resolve_field",
+      "template": "In a list of {_plural(iterator.scalar_type or 'items')}, use 'each' to refer to the current item.",
+      "slots": [
+        "_plural(iterator.scalar_type or 'items')"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_field-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1478",
+      "raised_in": "_resolve_field",
+      "template": "Unexpected field reference.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_value",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1527",
+      "raised_in": "_resolve_value",
+      "template": "Unexpected value in condition.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_sum-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1542",
+      "raised_in": "_check_sum",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sum-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1549",
+      "raised_in": "_check_sum",
+      "template": "I can only sum numbers. '{name}' contains text.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sum-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1551",
+      "raised_in": "_check_sum",
+      "template": "I can only sum numbers. '{name}' contains records.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_sum-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1552",
+      "raised_in": "_check_sum",
+      "template": "I can only sum numbers. '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_extrema-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1572",
+      "raised_in": "_check_extrema",
+      "template": "'{node.word}' on a list of records needs a field \u2014 try: {node.word} <field> of {node.target.name}.",
+      "slots": [
+        "node.word",
+        "node.word",
+        "node.target.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_extrema-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1578",
+      "raised_in": "_check_extrema",
+      "template": "'{node.word} {node.field}' needs a list of records. '{node.target.name}' is {_singular(entry.type)} \u2014 try: {node.word} of {node.target.name}.",
+      "slots": [
+        "node.word",
+        "node.field",
+        "node.target.name",
+        "_singular(entry.type)",
+        "node.word",
+        "node.target.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_extrema-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1588",
+      "raised_in": "_check_extrema",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._check_gather",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1603",
+      "raised_in": "_check_gather",
+      "template": "That range is too large. The maximum is {GATHER_RANGE_CAP} items.",
+      "slots": [
+        "GATHER_RANGE_CAP"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_require_each",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1645",
+      "raised_in": "_check_require_each",
+      "template": "The binding name can't be the same as the list name. Try: require each <item> in {name} <condition>.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_composition_call_shape-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1715",
+      "raised_in": "_check_composition_call_shape",
+      "template": "I can't find a composition called '{node.name}'.",
+      "slots": [
+        "node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_composition_call_shape-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1720",
+      "raised_in": "_check_composition_call_shape",
+      "template": "'{node.name}' expects an input (from <{param}>). Try: {node.name} from <your-list> or {node.name} from 50.",
+      "slots": [
+        "node.name",
+        "param",
+        "node.name",
+        "node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_composition_call_shape-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1725",
+      "raised_in": "_check_composition_call_shape",
+      "template": "'{node.name}' doesn't take an input. Call it on its own: {node.name}.",
+      "slots": [
+        "node.name",
+        "node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_composition_call_shape-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1732",
+      "raised_in": "_check_composition_call_shape",
+      "template": "I can't find '{node.arg}'. You might need to 'remember' it first.",
+      "slots": [
+        "node.arg"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_choose_condition-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1831",
+      "raised_in": "_check_choose_condition",
+      "template": "Unexpected condition shape.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_choose_condition-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1855",
+      "raised_in": "_check_choose_condition",
+      "template": "Unknown comparison operator '{cond.op}'.",
+      "slots": [
+        "cond.op"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_predicate_application",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1881",
+      "raised_in": "_check_predicate_application",
+      "template": "I don't know a definition for '{cond.predicate_name}'. Use 'define {cond.predicate_name}: ...' to create one.",
+      "slots": [
+        "cond.predicate_name",
+        "cond.predicate_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_self_referential_define-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1936",
+      "raised_in": "_check_self_referential_define",
+      "template": "Definition '{name}' can't refer to itself.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_self_referential_define-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1938",
+      "raised_in": "_check_self_referential_define",
+      "template": "Definition '{name}' can't refer to itself.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_define_condition-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1955",
+      "raised_in": "_check_define_condition",
+      "template": "Unexpected condition shape.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_define_condition-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1957",
+      "raised_in": "_check_define_condition",
+      "template": "Unknown comparison operator '{cond.op}'.",
+      "slots": [
+        "cond.op"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_predicate_definition_cycle-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1974",
+      "raised_in": "_check_predicate_definition_cycle",
+      "template": "Definition '{name}' can't depend on itself.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_predicate_definition_cycle-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1976",
+      "raised_in": "_check_predicate_definition_cycle",
+      "template": "Definition '{name}' refers back to itself through {chain}. A definition can't depend on itself.",
+      "slots": [
+        "name",
+        "chain"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_verb-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2070",
+      "raised_in": "_check_pack_verb",
+      "template": "'{slot_label}' expects a name.",
+      "slots": [
+        "slot_label"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_verb-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2075",
+      "raised_in": "_check_pack_verb",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_verb-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2094",
+      "raised_in": "_check_pack_verb",
+      "template": "'{name}' is {shown}, not a {constraint}. '{slot_label}' expects a {constraint}.",
+      "slots": [
+        "name",
+        "shown",
+        "constraint",
+        "slot_label",
+        "constraint"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_slot_target_name",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2141",
+      "raised_in": "_resolve_slot_target_name",
+      "template": "Pack verb '{node.word}' needs a name for its target.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_substring-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2155",
+      "raised_in": "_check_pack_substring",
+      "template": "'{node.word}' expects a name for the source text.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_substring-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2160",
+      "raised_in": "_check_pack_substring",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_substring-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2166",
+      "raised_in": "_check_pack_substring",
+      "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.word",
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_substring-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2174",
+      "raised_in": "_check_pack_substring",
+      "template": "I can't find '{check_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "check_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_append",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2195",
+      "raised_in": "_check_pack_append",
+      "template": "Pack verb '{node.word}' missing source value.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_set_field-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2216",
+      "raised_in": "_check_pack_set_field",
+      "template": "I can't find '{target_name}'. You might need to 'remember' it first.",
+      "slots": [
+        "target_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_set_field-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2222",
+      "raised_in": "_check_pack_set_field",
+      "template": "'{node.word}' expects a record, but '{target_name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.word",
+        "target_name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_set_field-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2229",
+      "raised_in": "_check_pack_set_field",
+      "template": "I can't find '{src.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "src.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_compare-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2246",
+      "raised_in": "_check_pack_compare",
+      "template": "'{node.word}' expects a name for '{slot_name}'.",
+      "slots": [
+        "node.word",
+        "slot_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_compare-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2250",
+      "raised_in": "_check_pack_compare",
+      "template": "I can't find '{value_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "value_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_numeric_extract-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2264",
+      "raised_in": "_check_pack_numeric_extract",
+      "template": "'{node.word}' expects a name for the source text.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_numeric_extract-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2269",
+      "raised_in": "_check_pack_numeric_extract",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_numeric_extract-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2275",
+      "raised_in": "_check_pack_numeric_extract",
+      "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.word",
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_range_check-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2292",
+      "raised_in": "_check_pack_range_check",
+      "template": "'{node.word}' expects a name for the reference window.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_range_check-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2297",
+      "raised_in": "_check_pack_range_check",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_range_check-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2303",
+      "raised_in": "_check_pack_range_check",
+      "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
+      "slots": [
+        "node.word",
+        "name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_range_check-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2310",
+      "raised_in": "_check_pack_range_check",
+      "template": "I can't find '{check_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "check_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2329",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word}' expects a name for the shape.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2333",
+      "raised_in": "_check_pack_conformance",
+      "template": "I can't find '{shape_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "shape_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2339",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word} to' expects a record shape, but '{shape_node.name}' is {_singular(shape_entry.type)}.",
+      "slots": [
+        "node.word",
+        "shape_node.name",
+        "_singular(shape_entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2349",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word} each' can only be used inside an 'each' loop.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-5",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2353",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word} each' expects a list of records to check against the shape.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-6",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2359",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word}' expects a name for the record.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-7",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2363",
+      "raised_in": "_check_pack_conformance",
+      "template": "I can't find '{record_node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "record_node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_pack_conformance-8",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2369",
+      "raised_in": "_check_pack_conformance",
+      "template": "'{node.word}' expects a record, but '{record_node.name}' is {_singular(record_entry.type)}.",
+      "slots": [
+        "node.word",
+        "record_node.name",
+        "_singular(record_entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_finish",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2386",
+      "raised_in": "_check_finish",
+      "template": "'finish' can only be used inside an event handler.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._check_list_append-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2461",
+      "raised_in": "_check_list_append",
+      "template": "'{target_name}' is a live value provided by the domain pack. '{verb}' modifies the list and can't be used on it \u2014 the domain pack controls this value.",
+      "slots": [
+        "target_name",
+        "verb"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_list_append-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2467",
+      "raised_in": "_check_list_append",
+      "template": "I can't find '{target_name}'. You might need to 'remember' it first.",
+      "slots": [
+        "target_name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_list_append-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2473",
+      "raised_in": "_check_list_append",
+      "template": "I can only {verb} {prep} a list. '{target_name}' is {_singular(entry.type)}.",
+      "slots": [
+        "verb",
+        "prep",
+        "target_name",
+        "_singular(entry.type)"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_list_append-4",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2479",
+      "raised_in": "_check_list_append",
+      "template": "'{target_name}' is the list being iterated \u2014 you can't {verb} {prep} it while iterating. Try {verb}ing {prep} a different list.",
+      "slots": [
+        "target_name",
+        "verb",
+        "prep",
+        "verb",
+        "prep"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._check_list_append-5",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2497",
+      "raised_in": "_check_list_append",
+      "template": "'{target_name}' is {_singular(entry.type)}. '{item_label}' is {_singular(item_type)} and can't be {action} it.",
+      "slots": [
+        "target_name",
+        "_singular(entry.type)",
+        "item_label",
+        "_singular(item_type)",
+        "action"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._infer_add_item_type-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2535",
+      "raised_in": "_infer_add_item_type",
+      "template": "I can't find '{item.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "item.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._infer_add_item_type-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2545",
+      "raised_in": "_infer_add_item_type",
+      "template": "Unexpected item for 'add': {type(item).__name__}.",
+      "slots": [
+        "type(item).__name__"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_choose_operand-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2567",
+      "raised_in": "_resolve_choose_operand",
+      "template": "I can't find '{node.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "node.name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_choose_operand-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2592",
+      "raised_in": "_resolve_choose_operand",
+      "template": "'each' only refers to the current item inside an 'each' or 'where' clause. In 'choose', name the value directly.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._resolve_choose_operand-3",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2604",
+      "raised_in": "_resolve_choose_operand",
+      "template": "Unexpected operand in 'choose' condition.",
+      "slots": []
+    },
+    {
+      "id": "analyzer._SemanticError._require_list-1",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2619",
+      "raised_in": "_require_list",
+      "template": "I can't find '{name}'. You might need to 'remember' it first.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "analyzer._SemanticError._require_list-2",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2637",
+      "raised_in": "_require_list",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "analyzer._SemanticError._make_iterator",
+      "class": "_SemanticError",
+      "source": "analyzer.py:2653",
+      "raised_in": "_make_iterator",
+      "template": "'{name}' isn't a list I can iterate.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-1",
+      "class": "BuildError",
+      "source": "build.py:174",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: {e.message}",
+      "slots": [
+        "i + 1",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-2",
+      "class": "BuildError",
+      "source": "build.py:181",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: 'about' is a declaration that must be the first line of the program (after any comments). Only one 'about' declaration is allowed.",
+      "slots": [
+        "i + 1"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-3",
+      "class": "BuildError",
+      "source": "build.py:189",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: {e.message}",
+      "slots": [
+        "i + 1",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-4",
+      "class": "BuildError",
+      "source": "build.py:199",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: {e.message}",
+      "slots": [
+        "i + 1",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-5",
+      "class": "BuildError",
+      "source": "build.py:207",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: {e.message}",
+      "slots": [
+        "i + 1",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-6",
+      "class": "BuildError",
+      "source": "build.py:237",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: failed to render canonical form ({e})",
+      "slots": [
+        "i + 1",
+        "e"
+      ]
+    },
+    {
+      "id": "build.BuildError._validate_and_render-7",
+      "class": "BuildError",
+      "source": "build.py:251",
+      "raised_in": "_validate_and_render",
+      "template": "line {i + 1}: failed to render canonical form ({e})",
+      "slots": [
+        "i + 1",
+        "e"
+      ]
+    },
+    {
+      "id": "build.BuildError._parse_line-1",
+      "class": "BuildError",
+      "source": "build.py:267",
+      "raised_in": "_parse_line",
+      "template": "line {line_no}: {e.message}",
+      "slots": [
+        "line_no",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._parse_line-2",
+      "class": "BuildError",
+      "source": "build.py:270",
+      "raised_in": "_parse_line",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "build.BuildError._parse_line-3",
+      "class": "BuildError",
+      "source": "build.py:273",
+      "raised_in": "_parse_line",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "build.BuildError._parse_when_block_from_source-1",
+      "class": "BuildError",
+      "source": "build.py:288",
+      "raised_in": "_parse_when_block_from_source",
+      "template": "line {line_no}: {e.message}",
+      "slots": [
+        "line_no",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._parse_when_block_from_source-2",
+      "class": "BuildError",
+      "source": "build.py:291",
+      "raised_in": "_parse_when_block_from_source",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "build.BuildError._parse_when_block_from_source-3",
+      "class": "BuildError",
+      "source": "build.py:298",
+      "raised_in": "_parse_when_block_from_source",
+      "template": "line {line_no + offset}: {e.message}",
+      "slots": [
+        "line_no + offset",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._parse_when_block_from_source-4",
+      "class": "BuildError",
+      "source": "build.py:303",
+      "raised_in": "_parse_when_block_from_source",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "build.BuildError._parse_when_block_from_source-5",
+      "class": "BuildError",
+      "source": "build.py:312",
+      "raised_in": "_parse_when_block_from_source",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "build.BuildError._collect_when_block-1",
+      "class": "BuildError",
+      "source": "build.py:335",
+      "raised_in": "_collect_when_block",
+      "template": "line {j + 1}: {e.message}",
+      "slots": [
+        "j + 1",
+        "e.message"
+      ]
+    },
+    {
+      "id": "build.BuildError._collect_when_block-2",
+      "class": "BuildError",
+      "source": "build.py:341",
+      "raised_in": "_collect_when_block",
+      "template": "line {j + 1}: This line is indented {indent} spaces, deeper than the action block's first indented line ({block_depth} spaces). v3a \u00a7110 \u2014 all action lines in a 'when' block must use the same indentation depth.",
+      "slots": [
+        "j + 1",
+        "indent",
+        "block_depth"
+      ]
+    },
+    {
+      "id": "build.BuildError._load_pack_manifests",
+      "class": "BuildError",
+      "source": "build.py:444",
+      "raised_in": "_load_pack_manifests",
+      "template": "pack '{arg}': {e}",
+      "slots": [
+        "arg",
+        "e"
+      ]
+    },
+    {
+      "id": "cli.ValueError._make_test_pack-1",
+      "class": "ValueError",
+      "source": "cli.py:458",
+      "raised_in": "_make_test_pack",
+      "template": "test pack config has both 'sequence' and 'script' keys \u2014 use only one (prefer 'sequence').",
+      "slots": []
+    },
+    {
+      "id": "cli.ValueError._make_test_pack-2",
+      "class": "ValueError",
+      "source": "cli.py:475",
+      "raised_in": "_make_test_pack",
+      "template": "malformed sequence entry {entry} \u2014 each entry must be ['name', value] or '[done]'.",
+      "slots": [
+        "entry"
+      ]
+    },
+    {
+      "id": "cli.ValueError._make_test_pack-3",
+      "class": "ValueError",
+      "source": "cli.py:488",
+      "raised_in": "_make_test_pack",
+      "template": "malformed vocabulary entry {entry} \u2014 each entry must be {'word', 'category'} or [word, category].",
+      "slots": [
+        "entry"
+      ]
+    },
+    {
+      "id": "cli.ValueError.load_pack_from_arg",
+      "class": "ValueError",
+      "source": "cli.py:534",
+      "raised_in": "load_pack_from_arg",
+      "template": "unknown pack type '{pack_type}'. Allowed: {sorted(_PACK_FACTORIES)}.",
+      "slots": [
+        "pack_type",
+        "sorted(_PACK_FACTORIES)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_op-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:736",
+      "raised_in": "_exec_op",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_op-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:739",
+      "raised_in": "_exec_op",
+      "template": "unsupported AST node {type(node).__name__}",
+      "slots": [
+        "type(node).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_pack_verb",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:845",
+      "raised_in": "_exec_pack_verb",
+      "template": "Pack verb '{node.word}' has an unrecognized execution type.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._resolve_target",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:860",
+      "raised_in": "_resolve_target",
+      "template": "Pack verb '{node.word}' needs a name for its target, not a literal value.",
+      "slots": [
+        "node.word"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_pack_fit-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1291",
+      "raised_in": "_exec_pack_fit",
+      "template": "'{node.word}' needs a record for '{record_name}', but it isn't a record.",
+      "slots": [
+        "node.word",
+        "record_name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_pack_fit-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1296",
+      "raised_in": "_exec_pack_fit",
+      "template": "'{node.word}' needs a record shape for '{shape_name}', but it isn't a record.",
+      "slots": [
+        "node.word",
+        "shape_name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_sort-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1448",
+      "raised_in": "_exec_sort",
+      "template": "I can only sort a list of records by a field. Item {i + 1} in '{node.target.name}' is {_format_scalar(item)}.",
+      "slots": [
+        "i + 1",
+        "node.target.name",
+        "_format_scalar(item)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_sort-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1454",
+      "raised_in": "_exec_sort",
+      "template": "Record {i + 1} in '{node.target.name}' doesn't have a field called '{node.field}'.",
+      "slots": [
+        "i + 1",
+        "node.target.name",
+        "node.field"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_sort-3",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1464",
+      "raised_in": "_exec_sort",
+      "template": "I can't sort '{node.target.name}' by '{node.field}' \u2014 the values are a mix of types that can't be compared.",
+      "slots": [
+        "node.target.name",
+        "node.field"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_transform-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1498",
+      "raised_in": "_exec_transform",
+      "template": "I can only transform fields on records. Item {i + 1} in '{node.target.name}' is {_format_scalar(item)}.",
+      "slots": [
+        "i + 1",
+        "node.target.name",
+        "_format_scalar(item)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_transform-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1504",
+      "raised_in": "_exec_transform",
+      "template": "Record {i + 1} in '{node.target.name}' doesn't have a field called '{node.field}'.",
+      "slots": [
+        "i + 1",
+        "node.target.name",
+        "node.field"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_remove",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1686",
+      "raised_in": "_exec_remove",
+      "template": "I can't find '{_format_scalar(item_value)}' in '{node.target.name}'.",
+      "slots": [
+        "_format_scalar(item_value)",
+        "node.target.name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_weakens",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:1712",
+      "raised_in": "_exec_weakens",
+      "template": "'weakens' only works on numbers \u2014 '{node.subject.name}' is a {type(current).__name__}.",
+      "slots": [
+        "node.subject.name",
+        "type(current).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_composition_call-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2053",
+      "raised_in": "_exec_composition_call",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "interpreter._RuntimeError._exec_composition_call-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2064",
+      "raised_in": "_exec_composition_call",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "interpreter._RuntimeError._evaluate_expression-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2157",
+      "raised_in": "_evaluate_expression",
+      "template": "I can't find '{expr.name}'. You might need to 'remember' it first.",
+      "slots": [
+        "expr.name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._evaluate_expression-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2195",
+      "raised_in": "_evaluate_expression",
+      "template": "Can't evaluate {type(expr).__name__} as a value.",
+      "slots": [
+        "type(expr).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._composition_call_value-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2219",
+      "raised_in": "_composition_call_value",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "interpreter._RuntimeError._composition_call_value-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2230",
+      "raised_in": "_composition_call_value",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "interpreter._RuntimeError._value_of_op",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2265",
+      "raised_in": "_value_of_op",
+      "template": "Can't extract a value from {type(op).__name__} as a last operation.",
+      "slots": [
+        "type(op).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_condition-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2305",
+      "raised_in": "_eval_condition",
+      "template": "I don't have a definition for '{cond.predicate_name}'.",
+      "slots": [
+        "cond.predicate_name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_condition-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2310",
+      "raised_in": "_eval_condition",
+      "template": "Predicate '{cond.predicate_name}' is nested more than {_MAX_PREDICATE_EVAL_DEPTH} levels deep \u2014 this usually means two or more definitions refer back to each other.",
+      "slots": [
+        "cond.predicate_name",
+        "_MAX_PREDICATE_EVAL_DEPTH"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_condition-3",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2322",
+      "raised_in": "_eval_condition",
+      "template": "Can't evaluate condition {type(cond).__name__}.",
+      "slots": [
+        "type(cond).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._within_tolerance-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2336",
+      "raised_in": "_within_tolerance",
+      "template": "'within' on dates needs a numeric day count, but the amount is {_format_scalar(tolerance)}.",
+      "slots": [
+        "_format_scalar(tolerance)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._within_tolerance-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2344",
+      "raised_in": "_within_tolerance",
+      "template": "'within' compares numbers, but the {label} is {_format_scalar(v)}.",
+      "slots": [
+        "label",
+        "_format_scalar(v)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_extrema-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2361",
+      "raised_in": "_eval_extrema",
+      "template": "There's no {node.word} of '{node.target.name}' \u2014 the list is empty.",
+      "slots": [
+        "node.word",
+        "node.target.name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_extrema-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2372",
+      "raised_in": "_eval_extrema",
+      "template": "'{node.word}' needs numbers or dates. Field '{node.field}' in '{node.target.name}' contains {_format_scalar(v)}.",
+      "slots": [
+        "node.word",
+        "node.field",
+        "node.target.name",
+        "_format_scalar(v)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_extrema-3",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2383",
+      "raised_in": "_eval_extrema",
+      "template": "'{node.word}' needs numbers or dates. '{node.target.name}' contains text.",
+      "slots": [
+        "node.word",
+        "node.target.name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_field-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2400",
+      "raised_in": "_eval_field",
+      "template": "I can't find '{field_node.name}' in this item.",
+      "slots": [
+        "field_node.name"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_field-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2413",
+      "raised_in": "_eval_field",
+      "template": "Unexpected field reference {type(field_node).__name__}.",
+      "slots": [
+        "type(field_node).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_value",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2446",
+      "raised_in": "_eval_value",
+      "template": "Unexpected value {type(value_node).__name__}.",
+      "slots": [
+        "type(value_node).__name__"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_arithmetic-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2472",
+      "raised_in": "_eval_arithmetic",
+      "template": "I can only do arithmetic with numbers, but the left side of '{_OP_PROSE[node.op]}' is {_format_scalar(left)}.",
+      "slots": [
+        "_OP_PROSE[node.op]",
+        "_format_scalar(left)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_arithmetic-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2477",
+      "raised_in": "_eval_arithmetic",
+      "template": "I can only do arithmetic with numbers, but the right side of '{_OP_PROSE[node.op]}' is {_format_scalar(right)}.",
+      "slots": [
+        "_OP_PROSE[node.op]",
+        "_format_scalar(right)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_arithmetic-3",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2489",
+      "raised_in": "_eval_arithmetic",
+      "template": "I can't divide by zero.",
+      "slots": []
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_arithmetic-4",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2494",
+      "raised_in": "_eval_arithmetic",
+      "template": "Unknown arithmetic operator '{node.op}'.",
+      "slots": [
+        "node.op"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2508",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "Dates can't be multiplied or divided.",
+      "slots": []
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2513",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "I can't add two dates \u2014 did you mean to subtract? Try: date minus date.",
+      "slots": []
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-3",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2525",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "Date arithmetic works in whole days \u2014 the offset must be a number, not {_format_scalar(the_number)}.",
+      "slots": [
+        "_format_scalar(the_number)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-4",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2530",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "Date arithmetic works in whole days \u2014 {_format_scalar(the_number)} isn't a whole number.",
+      "slots": [
+        "_format_scalar(the_number)"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-5",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2541",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "I can't subtract a date from a number. Try: date minus number.",
+      "slots": []
+    },
+    {
+      "id": "interpreter._RuntimeError._eval_date_arithmetic-6",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2545",
+      "raised_in": "_eval_date_arithmetic",
+      "template": "Unknown arithmetic operator '{op}' on dates.",
+      "slots": [
+        "op"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._apply_op-1",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2588",
+      "raised_in": "_apply_op",
+      "template": "I can't compare a date to {kind}. Both sides must be dates.",
+      "slots": [
+        "kind"
+      ]
+    },
+    {
+      "id": "interpreter._RuntimeError._apply_op-2",
+      "class": "_RuntimeError",
+      "source": "interpreter.py:2613",
+      "raised_in": "_apply_op",
+      "template": "Unknown comparison operator '{op}'.",
+      "slots": [
+        "op"
+      ]
+    },
+    {
+      "id": "lexer.LexError.leading_indent",
+      "class": "LexError",
+      "source": "lexer.py:122",
+      "raised_in": "leading_indent",
+      "template": "Indented lines must use spaces, not tabs. v3a \u00a7110 \u2014 each line in an action block uses the same number of leading spaces.",
+      "slots": []
+    },
+    {
+      "id": "lexer.LexError._split_raw-1",
+      "class": "LexError",
+      "source": "lexer.py:158",
+      "raised_in": "_split_raw",
+      "template": "I see an opening quote mark but no closing one on this line. Each quoted phrase needs both opening and closing marks.",
+      "slots": []
+    },
+    {
+      "id": "lexer.LexError._split_raw-2",
+      "class": "LexError",
+      "source": "lexer.py:166",
+      "raised_in": "_split_raw",
+      "template": "There's nothing between these quote marks. If you want to store a value, put it between the quotes.",
+      "slots": []
+    },
+    {
+      "id": "listener._RuntimeError._apply_op",
+      "class": "_RuntimeError",
+      "source": "listener.py:817",
+      "raised_in": "_apply_op",
+      "template": "I can't compare a date to {kind}. Both sides must be dates.",
+      "slots": [
+        "kind"
+      ]
+    },
+    {
+      "id": "listener.ValueError._apply_op",
+      "class": "ValueError",
+      "source": "listener.py:842",
+      "raised_in": "_apply_op",
+      "template": "Unknown comparison operator '{op}'.",
+      "slots": [
+        "op"
+      ]
+    },
+    {
+      "id": "parser._ParseError.parse",
+      "class": "_ParseError",
+      "source": "parser.py:1100",
+      "raised_in": "parse",
+      "template": "I didn't expect '{unexpected.value}' here.",
+      "slots": [
+        "unexpected.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError.parse_about-1",
+      "class": "_ParseError",
+      "source": "parser.py:1153",
+      "raised_in": "parse_about",
+      "template": "'about' needs a topic \u2014 try: about \"expense authorization\" or about expense-authorization.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError.parse_about-2",
+      "class": "_ParseError",
+      "source": "parser.py:1162",
+      "raised_in": "parse_about",
+      "template": "I didn't expect anything after the quoted topic in 'about'. Try: about \"{tokens[1].value}\".",
+      "slots": [
+        "tokens[1].value"
+      ]
+    },
+    {
+      "id": "parser._ParseError.parse_when_block-1",
+      "class": "_ParseError",
+      "source": "parser.py:1265",
+      "raised_in": "parse_when_block",
+      "template": "I expected a condition after 'when'. Try: when <name> is above <value>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError.parse_when_block-2",
+      "class": "_ParseError",
+      "source": "parser.py:1280",
+      "raised_in": "parse_when_block",
+      "template": "I expected a guard condition after 'unless'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError.parse_when_block-3",
+      "class": "_ParseError",
+      "source": "parser.py:1300",
+      "raised_in": "parse_when_block",
+      "template": "'from' attribution on a 'when' header needs the 'inherited' prefix \u2014 try: inherited when <condition> from <agent-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError.parse_when_block-4",
+      "class": "_ParseError",
+      "source": "parser.py:1313",
+      "raised_in": "parse_when_block",
+      "template": "I didn't expect '{unexpected.value}' in the 'when' header.",
+      "slots": [
+        "unexpected.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_operation_sequence",
+      "class": "_ParseError",
+      "source": "parser.py:1427",
+      "raised_in": "_parse_operation_sequence",
+      "template": "I expected a verb after 'then'. Try: <action> then <next-action>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._try_consume_starting_until-1",
+      "class": "_ParseError",
+      "source": "parser.py:1471",
+      "raised_in": "_try_consume_starting_until",
+      "template": "'starting' needs a date \u2014 try: starting \"2025-07-01\" or starting 2025-07-01. Got: {got}.",
+      "slots": [
+        "got"
+      ]
+    },
+    {
+      "id": "parser._ParseError._try_consume_starting_until-2",
+      "class": "_ParseError",
+      "source": "parser.py:1494",
+      "raised_in": "_try_consume_starting_until",
+      "template": "'until' needs a date \u2014 try: until \"2025-12-31\" or until 2025-12-31. Got: {got}.",
+      "slots": [
+        "got"
+      ]
+    },
+    {
+      "id": "parser._ParseError._validate_iso_date",
+      "class": "_ParseError",
+      "source": "parser.py:1518",
+      "raised_in": "_validate_iso_date",
+      "template": "'{keyword}' needs an ISO 8601 date (YYYY-MM-DD) \u2014 try: {keyword} \"2025-07-01\". Got: \"{date_str}\".",
+      "slots": [
+        "keyword",
+        "keyword",
+        "date_str"
+      ]
+    },
+    {
+      "id": "parser._ParseError._validate_calendar_date",
+      "class": "_ParseError",
+      "source": "parser.py:1533",
+      "raised_in": "_validate_calendar_date",
+      "template": "'{date_str}' isn't a valid calendar date. Dates use the format YYYY-MM-DD \u2014 for example, 2025-07-01.",
+      "slots": [
+        "date_str"
+      ]
+    },
+    {
+      "id": "parser._ParseError._try_consume_because",
+      "class": "_ParseError",
+      "source": "parser.py:1561",
+      "raised_in": "_try_consume_because",
+      "template": "'because' needs a quoted rationale \u2014 try: because \"your reason here\". Got: {got}.",
+      "slots": [
+        "got"
+      ]
+    },
+    {
+      "id": "parser._ParseError._try_consume_unless_exception",
+      "class": "_ParseError",
+      "source": "parser.py:1590",
+      "raised_in": "_try_consume_unless_exception",
+      "template": "I expected a condition after 'unless'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._try_consume_inherited_from-1",
+      "class": "_ParseError",
+      "source": "parser.py:1617",
+      "raised_in": "_try_consume_inherited_from",
+      "template": "'from' in an inherited statement needs an agent name \u2014 try: inherited <verb> ... from <agent-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._try_consume_inherited_from-2",
+      "class": "_ParseError",
+      "source": "parser.py:1622",
+      "raised_in": "_try_consume_inherited_from",
+      "template": "Agent names can't have spaces. Try a hyphenated name like '{_hyphenate(agent_tok.value)}' instead.",
+      "slots": [
+        "_hyphenate(agent_tok.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._try_consume_inherited_from-3",
+      "class": "_ParseError",
+      "source": "parser.py:1629",
+      "raised_in": "_try_consume_inherited_from",
+      "template": "The word '{agent_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name for the agent, like 'agent-compliance'.",
+      "slots": [
+        "agent_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._try_consume_inherited_from-4",
+      "class": "_ParseError",
+      "source": "parser.py:1634",
+      "raised_in": "_try_consume_inherited_from",
+      "template": "I expected an agent name after 'from', not '{agent_tok.value}'.",
+      "slots": [
+        "agent_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-1",
+      "class": "_ParseError",
+      "source": "parser.py:1719",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "I expected an operation here.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-2",
+      "class": "_ParseError",
+      "source": "parser.py:1739",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "The word '{t.value}' was renamed \u2014 use '{TOMBSTONES[t.value]}'.",
+      "slots": [
+        "t.value",
+        "TOMBSTONES[t.value]"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-3",
+      "class": "_ParseError",
+      "source": "parser.py:1742",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'sum', 'each', or 'choose'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-4",
+      "class": "_ParseError",
+      "source": "parser.py:1751",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "'when' is a top-level statement and starts its own indented action block. It can't appear inside compositions, 'each' bodies, or another 'when' action block.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-5",
+      "class": "_ParseError",
+      "source": "parser.py:1758",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "'unless' is a guard clause that follows a 'when' condition \u2014 it can't introduce a statement on its own. Try: when <condition> unless <guard>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-6",
+      "class": "_ParseError",
+      "source": "parser.py:1771",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "'{t.value}' is a declaration that must be the first line of the program (after any comments). It can't appear here.",
+      "slots": [
+        "t.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_one_operation_inner-7",
+      "class": "_ParseError",
+      "source": "parser.py:1775",
+      "raised_in": "_parse_one_operation_inner",
+      "template": "I didn't expect '{t.value}' at the start of an operation.",
+      "slots": [
+        "t.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_verb_statement-1",
+      "class": "_ParseError",
+      "source": "parser.py:1816",
+      "raised_in": "_parse_verb_statement",
+      "template": "'choose' can't appear inside 'each'. To handle items differently, use 'keep' to separate them by condition.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_verb_statement-2",
+      "class": "_ParseError",
+      "source": "parser.py:1853",
+      "raised_in": "_parse_verb_statement",
+      "template": "Unknown verb '{verb.value}'.",
+      "slots": [
+        "verb.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_pack_verb-1",
+      "class": "_ParseError",
+      "source": "parser.py:1882",
+      "raised_in": "_parse_pack_verb",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "parser._ParseError._parse_pack_verb-2",
+      "class": "_ParseError",
+      "source": "parser.py:1896",
+      "raised_in": "_parse_pack_verb",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "parser._ParseError._parse_pack_verb-3",
+      "class": "_ParseError",
+      "source": "parser.py:1900",
+      "raised_in": "_parse_pack_verb",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "parser._ParseError._parse_pack_slot_value-1",
+      "class": "_ParseError",
+      "source": "parser.py:1928",
+      "raised_in": "_parse_pack_slot_value",
+      "template": null,
+      "slots": [],
+      "note": "message is not a literal string or f-string at the call site (built elsewhere, or no message argument found)"
+    },
+    {
+      "id": "parser._ParseError._parse_pack_slot_value-2",
+      "class": "_ParseError",
+      "source": "parser.py:1930",
+      "raised_in": "_parse_pack_slot_value",
+      "template": "Names can't have spaces. Try a hyphenated name like '{_hyphenate(value_tok.value)}' instead.",
+      "slots": [
+        "_hyphenate(value_tok.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_pack_slot_value-3",
+      "class": "_ParseError",
+      "source": "parser.py:1937",
+      "raised_in": "_parse_pack_slot_value",
+      "template": "The word '{value_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
+      "slots": [
+        "value_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_pack_slot_value-4",
+      "class": "_ParseError",
+      "source": "parser.py:1947",
+      "raised_in": "_parse_pack_slot_value",
+      "template": "I expected a name {intro}, not '{value_tok.value}'.",
+      "slots": [
+        "intro",
+        "value_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_remember-1",
+      "class": "_ParseError",
+      "source": "parser.py:2009",
+      "raised_in": "_parse_remember",
+      "template": "I expected the word 'called' to introduce the name.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_remember-2",
+      "class": "_ParseError",
+      "source": "parser.py:2019",
+      "raised_in": "_parse_remember",
+      "template": "I expected 'with' or 'from' after '{name}'.",
+      "slots": [
+        "name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_remember-3",
+      "class": "_ParseError",
+      "source": "parser.py:2021",
+      "raised_in": "_parse_remember",
+      "template": "I expected 'with' or 'from', not '{intro.value}'.",
+      "slots": [
+        "intro.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_composition_definition-1",
+      "class": "_ParseError",
+      "source": "parser.py:2044",
+      "raised_in": "_parse_composition_definition",
+      "template": "I expected 'to' after 'how'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_composition_definition-2",
+      "class": "_ParseError",
+      "source": "parser.py:2060",
+      "raised_in": "_parse_composition_definition",
+      "template": "I expected ':' after the composition name.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_define",
+      "class": "_ParseError",
+      "source": "parser.py:2089",
+      "raised_in": "_parse_define",
+      "template": "I expected ':' after the predicate name.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._consume_remember_intro-1",
+      "class": "_ParseError",
+      "source": "parser.py:2119",
+      "raised_in": "_consume_remember_intro",
+      "template": "I expected 'called' to introduce the name.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._consume_remember_intro-2",
+      "class": "_ParseError",
+      "source": "parser.py:2134",
+      "raised_in": "_consume_remember_intro",
+      "template": "The word '{t.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
+      "slots": [
+        "t.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_remember_intro-3",
+      "class": "_ParseError",
+      "source": "parser.py:2138",
+      "raised_in": "_consume_remember_intro",
+      "template": "I didn't expect '{t.value}' before 'called'.",
+      "slots": [
+        "t.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_remember_with",
+      "class": "_ParseError",
+      "source": "parser.py:2163",
+      "raised_in": "_parse_remember_with",
+      "template": "I expected a value after 'with'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_record_field-1",
+      "class": "_ParseError",
+      "source": "parser.py:2236",
+      "raised_in": "_parse_record_field",
+      "template": "I expected a field name.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_record_field-2",
+      "class": "_ParseError",
+      "source": "parser.py:2239",
+      "raised_in": "_parse_record_field",
+      "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(field_tok.value)}' instead.",
+      "slots": [
+        "_hyphenate(field_tok.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_record_field-3",
+      "class": "_ParseError",
+      "source": "parser.py:2246",
+      "raised_in": "_parse_record_field",
+      "template": "The word '{field_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
+      "slots": [
+        "field_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_record_field-4",
+      "class": "_ParseError",
+      "source": "parser.py:2250",
+      "raised_in": "_parse_record_field",
+      "template": "I expected a field name, not '{field_tok.value}'.",
+      "slots": [
+        "field_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_record_field-5",
+      "class": "_ParseError",
+      "source": "parser.py:2256",
+      "raised_in": "_parse_record_field",
+      "template": "I expected a value after '{field_name}'. Try: '{field_name} as [value]'.",
+      "slots": [
+        "field_name",
+        "field_name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_remember_from",
+      "class": "_ParseError",
+      "source": "parser.py:2280",
+      "raised_in": "_parse_remember_from",
+      "template": "I expected an expression after 'from'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_show-1",
+      "class": "_ParseError",
+      "source": "parser.py:2378",
+      "raised_in": "_parse_show",
+      "template": "Field names can't have spaces. Try 'show {_hyphenate(peek.value)} of {rec}' instead.",
+      "slots": [
+        "_hyphenate(peek.value)",
+        "rec"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-2",
+      "class": "_ParseError",
+      "source": "parser.py:2383",
+      "raised_in": "_parse_show",
+      "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(peek.value)}' instead.",
+      "slots": [
+        "_hyphenate(peek.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-3",
+      "class": "_ParseError",
+      "source": "parser.py:2399",
+      "raised_in": "_parse_show",
+      "template": "I expected a record name after 'of'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_show-4",
+      "class": "_ParseError",
+      "source": "parser.py:2403",
+      "raised_in": "_parse_show",
+      "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
+      "slots": [
+        "rec_tok.value",
+        "rcat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-5",
+      "class": "_ParseError",
+      "source": "parser.py:2408",
+      "raised_in": "_parse_show",
+      "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
+      "slots": [
+        "rec_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-6",
+      "class": "_ParseError",
+      "source": "parser.py:2416",
+      "raised_in": "_parse_show",
+      "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_show-7",
+      "class": "_ParseError",
+      "source": "parser.py:2444",
+      "raised_in": "_parse_show",
+      "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(nx2.value)}' instead.",
+      "slots": [
+        "_hyphenate(nx2.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-8",
+      "class": "_ParseError",
+      "source": "parser.py:2471",
+      "raised_in": "_parse_show",
+      "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_show-9",
+      "class": "_ParseError",
+      "source": "parser.py:2476",
+      "raised_in": "_parse_show",
+      "template": "I expected a target after 'show', but '{peek.value}' is a {cat} in Liminate. Targets must be names you've created with 'remember' or 'gather'.",
+      "slots": [
+        "peek.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_show-10",
+      "class": "_ParseError",
+      "source": "parser.py:2481",
+      "raised_in": "_parse_show",
+      "template": "I didn't expect '{peek.value}' after 'show'.",
+      "slots": [
+        "peek.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_add-1",
+      "class": "_ParseError",
+      "source": "parser.py:2513",
+      "raised_in": "_parse_add",
+      "template": "'add' needs an item and a target list \u2014 try: add <item> to <list-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_add-2",
+      "class": "_ParseError",
+      "source": "parser.py:2520",
+      "raised_in": "_parse_add",
+      "template": "'add' needs a target list \u2014 try: add <item> to <list-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_remove-1",
+      "class": "_ParseError",
+      "source": "parser.py:2537",
+      "raised_in": "_parse_remove",
+      "template": "'remove' needs an item and a target list \u2014 try: remove <item> from <list-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_remove-2",
+      "class": "_ParseError",
+      "source": "parser.py:2547",
+      "raised_in": "_parse_remove",
+      "template": "'remove' needs a source list \u2014 try: remove <item> from <list-name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_weakens-1",
+      "class": "_ParseError",
+      "source": "parser.py:2565",
+      "raised_in": "_parse_weakens",
+      "template": "'weakens' needs a target and a decay period \u2014 try: weakens <name> over <number>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_weakens-2",
+      "class": "_ParseError",
+      "source": "parser.py:2577",
+      "raised_in": "_parse_weakens",
+      "template": "'weakens' needs a decay period \u2014 try: weakens <name> over <number>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_weakens-3",
+      "class": "_ParseError",
+      "source": "parser.py:2584",
+      "raised_in": "_parse_weakens",
+      "template": "I expected a number after 'over' \u2014 the decay period. Try: weakens <name> over 30.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_require",
+      "class": "_ParseError",
+      "source": "parser.py:2613",
+      "raised_in": "_parse_require",
+      "template": "'require' needs a condition \u2014 try: require <field> is <operator> <value>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_require_each-1",
+      "class": "_ParseError",
+      "source": "parser.py:2653",
+      "raised_in": "_parse_require_each",
+      "template": "'require each' needs a list \u2014 try: require each {binding_name} in <list-name> <condition>.",
+      "slots": [
+        "binding_name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_require_each-2",
+      "class": "_ParseError",
+      "source": "parser.py:2658",
+      "raised_in": "_parse_require_each",
+      "template": "I expected 'in' after 'require each {binding_name}', not '{in_tok.value}'. Try: require each {binding_name} in <list-name> <condition>.",
+      "slots": [
+        "binding_name",
+        "in_tok.value",
+        "binding_name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_require_each-3",
+      "class": "_ParseError",
+      "source": "parser.py:2670",
+      "raised_in": "_parse_require_each",
+      "template": "'require each {binding_name} in {collection.name}' needs a condition \u2014 try: require each {binding_name} in {collection.name} is <operator> <value>.",
+      "slots": [
+        "binding_name",
+        "collection.name",
+        "binding_name",
+        "collection.name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_forbid",
+      "class": "_ParseError",
+      "source": "parser.py:2701",
+      "raised_in": "_parse_forbid",
+      "template": "'forbid' needs a condition \u2014 try: forbid <field> is <operator> <value>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_permit",
+      "class": "_ParseError",
+      "source": "parser.py:2727",
+      "raised_in": "_parse_permit",
+      "template": "'permit' needs a condition \u2014 try: permit <field> is <operator> <value>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_assign-1",
+      "class": "_ParseError",
+      "source": "parser.py:2749",
+      "raised_in": "_parse_assign",
+      "template": "'assign' needs an item and a recipient \u2014 try: assign <item> to <recipient>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_assign-2",
+      "class": "_ParseError",
+      "source": "parser.py:2759",
+      "raised_in": "_parse_assign",
+      "template": "'assign' needs a recipient \u2014 try: assign <item> to <recipient>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_assign-3",
+      "class": "_ParseError",
+      "source": "parser.py:2764",
+      "raised_in": "_parse_assign",
+      "template": "I expected a recipient after 'to'. Try: assign <item> to <recipient>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_expect",
+      "class": "_ParseError",
+      "source": "parser.py:2785",
+      "raised_in": "_parse_expect",
+      "template": "'expect' needs a condition \u2014 try: expect <field> is <operator> <value>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_sort-1",
+      "class": "_ParseError",
+      "source": "parser.py:2813",
+      "raised_in": "_parse_sort",
+      "template": "'sort' needs a target list and a field \u2014 try: sort <list> by <field>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_sort-2",
+      "class": "_ParseError",
+      "source": "parser.py:2825",
+      "raised_in": "_parse_sort",
+      "template": "'sort' needs a field to sort by \u2014 try: sort <list> by <field>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_sort-3",
+      "class": "_ParseError",
+      "source": "parser.py:2832",
+      "raised_in": "_parse_sort",
+      "template": "I expected a field name after 'by'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_sort-4",
+      "class": "_ParseError",
+      "source": "parser.py:2834",
+      "raised_in": "_parse_sort",
+      "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(field_tok.value)}' instead.",
+      "slots": [
+        "_hyphenate(field_tok.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_sort-5",
+      "class": "_ParseError",
+      "source": "parser.py:2841",
+      "raised_in": "_parse_sort",
+      "template": "The word '{field_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a field name from your records.",
+      "slots": [
+        "field_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_sort-6",
+      "class": "_ParseError",
+      "source": "parser.py:2846",
+      "raised_in": "_parse_sort",
+      "template": "I expected a field name after 'by', not '{field_tok.value}'.",
+      "slots": [
+        "field_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_compare-1",
+      "class": "_ParseError",
+      "source": "parser.py:2889",
+      "raised_in": "_parse_compare",
+      "template": "'compare' needs two values \u2014 try: compare <name> to <name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_compare-2",
+      "class": "_ParseError",
+      "source": "parser.py:2901",
+      "raised_in": "_parse_compare",
+      "template": "'compare' needs a second value \u2014 try: compare <name> to <name>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_transform-1",
+      "class": "_ParseError",
+      "source": "parser.py:2928",
+      "raised_in": "_parse_transform",
+      "template": "'transform' needs a target \u2014 try: transform <list> by <expression>, or transform <field> of <list> by <expression>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_transform-2",
+      "class": "_ParseError",
+      "source": "parser.py:2936",
+      "raised_in": "_parse_transform",
+      "template": "I expected a name after 'transform'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_transform-3",
+      "class": "_ParseError",
+      "source": "parser.py:2938",
+      "raised_in": "_parse_transform",
+      "template": "Names can't have spaces. Try a hyphenated name like '{_hyphenate(first_tok.value)}' instead.",
+      "slots": [
+        "_hyphenate(first_tok.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_transform-4",
+      "class": "_ParseError",
+      "source": "parser.py:2945",
+      "raised_in": "_parse_transform",
+      "template": "The word '{first_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
+      "slots": [
+        "first_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_transform-5",
+      "class": "_ParseError",
+      "source": "parser.py:2950",
+      "raised_in": "_parse_transform",
+      "template": "I expected a name after 'transform', not '{first_tok.value}'.",
+      "slots": [
+        "first_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_transform-6",
+      "class": "_ParseError",
+      "source": "parser.py:2969",
+      "raised_in": "_parse_transform",
+      "template": "'transform' needs an expression after 'by' \u2014 try: transform {field_name} of {target.name} by <expression>.",
+      "slots": [
+        "field_name",
+        "target.name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_transform-7",
+      "class": "_ParseError",
+      "source": "parser.py:2974",
+      "raised_in": "_parse_transform",
+      "template": "I expected an expression after 'by'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_transform-8",
+      "class": "_ParseError",
+      "source": "parser.py:2989",
+      "raised_in": "_parse_transform",
+      "template": "I expected an expression after 'by'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_transform-9",
+      "class": "_ParseError",
+      "source": "parser.py:2998",
+      "raised_in": "_parse_transform",
+      "template": "I expected 'of' or 'by' after 'transform {first_tok.value}', not '{got}'. Try: transform {first_tok.value} of <list> by <expression>, or transform {first_tok.value} by <expression>.",
+      "slots": [
+        "first_tok.value",
+        "got",
+        "first_tok.value",
+        "first_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_gather-1",
+      "class": "_ParseError",
+      "source": "parser.py:3021",
+      "raised_in": "_parse_gather",
+      "template": "I expected a name after 'gather'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-2",
+      "class": "_ParseError",
+      "source": "parser.py:3025",
+      "raised_in": "_parse_gather",
+      "template": "The word '{name_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
+      "slots": [
+        "name_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_gather-3",
+      "class": "_ParseError",
+      "source": "parser.py:3029",
+      "raised_in": "_parse_gather",
+      "template": "I expected a name after 'gather', not '{name_tok.value}'.",
+      "slots": [
+        "name_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_gather-4",
+      "class": "_ParseError",
+      "source": "parser.py:3034",
+      "raised_in": "_parse_gather",
+      "template": "I expected 'from' in 'gather'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-5",
+      "class": "_ParseError",
+      "source": "parser.py:3038",
+      "raised_in": "_parse_gather",
+      "template": "I expected a number after 'from'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-6",
+      "class": "_ParseError",
+      "source": "parser.py:3043",
+      "raised_in": "_parse_gather",
+      "template": "I expected 'to' after the range start.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-7",
+      "class": "_ParseError",
+      "source": "parser.py:3047",
+      "raised_in": "_parse_gather",
+      "template": "I expected a number after 'to'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-8",
+      "class": "_ParseError",
+      "source": "parser.py:3058",
+      "raised_in": "_parse_gather",
+      "template": "I expected a number after 'by' \u2014 the step value.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_gather-9",
+      "class": "_ParseError",
+      "source": "parser.py:3061",
+      "raised_in": "_parse_gather",
+      "template": "The step value must be positive \u2014 got {step_val}. The direction is determined by the range (from/to), not the step.",
+      "slots": [
+        "step_val"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_each-1",
+      "class": "_ParseError",
+      "source": "parser.py:3088",
+      "raised_in": "_parse_each",
+      "template": "I expected a collection after 'each'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_each-2",
+      "class": "_ParseError",
+      "source": "parser.py:3092",
+      "raised_in": "_parse_each",
+      "template": "I expected a collection after 'each', but '{coll_tok.value}' is a {cat} in Liminate. Collections must be names you've created with 'remember' or 'gather'.",
+      "slots": [
+        "coll_tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_each-3",
+      "class": "_ParseError",
+      "source": "parser.py:3097",
+      "raised_in": "_parse_each",
+      "template": "I expected a collection after 'each'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_each-4",
+      "class": "_ParseError",
+      "source": "parser.py:3101",
+      "raised_in": "_parse_each",
+      "template": "I expected an action for 'each'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_choose",
+      "class": "_ParseError",
+      "source": "parser.py:3132",
+      "raised_in": "_parse_choose",
+      "template": "I expected 'if' after 'choose'. Try: choose if <condition>: <action>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_choose_branch",
+      "class": "_ParseError",
+      "source": "parser.py:3175",
+      "raised_in": "_parse_choose_branch",
+      "template": "I expected ':' after the {leader} condition, not '{got}'.",
+      "slots": [
+        "leader",
+        "got"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_filter_shape",
+      "class": "_ParseError",
+      "source": "parser.py:3214",
+      "raised_in": "_parse_filter_shape",
+      "template": "I expected 'where' to introduce the condition.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-1",
+      "class": "_ParseError",
+      "source": "parser.py:3326",
+      "raised_in": "_parse_simple_condition",
+      "template": "I expected a field after 'where'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-2",
+      "class": "_ParseError",
+      "source": "parser.py:3362",
+      "raised_in": "_parse_simple_condition",
+      "template": "I expected a record name after 'of'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-3",
+      "class": "_ParseError",
+      "source": "parser.py:3366",
+      "raised_in": "_parse_simple_condition",
+      "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
+      "slots": [
+        "rec_tok.value",
+        "rcat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-4",
+      "class": "_ParseError",
+      "source": "parser.py:3371",
+      "raised_in": "_parse_simple_condition",
+      "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
+      "slots": [
+        "rec_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-5",
+      "class": "_ParseError",
+      "source": "parser.py:3377",
+      "raised_in": "_parse_simple_condition",
+      "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-6",
+      "class": "_ParseError",
+      "source": "parser.py:3387",
+      "raised_in": "_parse_simple_condition",
+      "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(head.value)}' instead.",
+      "slots": [
+        "_hyphenate(head.value)"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-7",
+      "class": "_ParseError",
+      "source": "parser.py:3394",
+      "raised_in": "_parse_simple_condition",
+      "template": "The word '{head.value}' is reserved in Liminate \u2014 it's used as a {cat} and can't be used as a field name.",
+      "slots": [
+        "head.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_simple_condition-8",
+      "class": "_ParseError",
+      "source": "parser.py:3398",
+      "raised_in": "_parse_simple_condition",
+      "template": "I didn't expect '{head.value}' as a field name.",
+      "slots": [
+        "head.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._finish_simple_condition-1",
+      "class": "_ParseError",
+      "source": "parser.py:3431",
+      "raised_in": "_finish_simple_condition",
+      "template": "I expected 'is' in this condition.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._finish_simple_condition-2",
+      "class": "_ParseError",
+      "source": "parser.py:3437",
+      "raised_in": "_finish_simple_condition",
+      "template": "I expected a value or comparison after 'is'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._finish_simple_condition-3",
+      "class": "_ParseError",
+      "source": "parser.py:3448",
+      "raised_in": "_finish_simple_condition",
+      "template": "'within' needs a target \u2014 try: <field> is within <amount> of <target>. Got: {got}.",
+      "slots": [
+        "got"
+      ]
+    },
+    {
+      "id": "parser._ParseError._finish_simple_condition-4",
+      "class": "_ParseError",
+      "source": "parser.py:3482",
+      "raised_in": "_finish_simple_condition",
+      "template": "After 'not' I expected 'above', 'below', or 'equal to'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._finish_simple_condition-5",
+      "class": "_ParseError",
+      "source": "parser.py:3492",
+      "raised_in": "_finish_simple_condition",
+      "template": "I didn't expect '{nxt.value}' after 'is'.",
+      "slots": [
+        "nxt.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_within_tolerance-1",
+      "class": "_ParseError",
+      "source": "parser.py:3520",
+      "raised_in": "_parse_within_tolerance",
+      "template": "'within' needs an amount \u2014 try: <field> is within <amount> of <target>.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_within_tolerance-2",
+      "class": "_ParseError",
+      "source": "parser.py:3527",
+      "raised_in": "_parse_within_tolerance",
+      "template": "'within' needs a numeric amount (the number of days), not a date. Got: {tok.value}.",
+      "slots": [
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_within_tolerance-3",
+      "class": "_ParseError",
+      "source": "parser.py:3535",
+      "raised_in": "_parse_within_tolerance",
+      "template": "'within' needs a numeric amount, but '{tok.value}' is a {cat} in Liminate.",
+      "slots": [
+        "tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_within_tolerance-4",
+      "class": "_ParseError",
+      "source": "parser.py:3539",
+      "raised_in": "_parse_within_tolerance",
+      "template": "'within' needs a numeric amount, not '{tok.value}'.",
+      "slots": [
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_extrema-1",
+      "class": "_ParseError",
+      "source": "parser.py:3642",
+      "raised_in": "_parse_extrema",
+      "template": "'{word}' needs a list \u2014 try: {word} of <list>, or {word} <field> of <list>.",
+      "slots": [
+        "word",
+        "word",
+        "word"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_extrema-2",
+      "class": "_ParseError",
+      "source": "parser.py:3650",
+      "raised_in": "_parse_extrema",
+      "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_atom-1",
+      "class": "_ParseError",
+      "source": "parser.py:3670",
+      "raised_in": "_parse_atom",
+      "template": "I expected a value here.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_atom-2",
+      "class": "_ParseError",
+      "source": "parser.py:3689",
+      "raised_in": "_parse_atom",
+      "template": "Field names can't have spaces. Try '{_hyphenate(tok.value)}' instead of \"{tok.value}\".",
+      "slots": [
+        "_hyphenate(tok.value)",
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_atom-3",
+      "class": "_ParseError",
+      "source": "parser.py:3703",
+      "raised_in": "_parse_atom",
+      "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a value on its own.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._parse_atom-4",
+      "class": "_ParseError",
+      "source": "parser.py:3710",
+      "raised_in": "_parse_atom",
+      "template": "The word '{tok.value}' is a {cat} in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: \"{tok.value}\".",
+      "slots": [
+        "tok.value",
+        "cat",
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._parse_atom-5",
+      "class": "_ParseError",
+      "source": "parser.py:3715",
+      "raised_in": "_parse_atom",
+      "template": "I didn't expect '{tok.value}' as a value.",
+      "slots": [
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._maybe_field_access-1",
+      "class": "_ParseError",
+      "source": "parser.py:3738",
+      "raised_in": "_maybe_field_access",
+      "template": "I expected a record name after 'of'.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._maybe_field_access-2",
+      "class": "_ParseError",
+      "source": "parser.py:3742",
+      "raised_in": "_maybe_field_access",
+      "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
+      "slots": [
+        "rec_tok.value",
+        "rcat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._maybe_field_access-3",
+      "class": "_ParseError",
+      "source": "parser.py:3747",
+      "raised_in": "_maybe_field_access",
+      "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
+      "slots": [
+        "rec_tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._maybe_field_access-4",
+      "class": "_ParseError",
+      "source": "parser.py:3752",
+      "raised_in": "_maybe_field_access",
+      "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._consume_target-1",
+      "class": "_ParseError",
+      "source": "parser.py:3794",
+      "raised_in": "_consume_target",
+      "template": "'{verb}' is a list operation \u2014 it can't appear inside 'each'. To {verb} only some items, use '{verb} <list> where <condition>' directly.",
+      "slots": [
+        "verb",
+        "verb",
+        "verb"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_target-2",
+      "class": "_ParseError",
+      "source": "parser.py:3800",
+      "raised_in": "_consume_target",
+      "template": "I expected a target after '{verb}'.",
+      "slots": [
+        "verb"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_target-3",
+      "class": "_ParseError",
+      "source": "parser.py:3807",
+      "raised_in": "_consume_target",
+      "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.",
+      "slots": []
+    },
+    {
+      "id": "parser._ParseError._consume_target-4",
+      "class": "_ParseError",
+      "source": "parser.py:3812",
+      "raised_in": "_consume_target",
+      "template": "I expected a target after '{verb}', but '{tok.value}' is a {cat} in Liminate. Targets must be names you've created with 'remember' or 'gather'.",
+      "slots": [
+        "verb",
+        "tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_target-5",
+      "class": "_ParseError",
+      "source": "parser.py:3817",
+      "raised_in": "_consume_target",
+      "template": "I expected a target after '{verb}', not '{tok.value}'.",
+      "slots": [
+        "verb",
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_parameter_arg-1",
+      "class": "_ParseError",
+      "source": "parser.py:3835",
+      "raised_in": "_consume_parameter_arg",
+      "template": "I expected a name after '{comp_name} from' \u2014 compositions take a single name as input.",
+      "slots": [
+        "comp_name"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_parameter_arg-2",
+      "class": "_ParseError",
+      "source": "parser.py:3848",
+      "raised_in": "_consume_parameter_arg",
+      "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
+      "slots": [
+        "tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_parameter_arg-3",
+      "class": "_ParseError",
+      "source": "parser.py:3852",
+      "raised_in": "_consume_parameter_arg",
+      "template": "I expected a name after '{comp_name} from', not '{tok.value}'.",
+      "slots": [
+        "comp_name",
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-1",
+      "class": "_ParseError",
+      "source": "parser.py:3861",
+      "raised_in": "_consume_name",
+      "template": "I expected a name after {after}.",
+      "slots": [
+        "after"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-2",
+      "class": "_ParseError",
+      "source": "parser.py:3868",
+      "raised_in": "_consume_name",
+      "template": "Composition names can't have spaces. Try a hyphenated name like '{suggestion}' instead.",
+      "slots": [
+        "suggestion"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-3",
+      "class": "_ParseError",
+      "source": "parser.py:3872",
+      "raised_in": "_consume_name",
+      "template": "Names can't have spaces. Try a hyphenated name like '{suggestion}' instead.",
+      "slots": [
+        "suggestion"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-4",
+      "class": "_ParseError",
+      "source": "parser.py:3879",
+      "raised_in": "_consume_name",
+      "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
+      "slots": [
+        "tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-5",
+      "class": "_ParseError",
+      "source": "parser.py:3883",
+      "raised_in": "_consume_name",
+      "template": "I expected a name after {after}, not '{tok.value}'.",
+      "slots": [
+        "after",
+        "tok.value"
+      ]
+    },
+    {
+      "id": "parser._ParseError._consume_name-6",
+      "class": "_ParseError",
+      "source": "parser.py:3889",
+      "raised_in": "_consume_name",
+      "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
+      "slots": [
+        "tok.value",
+        "cat"
+      ]
+    },
+    {
+      "id": "renderer.TypeError._render_node",
+      "class": "TypeError",
+      "source": "renderer.py:387",
+      "raised_in": "_render_node",
+      "template": "render() has no rule for {type(node).__name__}",
+      "slots": [
+        "type(node).__name__"
+      ]
+    },
+    {
+      "id": "renderer.ValueError._render_condition",
+      "class": "ValueError",
+      "source": "renderer.py:590",
+      "raised_in": "_render_condition",
+      "template": "unknown condition operator '{node.op}'",
+      "slots": [
+        "node.op"
+      ]
+    }
+  ]
+}
