@@ -182,6 +182,15 @@ define large: is above 50
 define enormous: is large
 require total is enormous
 
+# quoting is the escape hatch of v31 §82 — the quotes are what stop this from
+# being a predicate application, and v2c §90's conditional quoting dropped
+# them, so the canonical form re-parsed as a different program from the same
+# text. Only the last comment line before a program becomes the case id.
+# a quoted string that shadows a predicate keeps its quotes
+remember a string called total with "large"
+define large: is above 50
+require total is "large"
+
 # a bareword that is not a predicate stays string equality, which is what
 # makes define non-breaking for every program written before it
 remember a number called total with 75

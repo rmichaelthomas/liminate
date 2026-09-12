@@ -213,6 +213,26 @@ class QuotedString(ASTNode):
     displays the literal text (§88)."""
     content: str
 
+    # v31 §82 — set when this literal sits in a position where dropping
+    # its quotes would not merely change its spelling but change what it
+    # *is*: the right of `is`, where a bare word matching a declared
+    # predicate applies that predicate instead of testing equality.
+    #
+    # v2c §90's conditional quoting asks whether a word is *reserved*,
+    # which a predicate name never is — it is declared, not reserved. So
+    # the quotes that made `is "large"` mean equality were dropped on the
+    # way out and the canonical form re-parsed as a predicate
+    # application. The parser is the only place that knows the predicate
+    # table, so it records the collision here and the renderer honours it
+    # (the same arrangement v2d §96 reached for composition-call args,
+    # which are name-resolvable in exactly the same way).
+    #
+    # Inert for equality (`compare=False`): two `"large"` literals are
+    # the same value whether or not one of them has to be written with
+    # quotes to stay that way. This keeps `parse(render(ast)) == ast`
+    # meaning what it meant before.
+    shadows_a_predicate: bool = field(default=False, compare=False)
+
 
 @dataclass
 class FieldAccessNode(ASTNode):
@@ -3502,6 +3522,11 @@ def _finish_simple_condition(
 
     # `is` as equality operator: consume a value.
     value = _parse_value(stream)
+    if isinstance(value, QuotedString) and value.content in preds:
+        # The quotes are what stopped the branch above from reading this
+        # as a predicate application, so they are load-bearing and the
+        # canonical form has to keep them (§82; see QuotedString).
+        value.shadows_a_predicate = True
     return ConditionNode(field=field_node, op="is", value=value)
 
 

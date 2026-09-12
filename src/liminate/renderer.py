@@ -166,6 +166,16 @@ def _render_node(node: ASTNode) -> str:
         # v2c §90: same conditional-quoting rule applies regardless of
         # whether the source used quotes — `"active"` and `active` both
         # render bare; `"in progress"` keeps its quotes.
+        #
+        # Unless the parser marked the quotes load-bearing: on the right
+        # of `is`, a bare word that names a declared predicate applies
+        # that predicate, so normalising `is "large"` to `is large`
+        # would emit a different program, not a tidier spelling of the
+        # same one. §90's safety test cannot see this on its own — it
+        # asks whether a word is reserved, and a predicate name is
+        # declared rather than reserved.
+        if node.shadows_a_predicate:
+            return f'"{node.content}"'
         return _emit_string(node.content)
     if isinstance(node, NameRef):
         return node.name
