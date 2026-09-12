@@ -40,7 +40,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from liminate.analyzer import analyze  # noqa: E402
 from liminate.lexer import LexError, tokenize  # noqa: E402
-from liminate.parser import parse  # noqa: E402
+from liminate.parser import ASTNode, parse  # noqa: E402
 from liminate.renderer import render  # noqa: E402
 from liminate.reorderer import reorder  # noqa: E402
 from liminate.result import LiminateResult, ResultStatus  # noqa: E402
@@ -120,12 +120,19 @@ def node_kinds(node: object) -> list[str]:
 
     Kind names are the class name here and the `kind` field in TypeScript, and
     they already agree — `RequireNode` is `RequireNode` on both sides.
+
+    An `ASTNode` subclass is a node; another dataclass is a container. The walk
+    recurses through both and counts only the first. `ChooseBranch` is the case
+    that made the distinction necessary: it is a plain dataclass here and an
+    interface with no `kind` field in TypeScript, so both implementations
+    already agree it is not a node — and counting it made them disagree.
     """
     found: list[str] = []
 
     def walk(value: object) -> None:
         if dataclasses.is_dataclass(value) and not isinstance(value, type):
-            found.append(type(value).__name__)
+            if isinstance(value, ASTNode):
+                found.append(type(value).__name__)
             for f in dataclasses.fields(value):
                 walk(getattr(value, f.name))
         elif isinstance(value, (list, tuple)):

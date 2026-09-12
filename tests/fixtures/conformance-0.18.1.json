@@ -188,8 +188,6 @@
         {
           "canonical": "choose if tags includes urgent: show yes otherwise show no",
           "nodes": [
-            "ChooseBranch",
-            "ChooseBranch",
             "ChooseNode",
             "ConditionNode",
             "NameRef",
@@ -218,8 +216,6 @@
         {
           "canonical": "choose if tags not includes urgent: show ok otherwise show skip",
           "nodes": [
-            "ChooseBranch",
-            "ChooseBranch",
             "ChooseNode",
             "ConditionNode",
             "NameRef",
