@@ -2,7 +2,7 @@
   "format": 1,
   "generated_by": "grammar_gen.py",
   "note": "Every construction of _ParseError, _SemanticError, _RuntimeError, BuildError, LexError, ValueError, RuntimeError, or TypeError found by walking the AST of every .py file directly under src/liminate/. Liminate's errors carry no tag field -- unlike Planes' errors.json, there is no tags index here grouping entries by a shared identifier, because there is no shared identifier to group by. An id is assigned per entry (file.class.function[-N]) purely so a reader has something stable to point at; it is not a tag the source declares.",
-  "count": 360,
+  "count": 361,
   "literal_message_count": 91,
   "entries": [
     {
@@ -677,7 +677,7 @@
     {
       "id": "analyzer._SemanticError._check_condition-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1398",
+      "source": "analyzer.py:1399",
       "raised_in": "_check_condition",
       "template": "Unknown comparison operator '{cond.op}'.",
       "slots": [
@@ -685,9 +685,21 @@
       ]
     },
     {
+      "id": "analyzer._SemanticError._refuse_membership_over_a_known_scalar",
+      "class": "_SemanticError",
+      "source": "analyzer.py:1423",
+      "raised_in": "_refuse_membership_over_a_known_scalar",
+      "template": "'{word}' tests whether a list holds a value, and '{label}' is {_singular(t)}. Liminate has no text-contains test.",
+      "slots": [
+        "word",
+        "label",
+        "_singular(t)"
+      ]
+    },
+    {
       "id": "analyzer._SemanticError._require_comparable",
       "class": "_SemanticError",
-      "source": "analyzer.py:1406",
+      "source": "analyzer.py:1434",
       "raised_in": "_require_comparable",
       "template": "'{op}' requires numbers or dates, but '{label}' is {_singular(t)}.",
       "slots": [
@@ -699,7 +711,7 @@
     {
       "id": "analyzer._SemanticError._resolve_field-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1466",
+      "source": "analyzer.py:1494",
       "raised_in": "_resolve_field",
       "template": null,
       "slots": [],
@@ -708,7 +720,7 @@
     {
       "id": "analyzer._SemanticError._resolve_field-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1474",
+      "source": "analyzer.py:1502",
       "raised_in": "_resolve_field",
       "template": "In a list of {_plural(iterator.scalar_type or 'items')}, use 'each' to refer to the current item.",
       "slots": [
@@ -718,7 +730,7 @@
     {
       "id": "analyzer._SemanticError._resolve_field-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:1478",
+      "source": "analyzer.py:1506",
       "raised_in": "_resolve_field",
       "template": "Unexpected field reference.",
       "slots": []
@@ -726,7 +738,7 @@
     {
       "id": "analyzer._SemanticError._resolve_value",
       "class": "_SemanticError",
-      "source": "analyzer.py:1527",
+      "source": "analyzer.py:1555",
       "raised_in": "_resolve_value",
       "template": "Unexpected value in condition.",
       "slots": []
@@ -734,7 +746,7 @@
     {
       "id": "analyzer._SemanticError._check_sum-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1542",
+      "source": "analyzer.py:1570",
       "raised_in": "_check_sum",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -744,7 +756,7 @@
     {
       "id": "analyzer._SemanticError._check_sum-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1549",
+      "source": "analyzer.py:1577",
       "raised_in": "_check_sum",
       "template": "I can only sum numbers. '{name}' contains text.",
       "slots": [
@@ -754,7 +766,7 @@
     {
       "id": "analyzer._SemanticError._check_sum-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:1551",
+      "source": "analyzer.py:1579",
       "raised_in": "_check_sum",
       "template": "I can only sum numbers. '{name}' contains records.",
       "slots": [
@@ -764,7 +776,7 @@
     {
       "id": "analyzer._SemanticError._check_sum-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:1552",
+      "source": "analyzer.py:1580",
       "raised_in": "_check_sum",
       "template": "I can only sum numbers. '{name}' is {_singular(entry.type)}.",
       "slots": [
@@ -775,7 +787,7 @@
     {
       "id": "analyzer._SemanticError._check_extrema-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1572",
+      "source": "analyzer.py:1600",
       "raised_in": "_check_extrema",
       "template": "'{node.word}' on a list of records needs a field \u2014 try: {node.word} <field> of {node.target.name}.",
       "slots": [
@@ -787,7 +799,7 @@
     {
       "id": "analyzer._SemanticError._check_extrema-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1578",
+      "source": "analyzer.py:1606",
       "raised_in": "_check_extrema",
       "template": "'{node.word} {node.field}' needs a list of records. '{node.target.name}' is {_singular(entry.type)} \u2014 try: {node.word} of {node.target.name}.",
       "slots": [
@@ -802,7 +814,7 @@
     {
       "id": "analyzer._SemanticError._check_extrema-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:1588",
+      "source": "analyzer.py:1616",
       "raised_in": "_check_extrema",
       "template": null,
       "slots": [],
@@ -811,7 +823,7 @@
     {
       "id": "analyzer._SemanticError._check_gather",
       "class": "_SemanticError",
-      "source": "analyzer.py:1603",
+      "source": "analyzer.py:1631",
       "raised_in": "_check_gather",
       "template": "That range is too large. The maximum is {GATHER_RANGE_CAP} items.",
       "slots": [
@@ -821,7 +833,7 @@
     {
       "id": "analyzer._SemanticError._check_require_each",
       "class": "_SemanticError",
-      "source": "analyzer.py:1645",
+      "source": "analyzer.py:1673",
       "raised_in": "_check_require_each",
       "template": "The binding name can't be the same as the list name. Try: require each <item> in {name} <condition>.",
       "slots": [
@@ -831,7 +843,7 @@
     {
       "id": "analyzer._SemanticError._check_composition_call_shape-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1715",
+      "source": "analyzer.py:1743",
       "raised_in": "_check_composition_call_shape",
       "template": "I can't find a composition called '{node.name}'.",
       "slots": [
@@ -841,7 +853,7 @@
     {
       "id": "analyzer._SemanticError._check_composition_call_shape-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1720",
+      "source": "analyzer.py:1748",
       "raised_in": "_check_composition_call_shape",
       "template": "'{node.name}' expects an input (from <{param}>). Try: {node.name} from <your-list> or {node.name} from 50.",
       "slots": [
@@ -854,7 +866,7 @@
     {
       "id": "analyzer._SemanticError._check_composition_call_shape-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:1725",
+      "source": "analyzer.py:1753",
       "raised_in": "_check_composition_call_shape",
       "template": "'{node.name}' doesn't take an input. Call it on its own: {node.name}.",
       "slots": [
@@ -865,7 +877,7 @@
     {
       "id": "analyzer._SemanticError._check_composition_call_shape-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:1732",
+      "source": "analyzer.py:1760",
       "raised_in": "_check_composition_call_shape",
       "template": "I can't find '{node.arg}'. You might need to 'remember' it first.",
       "slots": [
@@ -875,7 +887,7 @@
     {
       "id": "analyzer._SemanticError._check_choose_condition-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1831",
+      "source": "analyzer.py:1859",
       "raised_in": "_check_choose_condition",
       "template": "Unexpected condition shape.",
       "slots": []
@@ -883,7 +895,7 @@
     {
       "id": "analyzer._SemanticError._check_choose_condition-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1855",
+      "source": "analyzer.py:1883",
       "raised_in": "_check_choose_condition",
       "template": "Unknown comparison operator '{cond.op}'.",
       "slots": [
@@ -893,7 +905,7 @@
     {
       "id": "analyzer._SemanticError._check_predicate_application",
       "class": "_SemanticError",
-      "source": "analyzer.py:1881",
+      "source": "analyzer.py:1909",
       "raised_in": "_check_predicate_application",
       "template": "I don't know a definition for '{cond.predicate_name}'. Use 'define {cond.predicate_name}: ...' to create one.",
       "slots": [
@@ -904,7 +916,7 @@
     {
       "id": "analyzer._SemanticError._check_self_referential_define-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1936",
+      "source": "analyzer.py:1964",
       "raised_in": "_check_self_referential_define",
       "template": "Definition '{name}' can't refer to itself.",
       "slots": [
@@ -914,7 +926,7 @@
     {
       "id": "analyzer._SemanticError._check_self_referential_define-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1938",
+      "source": "analyzer.py:1966",
       "raised_in": "_check_self_referential_define",
       "template": "Definition '{name}' can't refer to itself.",
       "slots": [
@@ -924,7 +936,7 @@
     {
       "id": "analyzer._SemanticError._check_define_condition-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1955",
+      "source": "analyzer.py:1983",
       "raised_in": "_check_define_condition",
       "template": "Unexpected condition shape.",
       "slots": []
@@ -932,7 +944,7 @@
     {
       "id": "analyzer._SemanticError._check_define_condition-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1957",
+      "source": "analyzer.py:1985",
       "raised_in": "_check_define_condition",
       "template": "Unknown comparison operator '{cond.op}'.",
       "slots": [
@@ -942,7 +954,7 @@
     {
       "id": "analyzer._SemanticError._check_predicate_definition_cycle-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:1974",
+      "source": "analyzer.py:2002",
       "raised_in": "_check_predicate_definition_cycle",
       "template": "Definition '{name}' can't depend on itself.",
       "slots": [
@@ -952,7 +964,7 @@
     {
       "id": "analyzer._SemanticError._check_predicate_definition_cycle-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:1976",
+      "source": "analyzer.py:2004",
       "raised_in": "_check_predicate_definition_cycle",
       "template": "Definition '{name}' refers back to itself through {chain}. A definition can't depend on itself.",
       "slots": [
@@ -963,7 +975,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_verb-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2070",
+      "source": "analyzer.py:2098",
       "raised_in": "_check_pack_verb",
       "template": "'{slot_label}' expects a name.",
       "slots": [
@@ -973,7 +985,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_verb-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2075",
+      "source": "analyzer.py:2103",
       "raised_in": "_check_pack_verb",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -983,7 +995,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_verb-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2094",
+      "source": "analyzer.py:2122",
       "raised_in": "_check_pack_verb",
       "template": "'{name}' is {shown}, not a {constraint}. '{slot_label}' expects a {constraint}.",
       "slots": [
@@ -997,7 +1009,7 @@
     {
       "id": "analyzer._SemanticError._resolve_slot_target_name",
       "class": "_SemanticError",
-      "source": "analyzer.py:2141",
+      "source": "analyzer.py:2169",
       "raised_in": "_resolve_slot_target_name",
       "template": "Pack verb '{node.word}' needs a name for its target.",
       "slots": [
@@ -1007,7 +1019,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_substring-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2155",
+      "source": "analyzer.py:2183",
       "raised_in": "_check_pack_substring",
       "template": "'{node.word}' expects a name for the source text.",
       "slots": [
@@ -1017,7 +1029,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_substring-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2160",
+      "source": "analyzer.py:2188",
       "raised_in": "_check_pack_substring",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1027,7 +1039,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_substring-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2166",
+      "source": "analyzer.py:2194",
       "raised_in": "_check_pack_substring",
       "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
       "slots": [
@@ -1039,7 +1051,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_substring-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:2174",
+      "source": "analyzer.py:2202",
       "raised_in": "_check_pack_substring",
       "template": "I can't find '{check_node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1049,7 +1061,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_append",
       "class": "_SemanticError",
-      "source": "analyzer.py:2195",
+      "source": "analyzer.py:2223",
       "raised_in": "_check_pack_append",
       "template": "Pack verb '{node.word}' missing source value.",
       "slots": [
@@ -1059,7 +1071,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_set_field-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2216",
+      "source": "analyzer.py:2244",
       "raised_in": "_check_pack_set_field",
       "template": "I can't find '{target_name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1069,7 +1081,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_set_field-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2222",
+      "source": "analyzer.py:2250",
       "raised_in": "_check_pack_set_field",
       "template": "'{node.word}' expects a record, but '{target_name}' is {_singular(entry.type)}.",
       "slots": [
@@ -1081,7 +1093,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_set_field-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2229",
+      "source": "analyzer.py:2257",
       "raised_in": "_check_pack_set_field",
       "template": "I can't find '{src.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1091,7 +1103,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_compare-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2246",
+      "source": "analyzer.py:2274",
       "raised_in": "_check_pack_compare",
       "template": "'{node.word}' expects a name for '{slot_name}'.",
       "slots": [
@@ -1102,7 +1114,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_compare-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2250",
+      "source": "analyzer.py:2278",
       "raised_in": "_check_pack_compare",
       "template": "I can't find '{value_node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1112,7 +1124,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_numeric_extract-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2264",
+      "source": "analyzer.py:2292",
       "raised_in": "_check_pack_numeric_extract",
       "template": "'{node.word}' expects a name for the source text.",
       "slots": [
@@ -1122,7 +1134,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_numeric_extract-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2269",
+      "source": "analyzer.py:2297",
       "raised_in": "_check_pack_numeric_extract",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1132,7 +1144,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_numeric_extract-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2275",
+      "source": "analyzer.py:2303",
       "raised_in": "_check_pack_numeric_extract",
       "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
       "slots": [
@@ -1144,7 +1156,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_range_check-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2292",
+      "source": "analyzer.py:2320",
       "raised_in": "_check_pack_range_check",
       "template": "'{node.word}' expects a name for the reference window.",
       "slots": [
@@ -1154,7 +1166,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_range_check-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2297",
+      "source": "analyzer.py:2325",
       "raised_in": "_check_pack_range_check",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1164,7 +1176,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_range_check-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2303",
+      "source": "analyzer.py:2331",
       "raised_in": "_check_pack_range_check",
       "template": "'{node.word} from' expects text, but '{name}' is {_singular(entry.type)}.",
       "slots": [
@@ -1176,7 +1188,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_range_check-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:2310",
+      "source": "analyzer.py:2338",
       "raised_in": "_check_pack_range_check",
       "template": "I can't find '{check_node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1186,7 +1198,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2329",
+      "source": "analyzer.py:2357",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word}' expects a name for the shape.",
       "slots": [
@@ -1196,7 +1208,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2333",
+      "source": "analyzer.py:2361",
       "raised_in": "_check_pack_conformance",
       "template": "I can't find '{shape_node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1206,7 +1218,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2339",
+      "source": "analyzer.py:2367",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word} to' expects a record shape, but '{shape_node.name}' is {_singular(shape_entry.type)}.",
       "slots": [
@@ -1218,7 +1230,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:2349",
+      "source": "analyzer.py:2377",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word} each' can only be used inside an 'each' loop.",
       "slots": [
@@ -1228,7 +1240,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-5",
       "class": "_SemanticError",
-      "source": "analyzer.py:2353",
+      "source": "analyzer.py:2381",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word} each' expects a list of records to check against the shape.",
       "slots": [
@@ -1238,7 +1250,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-6",
       "class": "_SemanticError",
-      "source": "analyzer.py:2359",
+      "source": "analyzer.py:2387",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word}' expects a name for the record.",
       "slots": [
@@ -1248,7 +1260,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-7",
       "class": "_SemanticError",
-      "source": "analyzer.py:2363",
+      "source": "analyzer.py:2391",
       "raised_in": "_check_pack_conformance",
       "template": "I can't find '{record_node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1258,7 +1270,7 @@
     {
       "id": "analyzer._SemanticError._check_pack_conformance-8",
       "class": "_SemanticError",
-      "source": "analyzer.py:2369",
+      "source": "analyzer.py:2397",
       "raised_in": "_check_pack_conformance",
       "template": "'{node.word}' expects a record, but '{record_node.name}' is {_singular(record_entry.type)}.",
       "slots": [
@@ -1270,7 +1282,7 @@
     {
       "id": "analyzer._SemanticError._check_finish",
       "class": "_SemanticError",
-      "source": "analyzer.py:2386",
+      "source": "analyzer.py:2414",
       "raised_in": "_check_finish",
       "template": "'finish' can only be used inside an event handler.",
       "slots": []
@@ -1278,7 +1290,7 @@
     {
       "id": "analyzer._SemanticError._check_list_append-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2461",
+      "source": "analyzer.py:2489",
       "raised_in": "_check_list_append",
       "template": "'{target_name}' is a live value provided by the domain pack. '{verb}' modifies the list and can't be used on it \u2014 the domain pack controls this value.",
       "slots": [
@@ -1289,7 +1301,7 @@
     {
       "id": "analyzer._SemanticError._check_list_append-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2467",
+      "source": "analyzer.py:2495",
       "raised_in": "_check_list_append",
       "template": "I can't find '{target_name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1299,7 +1311,7 @@
     {
       "id": "analyzer._SemanticError._check_list_append-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2473",
+      "source": "analyzer.py:2501",
       "raised_in": "_check_list_append",
       "template": "I can only {verb} {prep} a list. '{target_name}' is {_singular(entry.type)}.",
       "slots": [
@@ -1312,7 +1324,7 @@
     {
       "id": "analyzer._SemanticError._check_list_append-4",
       "class": "_SemanticError",
-      "source": "analyzer.py:2479",
+      "source": "analyzer.py:2507",
       "raised_in": "_check_list_append",
       "template": "'{target_name}' is the list being iterated \u2014 you can't {verb} {prep} it while iterating. Try {verb}ing {prep} a different list.",
       "slots": [
@@ -1326,7 +1338,7 @@
     {
       "id": "analyzer._SemanticError._check_list_append-5",
       "class": "_SemanticError",
-      "source": "analyzer.py:2497",
+      "source": "analyzer.py:2525",
       "raised_in": "_check_list_append",
       "template": "'{target_name}' is {_singular(entry.type)}. '{item_label}' is {_singular(item_type)} and can't be {action} it.",
       "slots": [
@@ -1340,7 +1352,7 @@
     {
       "id": "analyzer._SemanticError._infer_add_item_type-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2535",
+      "source": "analyzer.py:2563",
       "raised_in": "_infer_add_item_type",
       "template": "I can't find '{item.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1350,7 +1362,7 @@
     {
       "id": "analyzer._SemanticError._infer_add_item_type-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2545",
+      "source": "analyzer.py:2573",
       "raised_in": "_infer_add_item_type",
       "template": "Unexpected item for 'add': {type(item).__name__}.",
       "slots": [
@@ -1360,7 +1372,7 @@
     {
       "id": "analyzer._SemanticError._resolve_choose_operand-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2567",
+      "source": "analyzer.py:2595",
       "raised_in": "_resolve_choose_operand",
       "template": "I can't find '{node.name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1370,7 +1382,7 @@
     {
       "id": "analyzer._SemanticError._resolve_choose_operand-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2592",
+      "source": "analyzer.py:2620",
       "raised_in": "_resolve_choose_operand",
       "template": "'each' only refers to the current item inside an 'each' or 'where' clause. In 'choose', name the value directly.",
       "slots": []
@@ -1378,7 +1390,7 @@
     {
       "id": "analyzer._SemanticError._resolve_choose_operand-3",
       "class": "_SemanticError",
-      "source": "analyzer.py:2604",
+      "source": "analyzer.py:2632",
       "raised_in": "_resolve_choose_operand",
       "template": "Unexpected operand in 'choose' condition.",
       "slots": []
@@ -1386,7 +1398,7 @@
     {
       "id": "analyzer._SemanticError._require_list-1",
       "class": "_SemanticError",
-      "source": "analyzer.py:2619",
+      "source": "analyzer.py:2647",
       "raised_in": "_require_list",
       "template": "I can't find '{name}'. You might need to 'remember' it first.",
       "slots": [
@@ -1396,7 +1408,7 @@
     {
       "id": "analyzer._SemanticError._require_list-2",
       "class": "_SemanticError",
-      "source": "analyzer.py:2637",
+      "source": "analyzer.py:2665",
       "raised_in": "_require_list",
       "template": null,
       "slots": [],
@@ -1405,7 +1417,7 @@
     {
       "id": "analyzer._SemanticError._make_iterator",
       "class": "_SemanticError",
-      "source": "analyzer.py:2653",
+      "source": "analyzer.py:2681",
       "raised_in": "_make_iterator",
       "template": "'{name}' isn't a list I can iterate.",
       "slots": [

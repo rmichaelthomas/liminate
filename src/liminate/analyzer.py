@@ -1388,7 +1388,8 @@ def _check_condition(
     if cond.op == "equal_to":
         return  # any same-type comparison; analyzer doesn't enforce
     if cond.op in ("includes", "not_includes"):
-        return  # list-membership — analyzer accepts any operand types
+        _refuse_membership_over_a_known_scalar(field_type, field_label, cond.op)
+        return
     if cond.op.startswith("not_"):
         inner = cond.op[len("not_"):]
         if inner in ("above", "below"):
@@ -1396,6 +1397,33 @@ def _check_condition(
             _require_comparable(value_type, value_label, f"not {inner}")
         return
     raise _SemanticError(f"Unknown comparison operator '{cond.op}'.")
+
+
+def _refuse_membership_over_a_known_scalar(t: str, label: str, op: str) -> None:
+    """Refuse `includes` where the schema already says the operand is a scalar.
+
+    A non-list operand evaluates to false at runtime, deliberately — see
+    `test_includes_with_scalar_left_operand_is_false`. That is right where the
+    type is whatever the value turned out to be, and wrong here, where the
+    record schema has already said the field holds text: `filter the orders
+    where title includes "roof"` would validate clean, empty the list, and
+    report success.
+
+    So: answer where the type is known, defer where it is not. A list-valued
+    field is `unknown` statically, so it still reaches runtime, and nothing
+    that worked before this stops working.
+
+    Reachable only since the reorderer admitted `includes` after `where`. The
+    refusal that change replaced was safe and described the wrong problem; what
+    replaced it described nothing and was wrong.
+    """
+    if t not in ("string", "number", "date"):
+        return
+    word = op.replace("not_", "not ")
+    raise _SemanticError(
+        f"'{word}' tests whether a list holds a value, and '{label}' is "
+        f"{_singular(t)}. Liminate has no text-contains test."
+    )
 
 
 def _require_comparable(t: str, label: str, op: str) -> None:
