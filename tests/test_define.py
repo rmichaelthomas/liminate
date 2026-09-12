@@ -321,6 +321,38 @@ def test_render_predicate_condition_round_trip():
     assert again == ast
 
 
+def test_quoted_predicate_collision_keeps_its_quotes_through_canonical():
+    """The escape hatch of §82 has to survive rendering, or it is not one.
+
+    `is "large"` parses as string equality precisely because the quotes
+    suppress predicate application (see
+    test_quoted_string_forces_equality_even_if_predicate_name_matches).
+    v2c §90's conditional quoting then dropped those quotes on the way
+    out, because its safety test predates v31 and asks only whether the
+    word is *reserved* — and a predicate name is not reserved, it is
+    declared. The canonical form re-parsed as a predicate application:
+    the same text, a different program.
+    """
+    ast = _parse('require total is "large"', {"large"})
+    assert isinstance(ast.condition, ConditionNode)
+
+    rendered = render(ast)
+    assert rendered == 'require total is "large"'
+
+    again = _parse(rendered, {"large"})
+    assert isinstance(again.condition, ConditionNode), (
+        f"canonical form re-parsed as {type(again.condition).__name__}"
+    )
+    assert again == ast
+
+
+def test_conditional_quoting_is_untouched_where_no_predicate_collides():
+    """The fix is scoped to the collision. A quoted single word that
+    shadows nothing still normalises to bare, exactly as v2c §90 says."""
+    ast = _parse('require status is "active"', {"large"})
+    assert render(ast) == "require status is active"
+
+
 def test_define_with_because_round_trips():
     ast = _parse('define overdue: days-late is above 30 because "policy 4.2"')
     rendered = render(ast)

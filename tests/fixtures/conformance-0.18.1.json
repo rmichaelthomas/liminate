@@ -1161,6 +1161,40 @@
       "source": "remember a number called total with 200\ndefine large: is above 50\ndefine enormous: is large\nrequire total is enormous"
     },
     {
+      "id": "a quoted string that shadows a predicate keeps its quotes",
+      "results": [
+        {
+          "canonical": "remember a string called total with large",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is \"large\"",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "QuotedString",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a string called total with \"large\"\ndefine large: is above 50\nrequire total is \"large\""
+    },
+    {
       "id": "makes define non-breaking for every program written before it",
       "results": [
         {

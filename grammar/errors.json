@@ -2137,7 +2137,7 @@
     {
       "id": "parser._ParseError.parse",
       "class": "_ParseError",
-      "source": "parser.py:1100",
+      "source": "parser.py:1120",
       "raised_in": "parse",
       "template": "I didn't expect '{unexpected.value}' here.",
       "slots": [
@@ -2147,7 +2147,7 @@
     {
       "id": "parser._ParseError.parse_about-1",
       "class": "_ParseError",
-      "source": "parser.py:1153",
+      "source": "parser.py:1173",
       "raised_in": "parse_about",
       "template": "'about' needs a topic \u2014 try: about \"expense authorization\" or about expense-authorization.",
       "slots": []
@@ -2155,7 +2155,7 @@
     {
       "id": "parser._ParseError.parse_about-2",
       "class": "_ParseError",
-      "source": "parser.py:1162",
+      "source": "parser.py:1182",
       "raised_in": "parse_about",
       "template": "I didn't expect anything after the quoted topic in 'about'. Try: about \"{tokens[1].value}\".",
       "slots": [
@@ -2165,7 +2165,7 @@
     {
       "id": "parser._ParseError.parse_when_block-1",
       "class": "_ParseError",
-      "source": "parser.py:1265",
+      "source": "parser.py:1285",
       "raised_in": "parse_when_block",
       "template": "I expected a condition after 'when'. Try: when <name> is above <value>.",
       "slots": []
@@ -2173,7 +2173,7 @@
     {
       "id": "parser._ParseError.parse_when_block-2",
       "class": "_ParseError",
-      "source": "parser.py:1280",
+      "source": "parser.py:1300",
       "raised_in": "parse_when_block",
       "template": "I expected a guard condition after 'unless'.",
       "slots": []
@@ -2181,7 +2181,7 @@
     {
       "id": "parser._ParseError.parse_when_block-3",
       "class": "_ParseError",
-      "source": "parser.py:1300",
+      "source": "parser.py:1320",
       "raised_in": "parse_when_block",
       "template": "'from' attribution on a 'when' header needs the 'inherited' prefix \u2014 try: inherited when <condition> from <agent-name>.",
       "slots": []
@@ -2189,7 +2189,7 @@
     {
       "id": "parser._ParseError.parse_when_block-4",
       "class": "_ParseError",
-      "source": "parser.py:1313",
+      "source": "parser.py:1333",
       "raised_in": "parse_when_block",
       "template": "I didn't expect '{unexpected.value}' in the 'when' header.",
       "slots": [
@@ -2199,7 +2199,7 @@
     {
       "id": "parser._ParseError._parse_operation_sequence",
       "class": "_ParseError",
-      "source": "parser.py:1427",
+      "source": "parser.py:1447",
       "raised_in": "_parse_operation_sequence",
       "template": "I expected a verb after 'then'. Try: <action> then <next-action>.",
       "slots": []
@@ -2207,7 +2207,7 @@
     {
       "id": "parser._ParseError._try_consume_starting_until-1",
       "class": "_ParseError",
-      "source": "parser.py:1471",
+      "source": "parser.py:1491",
       "raised_in": "_try_consume_starting_until",
       "template": "'starting' needs a date \u2014 try: starting \"2025-07-01\" or starting 2025-07-01. Got: {got}.",
       "slots": [
@@ -2217,7 +2217,7 @@
     {
       "id": "parser._ParseError._try_consume_starting_until-2",
       "class": "_ParseError",
-      "source": "parser.py:1494",
+      "source": "parser.py:1514",
       "raised_in": "_try_consume_starting_until",
       "template": "'until' needs a date \u2014 try: until \"2025-12-31\" or until 2025-12-31. Got: {got}.",
       "slots": [
@@ -2227,7 +2227,7 @@
     {
       "id": "parser._ParseError._validate_iso_date",
       "class": "_ParseError",
-      "source": "parser.py:1518",
+      "source": "parser.py:1538",
       "raised_in": "_validate_iso_date",
       "template": "'{keyword}' needs an ISO 8601 date (YYYY-MM-DD) \u2014 try: {keyword} \"2025-07-01\". Got: \"{date_str}\".",
       "slots": [
@@ -2239,7 +2239,7 @@
     {
       "id": "parser._ParseError._validate_calendar_date",
       "class": "_ParseError",
-      "source": "parser.py:1533",
+      "source": "parser.py:1553",
       "raised_in": "_validate_calendar_date",
       "template": "'{date_str}' isn't a valid calendar date. Dates use the format YYYY-MM-DD \u2014 for example, 2025-07-01.",
       "slots": [
@@ -2249,7 +2249,7 @@
     {
       "id": "parser._ParseError._try_consume_because",
       "class": "_ParseError",
-      "source": "parser.py:1561",
+      "source": "parser.py:1581",
       "raised_in": "_try_consume_because",
       "template": "'because' needs a quoted rationale \u2014 try: because \"your reason here\". Got: {got}.",
       "slots": [
@@ -2259,7 +2259,7 @@
     {
       "id": "parser._ParseError._try_consume_unless_exception",
       "class": "_ParseError",
-      "source": "parser.py:1590",
+      "source": "parser.py:1610",
       "raised_in": "_try_consume_unless_exception",
       "template": "I expected a condition after 'unless'.",
       "slots": []
@@ -2267,7 +2267,7 @@
     {
       "id": "parser._ParseError._try_consume_inherited_from-1",
       "class": "_ParseError",
-      "source": "parser.py:1617",
+      "source": "parser.py:1637",
       "raised_in": "_try_consume_inherited_from",
       "template": "'from' in an inherited statement needs an agent name \u2014 try: inherited <verb> ... from <agent-name>.",
       "slots": []
@@ -2275,7 +2275,7 @@
     {
       "id": "parser._ParseError._try_consume_inherited_from-2",
       "class": "_ParseError",
-      "source": "parser.py:1622",
+      "source": "parser.py:1642",
       "raised_in": "_try_consume_inherited_from",
       "template": "Agent names can't have spaces. Try a hyphenated name like '{_hyphenate(agent_tok.value)}' instead.",
       "slots": [
@@ -2285,7 +2285,7 @@
     {
       "id": "parser._ParseError._try_consume_inherited_from-3",
       "class": "_ParseError",
-      "source": "parser.py:1629",
+      "source": "parser.py:1649",
       "raised_in": "_try_consume_inherited_from",
       "template": "The word '{agent_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name for the agent, like 'agent-compliance'.",
       "slots": [
@@ -2296,7 +2296,7 @@
     {
       "id": "parser._ParseError._try_consume_inherited_from-4",
       "class": "_ParseError",
-      "source": "parser.py:1634",
+      "source": "parser.py:1654",
       "raised_in": "_try_consume_inherited_from",
       "template": "I expected an agent name after 'from', not '{agent_tok.value}'.",
       "slots": [
@@ -2306,7 +2306,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-1",
       "class": "_ParseError",
-      "source": "parser.py:1719",
+      "source": "parser.py:1739",
       "raised_in": "_parse_one_operation_inner",
       "template": "I expected an operation here.",
       "slots": []
@@ -2314,7 +2314,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-2",
       "class": "_ParseError",
-      "source": "parser.py:1739",
+      "source": "parser.py:1759",
       "raised_in": "_parse_one_operation_inner",
       "template": "The word '{t.value}' was renamed \u2014 use '{TOMBSTONES[t.value]}'.",
       "slots": [
@@ -2325,7 +2325,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-3",
       "class": "_ParseError",
-      "source": "parser.py:1742",
+      "source": "parser.py:1762",
       "raised_in": "_parse_one_operation_inner",
       "template": "I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'sum', 'each', or 'choose'.",
       "slots": []
@@ -2333,7 +2333,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-4",
       "class": "_ParseError",
-      "source": "parser.py:1751",
+      "source": "parser.py:1771",
       "raised_in": "_parse_one_operation_inner",
       "template": "'when' is a top-level statement and starts its own indented action block. It can't appear inside compositions, 'each' bodies, or another 'when' action block.",
       "slots": []
@@ -2341,7 +2341,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-5",
       "class": "_ParseError",
-      "source": "parser.py:1758",
+      "source": "parser.py:1778",
       "raised_in": "_parse_one_operation_inner",
       "template": "'unless' is a guard clause that follows a 'when' condition \u2014 it can't introduce a statement on its own. Try: when <condition> unless <guard>.",
       "slots": []
@@ -2349,7 +2349,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-6",
       "class": "_ParseError",
-      "source": "parser.py:1771",
+      "source": "parser.py:1791",
       "raised_in": "_parse_one_operation_inner",
       "template": "'{t.value}' is a declaration that must be the first line of the program (after any comments). It can't appear here.",
       "slots": [
@@ -2359,7 +2359,7 @@
     {
       "id": "parser._ParseError._parse_one_operation_inner-7",
       "class": "_ParseError",
-      "source": "parser.py:1775",
+      "source": "parser.py:1795",
       "raised_in": "_parse_one_operation_inner",
       "template": "I didn't expect '{t.value}' at the start of an operation.",
       "slots": [
@@ -2369,7 +2369,7 @@
     {
       "id": "parser._ParseError._parse_verb_statement-1",
       "class": "_ParseError",
-      "source": "parser.py:1816",
+      "source": "parser.py:1836",
       "raised_in": "_parse_verb_statement",
       "template": "'choose' can't appear inside 'each'. To handle items differently, use 'keep' to separate them by condition.",
       "slots": []
@@ -2377,7 +2377,7 @@
     {
       "id": "parser._ParseError._parse_verb_statement-2",
       "class": "_ParseError",
-      "source": "parser.py:1853",
+      "source": "parser.py:1873",
       "raised_in": "_parse_verb_statement",
       "template": "Unknown verb '{verb.value}'.",
       "slots": [
@@ -2387,7 +2387,7 @@
     {
       "id": "parser._ParseError._parse_pack_verb-1",
       "class": "_ParseError",
-      "source": "parser.py:1882",
+      "source": "parser.py:1902",
       "raised_in": "_parse_pack_verb",
       "template": null,
       "slots": [],
@@ -2396,7 +2396,7 @@
     {
       "id": "parser._ParseError._parse_pack_verb-2",
       "class": "_ParseError",
-      "source": "parser.py:1896",
+      "source": "parser.py:1916",
       "raised_in": "_parse_pack_verb",
       "template": null,
       "slots": [],
@@ -2405,7 +2405,7 @@
     {
       "id": "parser._ParseError._parse_pack_verb-3",
       "class": "_ParseError",
-      "source": "parser.py:1900",
+      "source": "parser.py:1920",
       "raised_in": "_parse_pack_verb",
       "template": null,
       "slots": [],
@@ -2414,7 +2414,7 @@
     {
       "id": "parser._ParseError._parse_pack_slot_value-1",
       "class": "_ParseError",
-      "source": "parser.py:1928",
+      "source": "parser.py:1948",
       "raised_in": "_parse_pack_slot_value",
       "template": null,
       "slots": [],
@@ -2423,7 +2423,7 @@
     {
       "id": "parser._ParseError._parse_pack_slot_value-2",
       "class": "_ParseError",
-      "source": "parser.py:1930",
+      "source": "parser.py:1950",
       "raised_in": "_parse_pack_slot_value",
       "template": "Names can't have spaces. Try a hyphenated name like '{_hyphenate(value_tok.value)}' instead.",
       "slots": [
@@ -2433,7 +2433,7 @@
     {
       "id": "parser._ParseError._parse_pack_slot_value-3",
       "class": "_ParseError",
-      "source": "parser.py:1937",
+      "source": "parser.py:1957",
       "raised_in": "_parse_pack_slot_value",
       "template": "The word '{value_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
       "slots": [
@@ -2444,7 +2444,7 @@
     {
       "id": "parser._ParseError._parse_pack_slot_value-4",
       "class": "_ParseError",
-      "source": "parser.py:1947",
+      "source": "parser.py:1967",
       "raised_in": "_parse_pack_slot_value",
       "template": "I expected a name {intro}, not '{value_tok.value}'.",
       "slots": [
@@ -2455,7 +2455,7 @@
     {
       "id": "parser._ParseError._parse_remember-1",
       "class": "_ParseError",
-      "source": "parser.py:2009",
+      "source": "parser.py:2029",
       "raised_in": "_parse_remember",
       "template": "I expected the word 'called' to introduce the name.",
       "slots": []
@@ -2463,7 +2463,7 @@
     {
       "id": "parser._ParseError._parse_remember-2",
       "class": "_ParseError",
-      "source": "parser.py:2019",
+      "source": "parser.py:2039",
       "raised_in": "_parse_remember",
       "template": "I expected 'with' or 'from' after '{name}'.",
       "slots": [
@@ -2473,7 +2473,7 @@
     {
       "id": "parser._ParseError._parse_remember-3",
       "class": "_ParseError",
-      "source": "parser.py:2021",
+      "source": "parser.py:2041",
       "raised_in": "_parse_remember",
       "template": "I expected 'with' or 'from', not '{intro.value}'.",
       "slots": [
@@ -2483,7 +2483,7 @@
     {
       "id": "parser._ParseError._parse_composition_definition-1",
       "class": "_ParseError",
-      "source": "parser.py:2044",
+      "source": "parser.py:2064",
       "raised_in": "_parse_composition_definition",
       "template": "I expected 'to' after 'how'.",
       "slots": []
@@ -2491,7 +2491,7 @@
     {
       "id": "parser._ParseError._parse_composition_definition-2",
       "class": "_ParseError",
-      "source": "parser.py:2060",
+      "source": "parser.py:2080",
       "raised_in": "_parse_composition_definition",
       "template": "I expected ':' after the composition name.",
       "slots": []
@@ -2499,7 +2499,7 @@
     {
       "id": "parser._ParseError._parse_define",
       "class": "_ParseError",
-      "source": "parser.py:2089",
+      "source": "parser.py:2109",
       "raised_in": "_parse_define",
       "template": "I expected ':' after the predicate name.",
       "slots": []
@@ -2507,7 +2507,7 @@
     {
       "id": "parser._ParseError._consume_remember_intro-1",
       "class": "_ParseError",
-      "source": "parser.py:2119",
+      "source": "parser.py:2139",
       "raised_in": "_consume_remember_intro",
       "template": "I expected 'called' to introduce the name.",
       "slots": []
@@ -2515,7 +2515,7 @@
     {
       "id": "parser._ParseError._consume_remember_intro-2",
       "class": "_ParseError",
-      "source": "parser.py:2134",
+      "source": "parser.py:2154",
       "raised_in": "_consume_remember_intro",
       "template": "The word '{t.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
       "slots": [
@@ -2526,7 +2526,7 @@
     {
       "id": "parser._ParseError._consume_remember_intro-3",
       "class": "_ParseError",
-      "source": "parser.py:2138",
+      "source": "parser.py:2158",
       "raised_in": "_consume_remember_intro",
       "template": "I didn't expect '{t.value}' before 'called'.",
       "slots": [
@@ -2536,7 +2536,7 @@
     {
       "id": "parser._ParseError._parse_remember_with",
       "class": "_ParseError",
-      "source": "parser.py:2163",
+      "source": "parser.py:2183",
       "raised_in": "_parse_remember_with",
       "template": "I expected a value after 'with'.",
       "slots": []
@@ -2544,7 +2544,7 @@
     {
       "id": "parser._ParseError._parse_record_field-1",
       "class": "_ParseError",
-      "source": "parser.py:2236",
+      "source": "parser.py:2256",
       "raised_in": "_parse_record_field",
       "template": "I expected a field name.",
       "slots": []
@@ -2552,7 +2552,7 @@
     {
       "id": "parser._ParseError._parse_record_field-2",
       "class": "_ParseError",
-      "source": "parser.py:2239",
+      "source": "parser.py:2259",
       "raised_in": "_parse_record_field",
       "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(field_tok.value)}' instead.",
       "slots": [
@@ -2562,7 +2562,7 @@
     {
       "id": "parser._ParseError._parse_record_field-3",
       "class": "_ParseError",
-      "source": "parser.py:2246",
+      "source": "parser.py:2266",
       "raised_in": "_parse_record_field",
       "template": "The word '{field_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
       "slots": [
@@ -2573,7 +2573,7 @@
     {
       "id": "parser._ParseError._parse_record_field-4",
       "class": "_ParseError",
-      "source": "parser.py:2250",
+      "source": "parser.py:2270",
       "raised_in": "_parse_record_field",
       "template": "I expected a field name, not '{field_tok.value}'.",
       "slots": [
@@ -2583,7 +2583,7 @@
     {
       "id": "parser._ParseError._parse_record_field-5",
       "class": "_ParseError",
-      "source": "parser.py:2256",
+      "source": "parser.py:2276",
       "raised_in": "_parse_record_field",
       "template": "I expected a value after '{field_name}'. Try: '{field_name} as [value]'.",
       "slots": [
@@ -2594,7 +2594,7 @@
     {
       "id": "parser._ParseError._parse_remember_from",
       "class": "_ParseError",
-      "source": "parser.py:2280",
+      "source": "parser.py:2300",
       "raised_in": "_parse_remember_from",
       "template": "I expected an expression after 'from'.",
       "slots": []
@@ -2602,7 +2602,7 @@
     {
       "id": "parser._ParseError._parse_show-1",
       "class": "_ParseError",
-      "source": "parser.py:2378",
+      "source": "parser.py:2398",
       "raised_in": "_parse_show",
       "template": "Field names can't have spaces. Try 'show {_hyphenate(peek.value)} of {rec}' instead.",
       "slots": [
@@ -2613,7 +2613,7 @@
     {
       "id": "parser._ParseError._parse_show-2",
       "class": "_ParseError",
-      "source": "parser.py:2383",
+      "source": "parser.py:2403",
       "raised_in": "_parse_show",
       "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(peek.value)}' instead.",
       "slots": [
@@ -2623,7 +2623,7 @@
     {
       "id": "parser._ParseError._parse_show-3",
       "class": "_ParseError",
-      "source": "parser.py:2399",
+      "source": "parser.py:2419",
       "raised_in": "_parse_show",
       "template": "I expected a record name after 'of'.",
       "slots": []
@@ -2631,7 +2631,7 @@
     {
       "id": "parser._ParseError._parse_show-4",
       "class": "_ParseError",
-      "source": "parser.py:2403",
+      "source": "parser.py:2423",
       "raised_in": "_parse_show",
       "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
       "slots": [
@@ -2642,7 +2642,7 @@
     {
       "id": "parser._ParseError._parse_show-5",
       "class": "_ParseError",
-      "source": "parser.py:2408",
+      "source": "parser.py:2428",
       "raised_in": "_parse_show",
       "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
       "slots": [
@@ -2652,7 +2652,7 @@
     {
       "id": "parser._ParseError._parse_show-6",
       "class": "_ParseError",
-      "source": "parser.py:2416",
+      "source": "parser.py:2436",
       "raised_in": "_parse_show",
       "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
       "slots": []
@@ -2660,7 +2660,7 @@
     {
       "id": "parser._ParseError._parse_show-7",
       "class": "_ParseError",
-      "source": "parser.py:2444",
+      "source": "parser.py:2464",
       "raised_in": "_parse_show",
       "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(nx2.value)}' instead.",
       "slots": [
@@ -2670,7 +2670,7 @@
     {
       "id": "parser._ParseError._parse_show-8",
       "class": "_ParseError",
-      "source": "parser.py:2471",
+      "source": "parser.py:2491",
       "raised_in": "_parse_show",
       "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.",
       "slots": []
@@ -2678,7 +2678,7 @@
     {
       "id": "parser._ParseError._parse_show-9",
       "class": "_ParseError",
-      "source": "parser.py:2476",
+      "source": "parser.py:2496",
       "raised_in": "_parse_show",
       "template": "I expected a target after 'show', but '{peek.value}' is a {cat} in Liminate. Targets must be names you've created with 'remember' or 'gather'.",
       "slots": [
@@ -2689,7 +2689,7 @@
     {
       "id": "parser._ParseError._parse_show-10",
       "class": "_ParseError",
-      "source": "parser.py:2481",
+      "source": "parser.py:2501",
       "raised_in": "_parse_show",
       "template": "I didn't expect '{peek.value}' after 'show'.",
       "slots": [
@@ -2699,7 +2699,7 @@
     {
       "id": "parser._ParseError._parse_add-1",
       "class": "_ParseError",
-      "source": "parser.py:2513",
+      "source": "parser.py:2533",
       "raised_in": "_parse_add",
       "template": "'add' needs an item and a target list \u2014 try: add <item> to <list-name>.",
       "slots": []
@@ -2707,7 +2707,7 @@
     {
       "id": "parser._ParseError._parse_add-2",
       "class": "_ParseError",
-      "source": "parser.py:2520",
+      "source": "parser.py:2540",
       "raised_in": "_parse_add",
       "template": "'add' needs a target list \u2014 try: add <item> to <list-name>.",
       "slots": []
@@ -2715,7 +2715,7 @@
     {
       "id": "parser._ParseError._parse_remove-1",
       "class": "_ParseError",
-      "source": "parser.py:2537",
+      "source": "parser.py:2557",
       "raised_in": "_parse_remove",
       "template": "'remove' needs an item and a target list \u2014 try: remove <item> from <list-name>.",
       "slots": []
@@ -2723,7 +2723,7 @@
     {
       "id": "parser._ParseError._parse_remove-2",
       "class": "_ParseError",
-      "source": "parser.py:2547",
+      "source": "parser.py:2567",
       "raised_in": "_parse_remove",
       "template": "'remove' needs a source list \u2014 try: remove <item> from <list-name>.",
       "slots": []
@@ -2731,7 +2731,7 @@
     {
       "id": "parser._ParseError._parse_weakens-1",
       "class": "_ParseError",
-      "source": "parser.py:2565",
+      "source": "parser.py:2585",
       "raised_in": "_parse_weakens",
       "template": "'weakens' needs a target and a decay period \u2014 try: weakens <name> over <number>.",
       "slots": []
@@ -2739,7 +2739,7 @@
     {
       "id": "parser._ParseError._parse_weakens-2",
       "class": "_ParseError",
-      "source": "parser.py:2577",
+      "source": "parser.py:2597",
       "raised_in": "_parse_weakens",
       "template": "'weakens' needs a decay period \u2014 try: weakens <name> over <number>.",
       "slots": []
@@ -2747,7 +2747,7 @@
     {
       "id": "parser._ParseError._parse_weakens-3",
       "class": "_ParseError",
-      "source": "parser.py:2584",
+      "source": "parser.py:2604",
       "raised_in": "_parse_weakens",
       "template": "I expected a number after 'over' \u2014 the decay period. Try: weakens <name> over 30.",
       "slots": []
@@ -2755,7 +2755,7 @@
     {
       "id": "parser._ParseError._parse_require",
       "class": "_ParseError",
-      "source": "parser.py:2613",
+      "source": "parser.py:2633",
       "raised_in": "_parse_require",
       "template": "'require' needs a condition \u2014 try: require <field> is <operator> <value>.",
       "slots": []
@@ -2763,7 +2763,7 @@
     {
       "id": "parser._ParseError._parse_require_each-1",
       "class": "_ParseError",
-      "source": "parser.py:2653",
+      "source": "parser.py:2673",
       "raised_in": "_parse_require_each",
       "template": "'require each' needs a list \u2014 try: require each {binding_name} in <list-name> <condition>.",
       "slots": [
@@ -2773,7 +2773,7 @@
     {
       "id": "parser._ParseError._parse_require_each-2",
       "class": "_ParseError",
-      "source": "parser.py:2658",
+      "source": "parser.py:2678",
       "raised_in": "_parse_require_each",
       "template": "I expected 'in' after 'require each {binding_name}', not '{in_tok.value}'. Try: require each {binding_name} in <list-name> <condition>.",
       "slots": [
@@ -2785,7 +2785,7 @@
     {
       "id": "parser._ParseError._parse_require_each-3",
       "class": "_ParseError",
-      "source": "parser.py:2670",
+      "source": "parser.py:2690",
       "raised_in": "_parse_require_each",
       "template": "'require each {binding_name} in {collection.name}' needs a condition \u2014 try: require each {binding_name} in {collection.name} is <operator> <value>.",
       "slots": [
@@ -2798,7 +2798,7 @@
     {
       "id": "parser._ParseError._parse_forbid",
       "class": "_ParseError",
-      "source": "parser.py:2701",
+      "source": "parser.py:2721",
       "raised_in": "_parse_forbid",
       "template": "'forbid' needs a condition \u2014 try: forbid <field> is <operator> <value>.",
       "slots": []
@@ -2806,7 +2806,7 @@
     {
       "id": "parser._ParseError._parse_permit",
       "class": "_ParseError",
-      "source": "parser.py:2727",
+      "source": "parser.py:2747",
       "raised_in": "_parse_permit",
       "template": "'permit' needs a condition \u2014 try: permit <field> is <operator> <value>.",
       "slots": []
@@ -2814,7 +2814,7 @@
     {
       "id": "parser._ParseError._parse_assign-1",
       "class": "_ParseError",
-      "source": "parser.py:2749",
+      "source": "parser.py:2769",
       "raised_in": "_parse_assign",
       "template": "'assign' needs an item and a recipient \u2014 try: assign <item> to <recipient>.",
       "slots": []
@@ -2822,7 +2822,7 @@
     {
       "id": "parser._ParseError._parse_assign-2",
       "class": "_ParseError",
-      "source": "parser.py:2759",
+      "source": "parser.py:2779",
       "raised_in": "_parse_assign",
       "template": "'assign' needs a recipient \u2014 try: assign <item> to <recipient>.",
       "slots": []
@@ -2830,7 +2830,7 @@
     {
       "id": "parser._ParseError._parse_assign-3",
       "class": "_ParseError",
-      "source": "parser.py:2764",
+      "source": "parser.py:2784",
       "raised_in": "_parse_assign",
       "template": "I expected a recipient after 'to'. Try: assign <item> to <recipient>.",
       "slots": []
@@ -2838,7 +2838,7 @@
     {
       "id": "parser._ParseError._parse_expect",
       "class": "_ParseError",
-      "source": "parser.py:2785",
+      "source": "parser.py:2805",
       "raised_in": "_parse_expect",
       "template": "'expect' needs a condition \u2014 try: expect <field> is <operator> <value>.",
       "slots": []
@@ -2846,7 +2846,7 @@
     {
       "id": "parser._ParseError._parse_sort-1",
       "class": "_ParseError",
-      "source": "parser.py:2813",
+      "source": "parser.py:2833",
       "raised_in": "_parse_sort",
       "template": "'sort' needs a target list and a field \u2014 try: sort <list> by <field>.",
       "slots": []
@@ -2854,7 +2854,7 @@
     {
       "id": "parser._ParseError._parse_sort-2",
       "class": "_ParseError",
-      "source": "parser.py:2825",
+      "source": "parser.py:2845",
       "raised_in": "_parse_sort",
       "template": "'sort' needs a field to sort by \u2014 try: sort <list> by <field>.",
       "slots": []
@@ -2862,7 +2862,7 @@
     {
       "id": "parser._ParseError._parse_sort-3",
       "class": "_ParseError",
-      "source": "parser.py:2832",
+      "source": "parser.py:2852",
       "raised_in": "_parse_sort",
       "template": "I expected a field name after 'by'.",
       "slots": []
@@ -2870,7 +2870,7 @@
     {
       "id": "parser._ParseError._parse_sort-4",
       "class": "_ParseError",
-      "source": "parser.py:2834",
+      "source": "parser.py:2854",
       "raised_in": "_parse_sort",
       "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(field_tok.value)}' instead.",
       "slots": [
@@ -2880,7 +2880,7 @@
     {
       "id": "parser._ParseError._parse_sort-5",
       "class": "_ParseError",
-      "source": "parser.py:2841",
+      "source": "parser.py:2861",
       "raised_in": "_parse_sort",
       "template": "The word '{field_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a field name from your records.",
       "slots": [
@@ -2891,7 +2891,7 @@
     {
       "id": "parser._ParseError._parse_sort-6",
       "class": "_ParseError",
-      "source": "parser.py:2846",
+      "source": "parser.py:2866",
       "raised_in": "_parse_sort",
       "template": "I expected a field name after 'by', not '{field_tok.value}'.",
       "slots": [
@@ -2901,7 +2901,7 @@
     {
       "id": "parser._ParseError._parse_compare-1",
       "class": "_ParseError",
-      "source": "parser.py:2889",
+      "source": "parser.py:2909",
       "raised_in": "_parse_compare",
       "template": "'compare' needs two values \u2014 try: compare <name> to <name>.",
       "slots": []
@@ -2909,7 +2909,7 @@
     {
       "id": "parser._ParseError._parse_compare-2",
       "class": "_ParseError",
-      "source": "parser.py:2901",
+      "source": "parser.py:2921",
       "raised_in": "_parse_compare",
       "template": "'compare' needs a second value \u2014 try: compare <name> to <name>.",
       "slots": []
@@ -2917,7 +2917,7 @@
     {
       "id": "parser._ParseError._parse_transform-1",
       "class": "_ParseError",
-      "source": "parser.py:2928",
+      "source": "parser.py:2948",
       "raised_in": "_parse_transform",
       "template": "'transform' needs a target \u2014 try: transform <list> by <expression>, or transform <field> of <list> by <expression>.",
       "slots": []
@@ -2925,7 +2925,7 @@
     {
       "id": "parser._ParseError._parse_transform-2",
       "class": "_ParseError",
-      "source": "parser.py:2936",
+      "source": "parser.py:2956",
       "raised_in": "_parse_transform",
       "template": "I expected a name after 'transform'.",
       "slots": []
@@ -2933,7 +2933,7 @@
     {
       "id": "parser._ParseError._parse_transform-3",
       "class": "_ParseError",
-      "source": "parser.py:2938",
+      "source": "parser.py:2958",
       "raised_in": "_parse_transform",
       "template": "Names can't have spaces. Try a hyphenated name like '{_hyphenate(first_tok.value)}' instead.",
       "slots": [
@@ -2943,7 +2943,7 @@
     {
       "id": "parser._ParseError._parse_transform-4",
       "class": "_ParseError",
-      "source": "parser.py:2945",
+      "source": "parser.py:2965",
       "raised_in": "_parse_transform",
       "template": "The word '{first_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
       "slots": [
@@ -2954,7 +2954,7 @@
     {
       "id": "parser._ParseError._parse_transform-5",
       "class": "_ParseError",
-      "source": "parser.py:2950",
+      "source": "parser.py:2970",
       "raised_in": "_parse_transform",
       "template": "I expected a name after 'transform', not '{first_tok.value}'.",
       "slots": [
@@ -2964,7 +2964,7 @@
     {
       "id": "parser._ParseError._parse_transform-6",
       "class": "_ParseError",
-      "source": "parser.py:2969",
+      "source": "parser.py:2989",
       "raised_in": "_parse_transform",
       "template": "'transform' needs an expression after 'by' \u2014 try: transform {field_name} of {target.name} by <expression>.",
       "slots": [
@@ -2975,7 +2975,7 @@
     {
       "id": "parser._ParseError._parse_transform-7",
       "class": "_ParseError",
-      "source": "parser.py:2974",
+      "source": "parser.py:2994",
       "raised_in": "_parse_transform",
       "template": "I expected an expression after 'by'.",
       "slots": []
@@ -2983,7 +2983,7 @@
     {
       "id": "parser._ParseError._parse_transform-8",
       "class": "_ParseError",
-      "source": "parser.py:2989",
+      "source": "parser.py:3009",
       "raised_in": "_parse_transform",
       "template": "I expected an expression after 'by'.",
       "slots": []
@@ -2991,7 +2991,7 @@
     {
       "id": "parser._ParseError._parse_transform-9",
       "class": "_ParseError",
-      "source": "parser.py:2998",
+      "source": "parser.py:3018",
       "raised_in": "_parse_transform",
       "template": "I expected 'of' or 'by' after 'transform {first_tok.value}', not '{got}'. Try: transform {first_tok.value} of <list> by <expression>, or transform {first_tok.value} by <expression>.",
       "slots": [
@@ -3004,7 +3004,7 @@
     {
       "id": "parser._ParseError._parse_gather-1",
       "class": "_ParseError",
-      "source": "parser.py:3021",
+      "source": "parser.py:3041",
       "raised_in": "_parse_gather",
       "template": "I expected a name after 'gather'.",
       "slots": []
@@ -3012,7 +3012,7 @@
     {
       "id": "parser._ParseError._parse_gather-2",
       "class": "_ParseError",
-      "source": "parser.py:3025",
+      "source": "parser.py:3045",
       "raised_in": "_parse_gather",
       "template": "The word '{name_tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
       "slots": [
@@ -3023,7 +3023,7 @@
     {
       "id": "parser._ParseError._parse_gather-3",
       "class": "_ParseError",
-      "source": "parser.py:3029",
+      "source": "parser.py:3049",
       "raised_in": "_parse_gather",
       "template": "I expected a name after 'gather', not '{name_tok.value}'.",
       "slots": [
@@ -3033,7 +3033,7 @@
     {
       "id": "parser._ParseError._parse_gather-4",
       "class": "_ParseError",
-      "source": "parser.py:3034",
+      "source": "parser.py:3054",
       "raised_in": "_parse_gather",
       "template": "I expected 'from' in 'gather'.",
       "slots": []
@@ -3041,7 +3041,7 @@
     {
       "id": "parser._ParseError._parse_gather-5",
       "class": "_ParseError",
-      "source": "parser.py:3038",
+      "source": "parser.py:3058",
       "raised_in": "_parse_gather",
       "template": "I expected a number after 'from'.",
       "slots": []
@@ -3049,7 +3049,7 @@
     {
       "id": "parser._ParseError._parse_gather-6",
       "class": "_ParseError",
-      "source": "parser.py:3043",
+      "source": "parser.py:3063",
       "raised_in": "_parse_gather",
       "template": "I expected 'to' after the range start.",
       "slots": []
@@ -3057,7 +3057,7 @@
     {
       "id": "parser._ParseError._parse_gather-7",
       "class": "_ParseError",
-      "source": "parser.py:3047",
+      "source": "parser.py:3067",
       "raised_in": "_parse_gather",
       "template": "I expected a number after 'to'.",
       "slots": []
@@ -3065,7 +3065,7 @@
     {
       "id": "parser._ParseError._parse_gather-8",
       "class": "_ParseError",
-      "source": "parser.py:3058",
+      "source": "parser.py:3078",
       "raised_in": "_parse_gather",
       "template": "I expected a number after 'by' \u2014 the step value.",
       "slots": []
@@ -3073,7 +3073,7 @@
     {
       "id": "parser._ParseError._parse_gather-9",
       "class": "_ParseError",
-      "source": "parser.py:3061",
+      "source": "parser.py:3081",
       "raised_in": "_parse_gather",
       "template": "The step value must be positive \u2014 got {step_val}. The direction is determined by the range (from/to), not the step.",
       "slots": [
@@ -3083,7 +3083,7 @@
     {
       "id": "parser._ParseError._parse_each-1",
       "class": "_ParseError",
-      "source": "parser.py:3088",
+      "source": "parser.py:3108",
       "raised_in": "_parse_each",
       "template": "I expected a collection after 'each'.",
       "slots": []
@@ -3091,7 +3091,7 @@
     {
       "id": "parser._ParseError._parse_each-2",
       "class": "_ParseError",
-      "source": "parser.py:3092",
+      "source": "parser.py:3112",
       "raised_in": "_parse_each",
       "template": "I expected a collection after 'each', but '{coll_tok.value}' is a {cat} in Liminate. Collections must be names you've created with 'remember' or 'gather'.",
       "slots": [
@@ -3102,7 +3102,7 @@
     {
       "id": "parser._ParseError._parse_each-3",
       "class": "_ParseError",
-      "source": "parser.py:3097",
+      "source": "parser.py:3117",
       "raised_in": "_parse_each",
       "template": "I expected a collection after 'each'.",
       "slots": []
@@ -3110,7 +3110,7 @@
     {
       "id": "parser._ParseError._parse_each-4",
       "class": "_ParseError",
-      "source": "parser.py:3101",
+      "source": "parser.py:3121",
       "raised_in": "_parse_each",
       "template": "I expected an action for 'each'.",
       "slots": []
@@ -3118,7 +3118,7 @@
     {
       "id": "parser._ParseError._parse_choose",
       "class": "_ParseError",
-      "source": "parser.py:3132",
+      "source": "parser.py:3152",
       "raised_in": "_parse_choose",
       "template": "I expected 'if' after 'choose'. Try: choose if <condition>: <action>.",
       "slots": []
@@ -3126,7 +3126,7 @@
     {
       "id": "parser._ParseError._parse_choose_branch",
       "class": "_ParseError",
-      "source": "parser.py:3175",
+      "source": "parser.py:3195",
       "raised_in": "_parse_choose_branch",
       "template": "I expected ':' after the {leader} condition, not '{got}'.",
       "slots": [
@@ -3137,7 +3137,7 @@
     {
       "id": "parser._ParseError._parse_filter_shape",
       "class": "_ParseError",
-      "source": "parser.py:3214",
+      "source": "parser.py:3234",
       "raised_in": "_parse_filter_shape",
       "template": "I expected 'where' to introduce the condition.",
       "slots": []
@@ -3145,7 +3145,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-1",
       "class": "_ParseError",
-      "source": "parser.py:3326",
+      "source": "parser.py:3346",
       "raised_in": "_parse_simple_condition",
       "template": "I expected a field after 'where'.",
       "slots": []
@@ -3153,7 +3153,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-2",
       "class": "_ParseError",
-      "source": "parser.py:3362",
+      "source": "parser.py:3382",
       "raised_in": "_parse_simple_condition",
       "template": "I expected a record name after 'of'.",
       "slots": []
@@ -3161,7 +3161,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-3",
       "class": "_ParseError",
-      "source": "parser.py:3366",
+      "source": "parser.py:3386",
       "raised_in": "_parse_simple_condition",
       "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
       "slots": [
@@ -3172,7 +3172,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-4",
       "class": "_ParseError",
-      "source": "parser.py:3371",
+      "source": "parser.py:3391",
       "raised_in": "_parse_simple_condition",
       "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
       "slots": [
@@ -3182,7 +3182,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-5",
       "class": "_ParseError",
-      "source": "parser.py:3377",
+      "source": "parser.py:3397",
       "raised_in": "_parse_simple_condition",
       "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
       "slots": []
@@ -3190,7 +3190,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-6",
       "class": "_ParseError",
-      "source": "parser.py:3387",
+      "source": "parser.py:3407",
       "raised_in": "_parse_simple_condition",
       "template": "Field names can't have spaces. Try a hyphenated name like '{_hyphenate(head.value)}' instead.",
       "slots": [
@@ -3200,7 +3200,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-7",
       "class": "_ParseError",
-      "source": "parser.py:3394",
+      "source": "parser.py:3414",
       "raised_in": "_parse_simple_condition",
       "template": "The word '{head.value}' is reserved in Liminate \u2014 it's used as a {cat} and can't be used as a field name.",
       "slots": [
@@ -3211,7 +3211,7 @@
     {
       "id": "parser._ParseError._parse_simple_condition-8",
       "class": "_ParseError",
-      "source": "parser.py:3398",
+      "source": "parser.py:3418",
       "raised_in": "_parse_simple_condition",
       "template": "I didn't expect '{head.value}' as a field name.",
       "slots": [
@@ -3221,7 +3221,7 @@
     {
       "id": "parser._ParseError._finish_simple_condition-1",
       "class": "_ParseError",
-      "source": "parser.py:3431",
+      "source": "parser.py:3451",
       "raised_in": "_finish_simple_condition",
       "template": "I expected 'is' in this condition.",
       "slots": []
@@ -3229,7 +3229,7 @@
     {
       "id": "parser._ParseError._finish_simple_condition-2",
       "class": "_ParseError",
-      "source": "parser.py:3437",
+      "source": "parser.py:3457",
       "raised_in": "_finish_simple_condition",
       "template": "I expected a value or comparison after 'is'.",
       "slots": []
@@ -3237,7 +3237,7 @@
     {
       "id": "parser._ParseError._finish_simple_condition-3",
       "class": "_ParseError",
-      "source": "parser.py:3448",
+      "source": "parser.py:3468",
       "raised_in": "_finish_simple_condition",
       "template": "'within' needs a target \u2014 try: <field> is within <amount> of <target>. Got: {got}.",
       "slots": [
@@ -3247,7 +3247,7 @@
     {
       "id": "parser._ParseError._finish_simple_condition-4",
       "class": "_ParseError",
-      "source": "parser.py:3482",
+      "source": "parser.py:3502",
       "raised_in": "_finish_simple_condition",
       "template": "After 'not' I expected 'above', 'below', or 'equal to'.",
       "slots": []
@@ -3255,7 +3255,7 @@
     {
       "id": "parser._ParseError._finish_simple_condition-5",
       "class": "_ParseError",
-      "source": "parser.py:3492",
+      "source": "parser.py:3512",
       "raised_in": "_finish_simple_condition",
       "template": "I didn't expect '{nxt.value}' after 'is'.",
       "slots": [
@@ -3265,7 +3265,7 @@
     {
       "id": "parser._ParseError._parse_within_tolerance-1",
       "class": "_ParseError",
-      "source": "parser.py:3520",
+      "source": "parser.py:3545",
       "raised_in": "_parse_within_tolerance",
       "template": "'within' needs an amount \u2014 try: <field> is within <amount> of <target>.",
       "slots": []
@@ -3273,7 +3273,7 @@
     {
       "id": "parser._ParseError._parse_within_tolerance-2",
       "class": "_ParseError",
-      "source": "parser.py:3527",
+      "source": "parser.py:3552",
       "raised_in": "_parse_within_tolerance",
       "template": "'within' needs a numeric amount (the number of days), not a date. Got: {tok.value}.",
       "slots": [
@@ -3283,7 +3283,7 @@
     {
       "id": "parser._ParseError._parse_within_tolerance-3",
       "class": "_ParseError",
-      "source": "parser.py:3535",
+      "source": "parser.py:3560",
       "raised_in": "_parse_within_tolerance",
       "template": "'within' needs a numeric amount, but '{tok.value}' is a {cat} in Liminate.",
       "slots": [
@@ -3294,7 +3294,7 @@
     {
       "id": "parser._ParseError._parse_within_tolerance-4",
       "class": "_ParseError",
-      "source": "parser.py:3539",
+      "source": "parser.py:3564",
       "raised_in": "_parse_within_tolerance",
       "template": "'within' needs a numeric amount, not '{tok.value}'.",
       "slots": [
@@ -3304,7 +3304,7 @@
     {
       "id": "parser._ParseError._parse_extrema-1",
       "class": "_ParseError",
-      "source": "parser.py:3642",
+      "source": "parser.py:3667",
       "raised_in": "_parse_extrema",
       "template": "'{word}' needs a list \u2014 try: {word} of <list>, or {word} <field> of <list>.",
       "slots": [
@@ -3316,7 +3316,7 @@
     {
       "id": "parser._ParseError._parse_extrema-2",
       "class": "_ParseError",
-      "source": "parser.py:3650",
+      "source": "parser.py:3675",
       "raised_in": "_parse_extrema",
       "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
       "slots": []
@@ -3324,7 +3324,7 @@
     {
       "id": "parser._ParseError._parse_atom-1",
       "class": "_ParseError",
-      "source": "parser.py:3670",
+      "source": "parser.py:3695",
       "raised_in": "_parse_atom",
       "template": "I expected a value here.",
       "slots": []
@@ -3332,7 +3332,7 @@
     {
       "id": "parser._ParseError._parse_atom-2",
       "class": "_ParseError",
-      "source": "parser.py:3689",
+      "source": "parser.py:3714",
       "raised_in": "_parse_atom",
       "template": "Field names can't have spaces. Try '{_hyphenate(tok.value)}' instead of \"{tok.value}\".",
       "slots": [
@@ -3343,7 +3343,7 @@
     {
       "id": "parser._ParseError._parse_atom-3",
       "class": "_ParseError",
-      "source": "parser.py:3703",
+      "source": "parser.py:3728",
       "raised_in": "_parse_atom",
       "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a value on its own.",
       "slots": []
@@ -3351,7 +3351,7 @@
     {
       "id": "parser._ParseError._parse_atom-4",
       "class": "_ParseError",
-      "source": "parser.py:3710",
+      "source": "parser.py:3735",
       "raised_in": "_parse_atom",
       "template": "The word '{tok.value}' is a {cat} in Liminate and can't be used as a value. Try a different word, or wrap it in quotes: \"{tok.value}\".",
       "slots": [
@@ -3363,7 +3363,7 @@
     {
       "id": "parser._ParseError._parse_atom-5",
       "class": "_ParseError",
-      "source": "parser.py:3715",
+      "source": "parser.py:3740",
       "raised_in": "_parse_atom",
       "template": "I didn't expect '{tok.value}' as a value.",
       "slots": [
@@ -3373,7 +3373,7 @@
     {
       "id": "parser._ParseError._maybe_field_access-1",
       "class": "_ParseError",
-      "source": "parser.py:3738",
+      "source": "parser.py:3763",
       "raised_in": "_maybe_field_access",
       "template": "I expected a record name after 'of'.",
       "slots": []
@@ -3381,7 +3381,7 @@
     {
       "id": "parser._ParseError._maybe_field_access-2",
       "class": "_ParseError",
-      "source": "parser.py:3742",
+      "source": "parser.py:3767",
       "raised_in": "_maybe_field_access",
       "template": "The word '{rec_tok.value}' is reserved in Liminate \u2014 it's used as a {rcat} and can't be used as a record name.",
       "slots": [
@@ -3392,7 +3392,7 @@
     {
       "id": "parser._ParseError._maybe_field_access-3",
       "class": "_ParseError",
-      "source": "parser.py:3747",
+      "source": "parser.py:3772",
       "raised_in": "_maybe_field_access",
       "template": "I expected a record name after 'of', not '{rec_tok.value}'.",
       "slots": [
@@ -3402,7 +3402,7 @@
     {
       "id": "parser._ParseError._maybe_field_access-4",
       "class": "_ParseError",
-      "source": "parser.py:3752",
+      "source": "parser.py:3777",
       "raised_in": "_maybe_field_access",
       "template": "Field access uses one record at a time: <field> of <record>. Chained forms (a of b of c) need nested records, which v2b doesn't yet have.",
       "slots": []
@@ -3410,7 +3410,7 @@
     {
       "id": "parser._ParseError._consume_target-1",
       "class": "_ParseError",
-      "source": "parser.py:3794",
+      "source": "parser.py:3819",
       "raised_in": "_consume_target",
       "template": "'{verb}' is a list operation \u2014 it can't appear inside 'each'. To {verb} only some items, use '{verb} <list> where <condition>' directly.",
       "slots": [
@@ -3422,7 +3422,7 @@
     {
       "id": "parser._ParseError._consume_target-2",
       "class": "_ParseError",
-      "source": "parser.py:3800",
+      "source": "parser.py:3825",
       "raised_in": "_consume_target",
       "template": "I expected a target after '{verb}'.",
       "slots": [
@@ -3432,7 +3432,7 @@
     {
       "id": "parser._ParseError._consume_target-3",
       "class": "_ParseError",
-      "source": "parser.py:3807",
+      "source": "parser.py:3832",
       "raised_in": "_consume_target",
       "template": "'each' is a verb in Liminate \u2014 it iterates a list, or acts as a self-reference pronoun inside a 'where' clause. It can't appear as a target on its own.",
       "slots": []
@@ -3440,7 +3440,7 @@
     {
       "id": "parser._ParseError._consume_target-4",
       "class": "_ParseError",
-      "source": "parser.py:3812",
+      "source": "parser.py:3837",
       "raised_in": "_consume_target",
       "template": "I expected a target after '{verb}', but '{tok.value}' is a {cat} in Liminate. Targets must be names you've created with 'remember' or 'gather'.",
       "slots": [
@@ -3452,7 +3452,7 @@
     {
       "id": "parser._ParseError._consume_target-5",
       "class": "_ParseError",
-      "source": "parser.py:3817",
+      "source": "parser.py:3842",
       "raised_in": "_consume_target",
       "template": "I expected a target after '{verb}', not '{tok.value}'.",
       "slots": [
@@ -3463,7 +3463,7 @@
     {
       "id": "parser._ParseError._consume_parameter_arg-1",
       "class": "_ParseError",
-      "source": "parser.py:3835",
+      "source": "parser.py:3860",
       "raised_in": "_consume_parameter_arg",
       "template": "I expected a name after '{comp_name} from' \u2014 compositions take a single name as input.",
       "slots": [
@@ -3473,7 +3473,7 @@
     {
       "id": "parser._ParseError._consume_parameter_arg-2",
       "class": "_ParseError",
-      "source": "parser.py:3848",
+      "source": "parser.py:3873",
       "raised_in": "_consume_parameter_arg",
       "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please use a name you've created.",
       "slots": [
@@ -3484,7 +3484,7 @@
     {
       "id": "parser._ParseError._consume_parameter_arg-3",
       "class": "_ParseError",
-      "source": "parser.py:3852",
+      "source": "parser.py:3877",
       "raised_in": "_consume_parameter_arg",
       "template": "I expected a name after '{comp_name} from', not '{tok.value}'.",
       "slots": [
@@ -3495,7 +3495,7 @@
     {
       "id": "parser._ParseError._consume_name-1",
       "class": "_ParseError",
-      "source": "parser.py:3861",
+      "source": "parser.py:3886",
       "raised_in": "_consume_name",
       "template": "I expected a name after {after}.",
       "slots": [
@@ -3505,7 +3505,7 @@
     {
       "id": "parser._ParseError._consume_name-2",
       "class": "_ParseError",
-      "source": "parser.py:3868",
+      "source": "parser.py:3893",
       "raised_in": "_consume_name",
       "template": "Composition names can't have spaces. Try a hyphenated name like '{suggestion}' instead.",
       "slots": [
@@ -3515,7 +3515,7 @@
     {
       "id": "parser._ParseError._consume_name-3",
       "class": "_ParseError",
-      "source": "parser.py:3872",
+      "source": "parser.py:3897",
       "raised_in": "_consume_name",
       "template": "Names can't have spaces. Try a hyphenated name like '{suggestion}' instead.",
       "slots": [
@@ -3525,7 +3525,7 @@
     {
       "id": "parser._ParseError._consume_name-4",
       "class": "_ParseError",
-      "source": "parser.py:3879",
+      "source": "parser.py:3904",
       "raised_in": "_consume_name",
       "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
       "slots": [
@@ -3536,7 +3536,7 @@
     {
       "id": "parser._ParseError._consume_name-5",
       "class": "_ParseError",
-      "source": "parser.py:3883",
+      "source": "parser.py:3908",
       "raised_in": "_consume_name",
       "template": "I expected a name after {after}, not '{tok.value}'.",
       "slots": [
@@ -3547,7 +3547,7 @@
     {
       "id": "parser._ParseError._consume_name-6",
       "class": "_ParseError",
-      "source": "parser.py:3889",
+      "source": "parser.py:3914",
       "raised_in": "_consume_name",
       "template": "The word '{tok.value}' is reserved in Liminate \u2014 it's used as a {cat}. Please choose a different name.",
       "slots": [
@@ -3558,7 +3558,7 @@
     {
       "id": "renderer.TypeError._render_node",
       "class": "TypeError",
-      "source": "renderer.py:387",
+      "source": "renderer.py:397",
       "raised_in": "_render_node",
       "template": "render() has no rule for {type(node).__name__}",
       "slots": [
@@ -3568,7 +3568,7 @@
     {
       "id": "renderer.ValueError._render_condition",
       "class": "ValueError",
-      "source": "renderer.py:590",
+      "source": "renderer.py:600",
       "raised_in": "_render_condition",
       "template": "unknown condition operator '{node.op}'",
       "slots": [
