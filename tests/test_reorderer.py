@@ -328,14 +328,18 @@ def test_where_includes_filters_a_list_valued_field_correctly():
     ]
 
 
-def test_where_includes_over_scalar_items_keeps_the_documented_answer():
+def test_where_includes_over_scalar_items_is_refused():
     """The boundary, stated rather than discovered later.
 
-    `each` is an item, not a list, and `includes` over a non-list operand is
-    false by decision — see `test_includes_with_scalar_left_operand_is_false`.
-    So `where each includes "x"` empties the list rather than matching text.
-    Widening the gate does not change that and must not be read as making
-    `includes` a substring test; text-contains is not in the language.
+    `each` is an item, not a list, so `where each includes "x"` is a membership
+    test over a scalar. At runtime that is false by decision — see
+    `test_includes_with_scalar_left_operand_is_false` — which would have
+    emptied the list and reported success.
+
+    The analyzer answers first where the type is known, so this is refused and
+    the list is untouched. Widening the gate must not be read as making
+    `includes` a substring test; text-contains is not in the language, and the
+    refusal now says so.
     """
     from liminate.run import run
 
@@ -344,7 +348,10 @@ def test_where_includes_over_scalar_items_keeps_the_documented_answer():
         'add "routine-check" to tags\n'
     )
     result = run(base + 'filter tags where each includes "urgent"\nshow tags')
-    assert result.results[-1].output == [""]
+    refusal = result.results[-2]
+    assert refusal.status.value == "error_semantic", refusal.status.value
+    assert "no text-contains" in (refusal.message or "").lower()
+    assert result.results[-1].output == ["urgent-repair, routine-check"]
 
 
 def test_a_genuinely_scrambled_condition_is_still_rejected():

@@ -17,6 +17,11 @@ remember a list called events with e1
 filter the events where starts-at is not below 2026-01-01
 filter the events where starts-at is not above 2026-12-31
 
+# membership over a text field is refused, because includes is not contains
+remember an order called o1 with title as roofing and total as 75
+remember a list called orders with o1
+filter the orders where title includes "roof"
+
 # a range comparison over text is refused
 remember a string called title with "roof"
 require title is above 50

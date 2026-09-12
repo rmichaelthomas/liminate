@@ -69,6 +69,26 @@
       "source": "remember an event called e1 with title as launch and starts-at as 2026-03-15\nremember a list called events with e1\nfilter the events where starts-at is not below 2026-01-01\nfilter the events where starts-at is not above 2026-12-31"
     },
     {
+      "id": "membership over a text field is refused, because includes is not contains",
+      "results": [
+        {
+          "canonical": "remember an order called o1 with title as roofing and total as 75",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with o1",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the orders where title includes roof",
+          "errorKind": "semantic",
+          "errorMessage": "'includes' tests whether a list holds a value, and 'title' is text. Liminate has no text-contains test.",
+          "status": "error"
+        }
+      ],
+      "source": "remember an order called o1 with title as roofing and total as 75\nremember a list called orders with o1\nfilter the orders where title includes \"roof\""
+    },
+    {
       "id": "a range comparison over text is refused",
       "results": [
         {

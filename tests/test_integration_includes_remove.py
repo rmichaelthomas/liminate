@@ -268,3 +268,45 @@ def test_when_not_includes_fires_on_initial_evaluation():
     fires = [r for r in results if r.status is ResultStatus.HANDLER_FIRE]
     assert len(fires) == 1
     assert fires[0].output == ["flask not active"]
+
+
+# `includes` over a field the schema says is a scalar — refused, not answered.
+#
+# `includes` is a list-membership probe and a non-list operand evaluates to
+# false (see `test_includes_with_scalar_left_operand_is_false`). That rule is
+# right at runtime, where the operand's type is whatever the value turned out
+# to be. It is the wrong answer at analysis time when the record schema already
+# says the field holds text: `filter the orders where title includes "roof"`
+# then validates clean, empties the list, and reports success.
+#
+# Reachable only since the reorderer stopped refusing `includes` after `where`.
+# The refusal it replaced was safe and said the wrong thing; what replaced it
+# said nothing and was wrong. So the analyzer answers where it can, and defers
+# where it cannot — a field whose type is `unknown` (which is what a
+# list-valued field is, statically) still goes to runtime.
+
+def test_includes_over_a_text_field_is_refused_rather_than_answered():
+    session, setup = run_lines([
+        "remember an order called o1 with title as roofing and total as 75",
+        "remember an order called o2 with title as plumbing and total as 30",
+        "remember a list called orders with o1 and o2",
+    ])
+    assert all(r.status is ResultStatus.SUCCESS for r in setup), [r.message for r in setup]
+    result = session.run_line('filter the orders where title includes "roof"')
+    assert result.status is ResultStatus.ERROR_SEMANTIC, (
+        f"got {result.status.value}: a text field silently matched nothing"
+    )
+    assert "includes" in (result.message or "")
+    assert len(session.symtab["orders"].value) == 2, "the list must not have been touched"
+
+
+def test_includes_over_a_list_valued_field_still_works():
+    session, setup = run_lines([
+        'remember a list called roof-tags with "urgent" and "roof"',
+        "remember an order called o1 with total as 75 and tags as roof-tags",
+        "remember a list called orders with o1",
+    ])
+    assert all(r.status is ResultStatus.SUCCESS for r in setup), [r.message for r in setup]
+    result = session.run_line('filter the orders where tags includes "urgent"')
+    assert result.status is ResultStatus.SUCCESS, result.message
+    assert len(session.symtab["orders"].value) == 1
