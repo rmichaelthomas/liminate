@@ -1253,6 +1253,211 @@
       "source": "remember a number called total with 75\nrequire total is large\ndefine large: is above 50"
     },
     {
+      "id": "require each over a list of numbers, with the condition's field elided",
+      "results": [
+        {
+          "canonical": "remember a list called scores with 80 and 95",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require each score in scores each is above 70",
+          "nodes": [
+            "ConditionNode",
+            "EachPronoun",
+            "NameRef",
+            "NumberLiteral",
+            "RequireEachNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called scores with 80 and 95\nrequire each score in scores is above 70"
+    },
+    {
+      "id": "the explicit binding and the elided half resolve to the same element",
+      "results": [
+        {
+          "canonical": "remember a list called values with 30 and 40",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require each val in values each is above 0 and val is below 100",
+          "nodes": [
+            "CompoundConditionNode",
+            "ConditionNode",
+            "ConditionNode",
+            "EachPronoun",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral",
+            "NumberLiteral",
+            "RequireEachNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called values with 30 and 40\nrequire each val in values is above 0 and val is below 100"
+    },
+    {
+      "id": "where v8a and v31 meet: a predicate applied per element",
+      "results": [
+        {
+          "canonical": "remember a list called nums with 60 and 90",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require each n in nums each is large",
+          "nodes": [
+            "EachPronoun",
+            "NameRef",
+            "PredicateApplicationNode",
+            "RequireEachNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called nums with 60 and 90\ndefine large: is above 50\nrequire each n in nums is large"
+    },
+    {
+      "id": "the binding name may not be the list name, because it would read ambiguously",
+      "results": [
+        {
+          "canonical": "remember a list called scores with 80 and 95",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require each scores in scores each is above 70",
+          "errorKind": "semantic",
+          "errorMessage": "The binding name can't be the same as the list name. Try: require each <item> in scores <condition>.",
+          "status": "error"
+        }
+      ],
+      "source": "remember a list called scores with 80 and 95\nrequire each scores in scores is above 70"
+    },
+    {
+      "id": "different construct entirely",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "each the numbers show",
+          "nodes": [
+            "EachNode",
+            "NameRef",
+            "ShowNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\neach the numbers show"
+    },
+    {
+      "id": "`show <field> of <record>` and produces a node that path does not",
+      "results": [
+        {
+          "canonical": "remember an order called o1 with total as 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total of o1 is above 50",
+          "nodes": [
+            "ConditionNode",
+            "FieldAccessNode",
+            "NumberLiteral",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called o1 with total as 75\nrequire total of o1 is above 50"
+    },
+    {
+      "id": "a named composition, called",
+      "results": [
+        {
+          "canonical": "remember how to greet: show hello",
+          "nodes": [
+            "QuotedString",
+            "RememberCompositionNode",
+            "ShowNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "greet",
+          "nodes": [
+            "CompositionCallNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember how to greet: show \"hello\"\ngreet"
+    },
+    {
+      "id": "a named composition with a parameter, called with a literal argument",
+      "results": [
+        {
+          "canonical": "remember how to greet-name from name: show name",
+          "nodes": [
+            "NameRef",
+            "RememberCompositionNode",
+            "ShowNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "greet-name from \"bob\"",
+          "nodes": [
+            "CompositionCallNode",
+            "QuotedString"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember how to greet-name from name: show name\ngreet-name from \"bob\""
+    },
+    {
       "id": "weakens, over time",
       "results": [
         {

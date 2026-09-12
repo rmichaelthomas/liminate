@@ -201,6 +201,48 @@ remember a number called total with 75
 require total is large
 define large: is above 50
 
+# require each (v8a §49) — iterated enforcement. Both its words appear
+# elsewhere in this corpus, so the reserved-word coverage gate has always
+# been satisfied while saying nothing at all about the construct. That is
+# the same blind spot the Calendar Era found: a gate over words cannot see
+# a grammar.
+# require each over a list of numbers, with the condition's field elided
+
+remember a list called scores with 80 and 95
+require each score in scores is above 70
+
+# the explicit binding and the elided half resolve to the same element
+remember a list called values with 30 and 40
+require each val in values is above 0 and val is below 100
+
+# where v8a and v31 meet: a predicate applied per element
+remember a list called nums with 60 and 90
+define large: is above 50
+require each n in nums is large
+
+# the binding name may not be the list name, because it would read ambiguously
+remember a list called scores with 80 and 95
+require each scores in scores is above 70
+
+# each, the iteration verb — the word appears above inside a `where` clause,
+# which is a pronoun and not this verb, so the word gate was satisfied by a
+# different construct entirely
+remember a list called numbers with 3 and 9
+each the numbers show
+
+# field access in a condition, which is a different operand path from
+# `show <field> of <record>` and produces a node that path does not
+remember an order called o1 with total as 75
+require total of o1 is above 50
+
+# a named composition, called
+remember how to greet: show "hello"
+greet
+
+# a named composition with a parameter, called with a literal argument
+remember how to greet-name from name: show name
+greet-name from "bob"
+
 # weakens, over time
 remember a number called urgency with 10
 weakens urgency over 10
