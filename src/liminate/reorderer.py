@@ -165,8 +165,22 @@ def _validate_where_head(tokens: list[Token]) -> ReorderOutput:
                 head.type is TokenType.UNKNOWN
                 or (head.type is TokenType.VERB and head.value == "each")
             )
+            # `is` opens a comparison; `includes` opens a membership test,
+            # and `not includes` is the same test negated. All three are
+            # conditions the parser builds and the analyzer types — `includes`
+            # and `not_includes` are accepted there explicitly as
+            # list-membership over any operand types. Admitting only `is` here
+            # meant this stage reported a condition as unparseable without
+            # ever handing it to the stage that parses it.
             second_ok = (
-                second.type is TokenType.OPERATOR and second.value == "is"
+                (second.type is TokenType.OPERATOR and second.value == "is")
+                or (second.type is TokenType.CONNECTIVE
+                    and second.value == "includes")
+                or (second.type is TokenType.OPERATOR
+                    and second.value == "not"
+                    and len(rest) > 2
+                    and rest[2].type is TokenType.CONNECTIVE
+                    and rest[2].value == "includes")
             )
             if not (head_ok and second_ok):
                 return LiminateResult(

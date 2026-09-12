@@ -1,0 +1,171 @@
+# remember a string
+remember a string called greeting with "hello"
+show greeting
+
+# remember a number and compare it
+remember a number called total with 75
+require total is above 50
+
+# a date range — the Calendar Era surface (v29), invisible to a word-list gate
+remember a date called starts-at with 2026-03-15
+require starts-at is not below 2026-01-01
+require starts-at is not above 2026-12-31
+
+# a range comparison over text is refused
+remember a string called title with "roof"
+require title is above 50
+
+# membership in a condition
+remember a list called tags with "urgent"
+choose if tags includes "urgent": show "yes" otherwise show "no"
+
+# negated membership in a condition
+remember a list called tags with "routine"
+choose if tags not includes "urgent": show "ok" otherwise show "skip"
+
+# filter a list of records by a field
+remember an order called order1 with total as 75 and status as active
+remember a list called orders with order1
+filter the orders where total is above 50
+
+# filter by a field that holds a list
+remember a list called roof-tags with "urgent" and "roof"
+remember an order called order1 with total as 75 and tags as roof-tags
+remember a list called orders with order1
+filter the orders where tags includes "urgent"
+
+# filter over each item
+remember a list called numbers with 3 and 9
+filter the numbers where each is above 5
+
+# a scrambled condition is refused
+remember a list called orders with "none"
+filter the orders where above 50 total is
+
+# a verb at the end is refused
+remember a list called orders with "none"
+the orders where total is above 50 filter
+
+# target before verb is reordered
+remember an order called order1 with total as 75 and status as active
+remember a list called orders with order1
+the orders filter where total is above 50
+
+# equality and inequality
+remember a number called total with 75
+require total is equal to 75
+require total is not equal to 30
+
+# within a tolerance
+remember a number called total with 75
+require total is within 5 of 78
+
+# forbid
+remember a value called anchor with "no"
+forbid anchor is "no" because "a lifted manifest binds to no file"
+
+# permit
+remember a value called anchor with "yes"
+permit anchor is "yes"
+
+# expect
+remember a number called total with 75
+expect total is above 50
+
+# count
+remember a list called numbers with 3 and 9
+count the numbers
+
+# sum
+remember a list called numbers with 3 and 9
+sum the numbers
+
+# extrema
+remember a list called numbers with 3 and 9
+show the highest of numbers
+show the lowest of numbers
+
+# keep
+remember a list called numbers with 3 and 9
+keep the numbers where each is above 5
+
+# add and remove
+remember a list called tags with "urgent"
+add "roof" to tags
+remove "roof" from tags
+
+# arithmetic
+remember a number called total with 75
+remember a number called doubled with total multiplied by 2
+
+# unless, which is an exception clause and not a standalone conditional
+remember a number called revenue with 2000000
+expect revenue is above 1000000 unless revenue is equal to 0
+
+# a temporal prefix
+remember a number called total with 75
+starting 2025-07-01 until 2025-12-31 require total is above 10
+
+# an unknown verb is refused
+invoke "hello"
+
+# an unknown name is refused
+add "item" to nonexistent-list
+
+# a named composition
+remember how to find-big-orders: filter the orders where total is above 50
+
+# assign
+remember a value called review-task with "audit"
+remember a value called compliance-team with "legal"
+assign review-task to compliance-team
+
+# compare
+remember a value called original with "a"
+remember a value called copy with "a"
+compare original to copy
+
+# gather a range
+gather the numbers from 1 to 10
+
+# sort by a field
+remember an order called order1 with total as 75 and status as active
+remember a list called orders with order1
+sort the orders by total
+
+# transform a field
+remember an order called order1 with total as 75 and status as active
+remember a list called orders with order1
+transform total of the orders by total minus 10
+
+# arithmetic — plus, minus, divided by, multiplied by
+remember a number called total with 75
+remember a number called more with total plus 5
+remember a number called less with total minus 5
+remember a number called half with total divided by 2
+remember a number called twice with total multiplied by 2
+
+# define a predicate, and inherited
+remember a number called total with 75
+define large: is above 50
+inherited require total is above 10
+
+# weakens, over time
+remember a number called urgency with 10
+weakens urgency over 10
+
+# or, in a condition
+remember a number called total with 75
+require total is above 50 or total is equal to 0
+
+# then, sequencing
+remember a list called numbers with 3 and 9
+count the numbers then show numbers
+
+# reverse, which is an operator on sort and not a verb
+remember an order called order1 with total as 75 and status as active
+remember a list called orders with order1
+sort the orders by total in reverse
+
+# finish
+finish

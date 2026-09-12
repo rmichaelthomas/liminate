@@ -1,0 +1,624 @@
+{
+  "cases": [
+    {
+      "id": "remember a string",
+      "results": [
+        {
+          "canonical": "remember a string called greeting with hello",
+          "status": "success"
+        },
+        {
+          "canonical": "show greeting",
+          "status": "success"
+        }
+      ],
+      "source": "remember a string called greeting with \"hello\"\nshow greeting"
+    },
+    {
+      "id": "remember a number and compare it",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "require total is above 50",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is above 50"
+    },
+    {
+      "id": "a date range \u2014 the Calendar Era surface (v29), invisible to a word-list gate",
+      "results": [
+        {
+          "canonical": "remember a date called starts-at with 2026-03-15",
+          "status": "success"
+        },
+        {
+          "canonical": "require starts-at is not below 2026-01-01",
+          "status": "success"
+        },
+        {
+          "canonical": "require starts-at is not above 2026-12-31",
+          "status": "success"
+        }
+      ],
+      "source": "remember a date called starts-at with 2026-03-15\nrequire starts-at is not below 2026-01-01\nrequire starts-at is not above 2026-12-31"
+    },
+    {
+      "id": "a range comparison over text is refused",
+      "results": [
+        {
+          "canonical": "remember a string called title with roof",
+          "status": "success"
+        },
+        {
+          "canonical": "require title is above 50",
+          "errorKind": "semantic",
+          "errorMessage": "'above' requires numbers or dates, but 'title' is text.",
+          "status": "error"
+        }
+      ],
+      "source": "remember a string called title with \"roof\"\nrequire title is above 50"
+    },
+    {
+      "id": "membership in a condition",
+      "results": [
+        {
+          "canonical": "remember a list called tags with urgent",
+          "status": "success"
+        },
+        {
+          "canonical": "choose if tags includes urgent: show yes otherwise show no",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called tags with \"urgent\"\nchoose if tags includes \"urgent\": show \"yes\" otherwise show \"no\""
+    },
+    {
+      "id": "negated membership in a condition",
+      "results": [
+        {
+          "canonical": "remember a list called tags with routine",
+          "status": "success"
+        },
+        {
+          "canonical": "choose if tags not includes urgent: show ok otherwise show skip",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called tags with \"routine\"\nchoose if tags not includes \"urgent\": show \"ok\" otherwise show \"skip\""
+    },
+    {
+      "id": "filter a list of records by a field",
+      "results": [
+        {
+          "canonical": "remember an order called order1 with total as 75 and status as active",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the orders where total is above 50",
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called order1 with total as 75 and status as active\nremember a list called orders with order1\nfilter the orders where total is above 50"
+    },
+    {
+      "id": "filter by a field that holds a list",
+      "results": [
+        {
+          "canonical": "remember a list called roof-tags with urgent and roof",
+          "status": "success"
+        },
+        {
+          "canonical": "remember an order called order1 with total as 75 and tags as roof-tags",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the orders where tags includes urgent",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called roof-tags with \"urgent\" and \"roof\"\nremember an order called order1 with total as 75 and tags as roof-tags\nremember a list called orders with order1\nfilter the orders where tags includes \"urgent\""
+    },
+    {
+      "id": "filter over each item",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the numbers where each is above 5",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\nfilter the numbers where each is above 5"
+    },
+    {
+      "id": "a scrambled condition is refused",
+      "results": [
+        {
+          "canonical": "remember a list called orders with none",
+          "status": "success"
+        },
+        {
+          "errorKind": "parse",
+          "errorMessage": "I couldn't parse the condition after 'where'. Conditions look like '[field] is [comparison] [value]', for example: total is above 50.",
+          "status": "error"
+        }
+      ],
+      "source": "remember a list called orders with \"none\"\nfilter the orders where above 50 total is"
+    },
+    {
+      "id": "a verb at the end is refused",
+      "results": [
+        {
+          "canonical": "remember a list called orders with none",
+          "status": "success"
+        },
+        {
+          "errorKind": "parse",
+          "errorMessage": "I couldn't parse this. Try putting the verb at the front, for example: filter the orders where total is above 50.",
+          "status": "error"
+        }
+      ],
+      "source": "remember a list called orders with \"none\"\nthe orders where total is above 50 filter"
+    },
+    {
+      "id": "target before verb is reordered",
+      "results": [
+        {
+          "canonical": "remember an order called order1 with total as 75 and status as active",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the orders where total is above 50",
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called order1 with total as 75 and status as active\nremember a list called orders with order1\nthe orders filter where total is above 50"
+    },
+    {
+      "id": "equality and inequality",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "require total is equal to 75",
+          "status": "success"
+        },
+        {
+          "canonical": "require total is not equal to 30",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is equal to 75\nrequire total is not equal to 30"
+    },
+    {
+      "id": "within a tolerance",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "require total is within 5 of 78",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is within 5 of 78"
+    },
+    {
+      "id": "forbid",
+      "results": [
+        {
+          "canonical": "remember a value called anchor with no",
+          "status": "success"
+        },
+        {
+          "canonical": "forbid anchor is no because \"a lifted manifest binds to no file\"",
+          "status": "success"
+        }
+      ],
+      "source": "remember a value called anchor with \"no\"\nforbid anchor is \"no\" because \"a lifted manifest binds to no file\""
+    },
+    {
+      "id": "permit",
+      "results": [
+        {
+          "canonical": "remember a value called anchor with yes",
+          "status": "success"
+        },
+        {
+          "canonical": "permit anchor is yes",
+          "status": "success"
+        }
+      ],
+      "source": "remember a value called anchor with \"yes\"\npermit anchor is \"yes\""
+    },
+    {
+      "id": "expect",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "expect total is above 50",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nexpect total is above 50"
+    },
+    {
+      "id": "count",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "count the numbers",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\ncount the numbers"
+    },
+    {
+      "id": "sum",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "sum the numbers",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\nsum the numbers"
+    },
+    {
+      "id": "extrema",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "show highest of numbers",
+          "status": "success"
+        },
+        {
+          "canonical": "show lowest of numbers",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\nshow the highest of numbers\nshow the lowest of numbers"
+    },
+    {
+      "id": "keep",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "keep the numbers where each is above 5",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\nkeep the numbers where each is above 5"
+    },
+    {
+      "id": "add and remove",
+      "results": [
+        {
+          "canonical": "remember a list called tags with urgent",
+          "status": "success"
+        },
+        {
+          "canonical": "add roof to tags",
+          "status": "success"
+        },
+        {
+          "canonical": "remove roof from tags",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called tags with \"urgent\"\nadd \"roof\" to tags\nremove \"roof\" from tags"
+    },
+    {
+      "id": "arithmetic",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a number called doubled from total multiplied by 2",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nremember a number called doubled with total multiplied by 2"
+    },
+    {
+      "id": "unless, which is an exception clause and not a standalone conditional",
+      "results": [
+        {
+          "canonical": "remember a number called revenue with 2000000",
+          "status": "success"
+        },
+        {
+          "canonical": "expect revenue is above 1000000 unless revenue is equal to 0",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called revenue with 2000000\nexpect revenue is above 1000000 unless revenue is equal to 0"
+    },
+    {
+      "id": "a temporal prefix",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "starting \"2025-07-01\" until \"2025-12-31\" require total is above 10",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nstarting 2025-07-01 until 2025-12-31 require total is above 10"
+    },
+    {
+      "id": "an unknown verb is refused",
+      "results": [
+        {
+          "errorKind": "parse",
+          "errorMessage": "I don't recognize a command here. Every sentence needs a verb like 'remember', 'show', 'filter', 'count', 'gather', 'sum', 'each', or 'choose'.",
+          "status": "error"
+        }
+      ],
+      "source": "invoke \"hello\""
+    },
+    {
+      "id": "an unknown name is refused",
+      "results": [
+        {
+          "canonical": "add item to nonexistent-list",
+          "errorKind": "semantic",
+          "errorMessage": "I can't find 'nonexistent-list'. You might need to 'remember' it first.",
+          "status": "error"
+        }
+      ],
+      "source": "add \"item\" to nonexistent-list"
+    },
+    {
+      "id": "a named composition",
+      "results": [
+        {
+          "canonical": "remember how to find-big-orders: filter the orders where total is above 50",
+          "status": "success"
+        }
+      ],
+      "source": "remember how to find-big-orders: filter the orders where total is above 50"
+    },
+    {
+      "id": "assign",
+      "results": [
+        {
+          "canonical": "remember a value called review-task with audit",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a value called compliance-team with legal",
+          "status": "success"
+        },
+        {
+          "canonical": "assign review-task to compliance-team",
+          "status": "success"
+        }
+      ],
+      "source": "remember a value called review-task with \"audit\"\nremember a value called compliance-team with \"legal\"\nassign review-task to compliance-team"
+    },
+    {
+      "id": "compare",
+      "results": [
+        {
+          "canonical": "remember a value called original with \"a\"",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a value called copy with \"a\"",
+          "status": "success"
+        },
+        {
+          "canonical": "compare original to copy",
+          "status": "success"
+        }
+      ],
+      "source": "remember a value called original with \"a\"\nremember a value called copy with \"a\"\ncompare original to copy"
+    },
+    {
+      "id": "gather a range",
+      "results": [
+        {
+          "canonical": "gather the numbers from 1 to 10",
+          "status": "success"
+        }
+      ],
+      "source": "gather the numbers from 1 to 10"
+    },
+    {
+      "id": "sort by a field",
+      "results": [
+        {
+          "canonical": "remember an order called order1 with total as 75 and status as active",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "sort the orders by total",
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called order1 with total as 75 and status as active\nremember a list called orders with order1\nsort the orders by total"
+    },
+    {
+      "id": "transform a field",
+      "results": [
+        {
+          "canonical": "remember an order called order1 with total as 75 and status as active",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "transform total of orders by total minus 10",
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called order1 with total as 75 and status as active\nremember a list called orders with order1\ntransform total of the orders by total minus 10"
+    },
+    {
+      "id": "arithmetic \u2014 plus, minus, divided by, multiplied by",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a number called more from total plus 5",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a number called less from total minus 5",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a number called half from total divided by 2",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a number called twice from total multiplied by 2",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nremember a number called more with total plus 5\nremember a number called less with total minus 5\nremember a number called half with total divided by 2\nremember a number called twice with total multiplied by 2"
+    },
+    {
+      "id": "define a predicate, and inherited",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "status": "success"
+        },
+        {
+          "canonical": "inherited require total is above 10",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\ndefine large: is above 50\ninherited require total is above 10"
+    },
+    {
+      "id": "weakens, over time",
+      "results": [
+        {
+          "canonical": "remember a number called urgency with 10",
+          "status": "success"
+        },
+        {
+          "canonical": "weakens urgency over 10",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called urgency with 10\nweakens urgency over 10"
+    },
+    {
+      "id": "or, in a condition",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "status": "success"
+        },
+        {
+          "canonical": "require total is above 50 or total is equal to 0",
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is above 50 or total is equal to 0"
+    },
+    {
+      "id": "then, sequencing",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 3 and 9",
+          "status": "success"
+        },
+        {
+          "canonical": "count the numbers then show numbers",
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 3 and 9\ncount the numbers then show numbers"
+    },
+    {
+      "id": "reverse, which is an operator on sort and not a verb",
+      "results": [
+        {
+          "canonical": "remember an order called order1 with total as 75 and status as active",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called orders with order1",
+          "status": "success"
+        },
+        {
+          "canonical": "sort the orders by total in reverse",
+          "status": "success"
+        }
+      ],
+      "source": "remember an order called order1 with total as 75 and status as active\nremember a list called orders with order1\nsort the orders by total in reverse"
+    },
+    {
+      "id": "finish",
+      "results": [
+        {
+          "canonical": "finish",
+          "errorKind": "semantic",
+          "errorMessage": "'finish' can only be used inside an event handler.",
+          "status": "error"
+        }
+      ],
+      "source": "finish"
+    }
+  ],
+  "generator": "scripts/gen_conformance_corpus.py",
+  "language_version": "0.18.1",
+  "surface": "tokenize -> reorder -> parse -> analyze -> render"
+}

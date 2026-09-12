@@ -233,6 +233,20 @@ class Session:
             ResultStatus.ERROR_SEMANTIC,
             ResultStatus.ERROR_RUNTIME,
             ResultStatus.PACK_VERB_FAILURE,
+            # A fired prohibition or an unmet requirement is the deontic core
+            # answering, and it is the answer a caller most needs. Omitting
+            # them made `forbid` less consequential to a shell than `cite`,
+            # which is a pack verb: a failed cite exited 1 and a violated
+            # forbid exited 0. Every shell consumer had to string-match
+            # "Prohibition violated" to learn the verdict, and one that
+            # forgot reported a denial as an admission.
+            #
+            # This is the exit status only. Execution still continues past a
+            # fired rule, so a program reports every violation rather than
+            # the first — which is the more useful behaviour and is why the
+            # fix is here rather than a halt.
+            ResultStatus.PROHIBITION_VIOLATED,
+            ResultStatus.REQUIREMENT_NOT_MET,
         ):
             self.had_any_error = True
 
@@ -565,10 +579,16 @@ def run(
     lines = source.splitlines()
 
     # Phase 2 D-4 — run contradiction detection once over the whole program
-    # before execution, so a warning surfaces even if a later `require`/`forbid`
-    # halts the run before reaching the conflicting statement. Warning-only:
-    # emitted as an informational SUCCESS result, never blocks execution and
-    # never sets had_error.
+    # before execution, so the warning is independent of how far execution
+    # gets. Warning-only: emitted as an informational SUCCESS result, never
+    # blocks execution and never sets had_error.
+    #
+    # This used to say "even if a later `require`/`forbid` halts the run
+    # before reaching the conflicting statement." Neither halts the run. A
+    # fired rule unwinds its own statement — `executed=False` on that result —
+    # and execution carries on to the next, which is what lets a program
+    # report every violation rather than only the first. Running the check up
+    # front is still right; the reason given for it was not true.
     contradiction_warnings = detect_contradictions(_collect_deontic_statements(lines))
     if contradiction_warnings:
         warn_result = LiminateResult(
