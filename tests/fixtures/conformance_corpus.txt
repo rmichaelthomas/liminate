@@ -161,6 +161,37 @@ remember a number called total with 75
 define large: is above 50
 inherited require total is above 10
 
+# a predicate applied, which is what define exists for
+remember a number called total with 75
+define large: is above 50
+require total is large
+
+# a predicate negated
+remember a number called total with 30
+define large: is above 50
+require total is not large
+
+# a predicate over a list, with the body's field elided
+remember a list called numbers with 30 and 120
+define big: is above 100
+filter the numbers where each is big
+
+# a predicate referencing another predicate
+remember a number called total with 200
+define large: is above 50
+define enormous: is large
+require total is enormous
+
+# a bareword that is not a predicate stays string equality, which is what
+# makes define non-breaking for every program written before it
+remember a number called total with 75
+require total is overdue
+
+# a predicate used before it is defined is not a predicate
+remember a number called total with 75
+require total is large
+define large: is above 50
+
 # weakens, over time
 remember a number called urgency with 10
 weakens urgency over 10

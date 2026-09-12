@@ -5,10 +5,18 @@
       "results": [
         {
           "canonical": "remember a string called greeting with hello",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "show greeting",
+          "nodes": [
+            "NameRef",
+            "ShowNode"
+          ],
           "status": "success"
         }
       ],
@@ -19,10 +27,20 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require total is above 50",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -33,14 +51,30 @@
       "results": [
         {
           "canonical": "remember a date called starts-at with 2026-03-15",
+          "nodes": [
+            "DateLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require starts-at is not below 2026-01-01",
+          "nodes": [
+            "ConditionNode",
+            "DateLiteral",
+            "NameRef",
+            "RequireNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require starts-at is not above 2026-12-31",
+          "nodes": [
+            "ConditionNode",
+            "DateLiteral",
+            "NameRef",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -51,18 +85,41 @@
       "results": [
         {
           "canonical": "remember an event called e1 with title as launch and starts-at as 2026-03-15",
+          "nodes": [
+            "BareWord",
+            "DateLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called events with e1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the events where starts-at is not below 2026-01-01",
+          "nodes": [
+            "ConditionNode",
+            "DateLiteral",
+            "FilterNode",
+            "NameRef",
+            "NameRef"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the events where starts-at is not above 2026-12-31",
+          "nodes": [
+            "ConditionNode",
+            "DateLiteral",
+            "FilterNode",
+            "NameRef",
+            "NameRef"
+          ],
           "status": "success"
         }
       ],
@@ -73,10 +130,19 @@
       "results": [
         {
           "canonical": "remember an order called o1 with title as roofing and total as 75",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with o1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
@@ -93,6 +159,10 @@
       "results": [
         {
           "canonical": "remember a string called title with roof",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
@@ -109,10 +179,26 @@
       "results": [
         {
           "canonical": "remember a list called tags with urgent",
+          "nodes": [
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "choose if tags includes urgent: show yes otherwise show no",
+          "nodes": [
+            "ChooseBranch",
+            "ChooseBranch",
+            "ChooseNode",
+            "ConditionNode",
+            "NameRef",
+            "QuotedString",
+            "QuotedString",
+            "QuotedString",
+            "ShowNode",
+            "ShowNode"
+          ],
           "status": "success"
         }
       ],
@@ -123,10 +209,26 @@
       "results": [
         {
           "canonical": "remember a list called tags with routine",
+          "nodes": [
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "choose if tags not includes urgent: show ok otherwise show skip",
+          "nodes": [
+            "ChooseBranch",
+            "ChooseBranch",
+            "ChooseNode",
+            "ConditionNode",
+            "NameRef",
+            "QuotedString",
+            "QuotedString",
+            "QuotedString",
+            "ShowNode",
+            "ShowNode"
+          ],
           "status": "success"
         }
       ],
@@ -137,14 +239,30 @@
       "results": [
         {
           "canonical": "remember an order called order1 with total as 75 and status as active",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the orders where total is above 50",
+          "nodes": [
+            "ConditionNode",
+            "FilterNode",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -155,18 +273,39 @@
       "results": [
         {
           "canonical": "remember a list called roof-tags with urgent and roof",
+          "nodes": [
+            "QuotedString",
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember an order called order1 with total as 75 and tags as roof-tags",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the orders where tags includes urgent",
+          "nodes": [
+            "ConditionNode",
+            "FilterNode",
+            "NameRef",
+            "NameRef",
+            "QuotedString"
+          ],
           "status": "success"
         }
       ],
@@ -177,10 +316,22 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the numbers where each is above 5",
+          "nodes": [
+            "ConditionNode",
+            "EachPronoun",
+            "FilterNode",
+            "NameRef",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -191,6 +342,10 @@
       "results": [
         {
           "canonical": "remember a list called orders with none",
+          "nodes": [
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
@@ -206,6 +361,10 @@
       "results": [
         {
           "canonical": "remember a list called orders with none",
+          "nodes": [
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
@@ -221,14 +380,30 @@
       "results": [
         {
           "canonical": "remember an order called order1 with total as 75 and status as active",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "filter the orders where total is above 50",
+          "nodes": [
+            "ConditionNode",
+            "FilterNode",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -239,14 +414,30 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require total is equal to 75",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require total is not equal to 30",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -257,10 +448,21 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require total is within 5 of 78",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -271,10 +473,20 @@
       "results": [
         {
           "canonical": "remember a value called anchor with no",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "forbid anchor is no because \"a lifted manifest binds to no file\"",
+          "nodes": [
+            "ConditionNode",
+            "ForbidNode",
+            "NameRef",
+            "QuotedString"
+          ],
           "status": "success"
         }
       ],
@@ -285,10 +497,20 @@
       "results": [
         {
           "canonical": "remember a value called anchor with yes",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "permit anchor is yes",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "PermitNode",
+            "QuotedString"
+          ],
           "status": "success"
         }
       ],
@@ -299,10 +521,20 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "expect total is above 50",
+          "nodes": [
+            "ConditionNode",
+            "ExpectNode",
+            "NameRef",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -313,10 +545,19 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "count the numbers",
+          "nodes": [
+            "CountNode",
+            "NameRef"
+          ],
           "status": "success"
         }
       ],
@@ -327,10 +568,19 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "sum the numbers",
+          "nodes": [
+            "NameRef",
+            "SumNode"
+          ],
           "status": "success"
         }
       ],
@@ -341,14 +591,29 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "show highest of numbers",
+          "nodes": [
+            "ExtremaNode",
+            "NameRef",
+            "ShowNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "show lowest of numbers",
+          "nodes": [
+            "ExtremaNode",
+            "NameRef",
+            "ShowNode"
+          ],
           "status": "success"
         }
       ],
@@ -359,10 +624,22 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "keep the numbers where each is above 5",
+          "nodes": [
+            "ConditionNode",
+            "EachPronoun",
+            "KeepNode",
+            "NameRef",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -373,14 +650,28 @@
       "results": [
         {
           "canonical": "remember a list called tags with urgent",
+          "nodes": [
+            "QuotedString",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "add roof to tags",
+          "nodes": [
+            "AddNode",
+            "NameRef",
+            "QuotedString"
+          ],
           "status": "success"
         },
         {
           "canonical": "remove roof from tags",
+          "nodes": [
+            "NameRef",
+            "QuotedString",
+            "RemoveNode"
+          ],
           "status": "success"
         }
       ],
@@ -391,10 +682,20 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a number called doubled from total multiplied by 2",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         }
       ],
@@ -405,10 +706,23 @@
       "results": [
         {
           "canonical": "remember a number called revenue with 2000000",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "expect revenue is above 1000000 unless revenue is equal to 0",
+          "nodes": [
+            "ConditionNode",
+            "ConditionNode",
+            "ExpectNode",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral",
+            "NumberLiteral"
+          ],
           "status": "success"
         }
       ],
@@ -419,10 +733,20 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "starting \"2025-07-01\" until \"2025-12-31\" require total is above 10",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -456,6 +780,14 @@
       "results": [
         {
           "canonical": "remember how to find-big-orders: filter the orders where total is above 50",
+          "nodes": [
+            "ConditionNode",
+            "FilterNode",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral",
+            "RememberCompositionNode"
+          ],
           "status": "success"
         }
       ],
@@ -466,14 +798,27 @@
       "results": [
         {
           "canonical": "remember a value called review-task with audit",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a value called compliance-team with legal",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "assign review-task to compliance-team",
+          "nodes": [
+            "AssignNode",
+            "BareWord",
+            "NameRef"
+          ],
           "status": "success"
         }
       ],
@@ -484,14 +829,27 @@
       "results": [
         {
           "canonical": "remember a value called original with \"a\"",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a value called copy with \"a\"",
+          "nodes": [
+            "QuotedString",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "compare original to copy",
+          "nodes": [
+            "CompareNode",
+            "NameRef",
+            "NameRef"
+          ],
           "status": "success"
         }
       ],
@@ -502,6 +860,9 @@
       "results": [
         {
           "canonical": "gather the numbers from 1 to 10",
+          "nodes": [
+            "GatherNode"
+          ],
           "status": "success"
         }
       ],
@@ -512,14 +873,27 @@
       "results": [
         {
           "canonical": "remember an order called order1 with total as 75 and status as active",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "sort the orders by total",
+          "nodes": [
+            "NameRef",
+            "SortNode"
+          ],
           "status": "success"
         }
       ],
@@ -530,14 +904,30 @@
       "results": [
         {
           "canonical": "remember an order called order1 with total as 75 and status as active",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "transform total of orders by total minus 10",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NameRef",
+            "NumberLiteral",
+            "TransformNode"
+          ],
           "status": "success"
         }
       ],
@@ -548,22 +938,50 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a number called more from total plus 5",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a number called less from total minus 5",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a number called half from total divided by 2",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a number called twice from total multiplied by 2",
+          "nodes": [
+            "ArithmeticNode",
+            "BareWord",
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         }
       ],
@@ -574,28 +992,254 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
           "status": "success"
         },
         {
           "canonical": "inherited require total is above 10",
+          "nodes": [
+            "ConditionNode",
+            "NameRef",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
       "source": "remember a number called total with 75\ndefine large: is above 50\ninherited require total is above 10"
     },
     {
+      "id": "a predicate applied, which is what define exists for",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is large",
+          "nodes": [
+            "NameRef",
+            "PredicateApplicationNode",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\ndefine large: is above 50\nrequire total is large"
+    },
+    {
+      "id": "a predicate negated",
+      "results": [
+        {
+          "canonical": "remember a number called total with 30",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is not large",
+          "nodes": [
+            "NameRef",
+            "PredicateApplicationNode",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 30\ndefine large: is above 50\nrequire total is not large"
+    },
+    {
+      "id": "a predicate over a list, with the body's field elided",
+      "results": [
+        {
+          "canonical": "remember a list called numbers with 30 and 120",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define big: each is above 100",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "filter the numbers where each is big",
+          "nodes": [
+            "EachPronoun",
+            "FilterNode",
+            "NameRef",
+            "PredicateApplicationNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a list called numbers with 30 and 120\ndefine big: is above 100\nfilter the numbers where each is big"
+    },
+    {
+      "id": "a predicate referencing another predicate",
+      "results": [
+        {
+          "canonical": "remember a number called total with 200",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define enormous: each is large",
+          "nodes": [
+            "DefineNode",
+            "EachPronoun",
+            "PredicateApplicationNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is enormous",
+          "nodes": [
+            "NameRef",
+            "PredicateApplicationNode",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 200\ndefine large: is above 50\ndefine enormous: is large\nrequire total is enormous"
+    },
+    {
+      "id": "makes define non-breaking for every program written before it",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is overdue",
+          "nodes": [
+            "BareWord",
+            "ConditionNode",
+            "NameRef",
+            "RequireNode"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is overdue"
+    },
+    {
+      "id": "a predicate used before it is defined is not a predicate",
+      "results": [
+        {
+          "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "require total is large",
+          "nodes": [
+            "BareWord",
+            "ConditionNode",
+            "NameRef",
+            "RequireNode"
+          ],
+          "status": "success"
+        },
+        {
+          "canonical": "define large: each is above 50",
+          "nodes": [
+            "ConditionNode",
+            "DefineNode",
+            "EachPronoun",
+            "NumberLiteral"
+          ],
+          "status": "success"
+        }
+      ],
+      "source": "remember a number called total with 75\nrequire total is large\ndefine large: is above 50"
+    },
+    {
       "id": "weakens, over time",
       "results": [
         {
           "canonical": "remember a number called urgency with 10",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "weakens urgency over 10",
+          "nodes": [
+            "NameRef",
+            "NumberLiteral",
+            "WeakensNode"
+          ],
           "status": "success"
         }
       ],
@@ -606,10 +1250,24 @@
       "results": [
         {
           "canonical": "remember a number called total with 75",
+          "nodes": [
+            "NumberLiteral",
+            "RememberValueNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "require total is above 50 or total is equal to 0",
+          "nodes": [
+            "CompoundConditionNode",
+            "ConditionNode",
+            "ConditionNode",
+            "NameRef",
+            "NameRef",
+            "NumberLiteral",
+            "NumberLiteral",
+            "RequireNode"
+          ],
           "status": "success"
         }
       ],
@@ -620,10 +1278,22 @@
       "results": [
         {
           "canonical": "remember a list called numbers with 3 and 9",
+          "nodes": [
+            "NumberLiteral",
+            "NumberLiteral",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "count the numbers then show numbers",
+          "nodes": [
+            "CountNode",
+            "NameRef",
+            "NameRef",
+            "SequenceNode",
+            "ShowNode"
+          ],
           "status": "success"
         }
       ],
@@ -634,14 +1304,27 @@
       "results": [
         {
           "canonical": "remember an order called order1 with total as 75 and status as active",
+          "nodes": [
+            "BareWord",
+            "NumberLiteral",
+            "RememberRecordNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "remember a list called orders with order1",
+          "nodes": [
+            "BareWord",
+            "RememberListNode"
+          ],
           "status": "success"
         },
         {
           "canonical": "sort the orders by total in reverse",
+          "nodes": [
+            "NameRef",
+            "SortNode"
+          ],
           "status": "success"
         }
       ],
