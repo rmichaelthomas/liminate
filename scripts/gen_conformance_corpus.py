@@ -31,6 +31,7 @@ Usage:
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import sys
 from pathlib import Path
@@ -68,7 +69,7 @@ _ERROR_KIND = {
 }
 
 
-def validate_line(line: str, symtab: dict) -> dict:
+def validate_line(line: str, symtab: dict, session=None) -> dict:
     """One line through the ported stages, reported the way the port reports it.
 
     Deliberately shaped as `ValidationResult` from the TypeScript package —
@@ -86,7 +87,17 @@ def validate_line(line: str, symtab: dict) -> dict:
     if isinstance(reordered, LiminateResult):
         return _from_result(reordered)
 
-    ast = parse(reordered)
+    # `parse` needs the names a bareword could be: a composition call, and —
+    # since v31 — a predicate application. Without them `define overdue: ...`
+    # registers nothing and `is overdue` silently parses as string equality, so
+    # the corpus would record equality where the language does predicate
+    # application, and teach the port the wrong thing. Both sets come from the
+    # session, which is where the CLI gets them.
+    ast = parse(
+        reordered,
+        session.composition_names() if session else None,
+        session.predicate_names() if session else None,
+    )
     if isinstance(ast, LiminateResult):
         return _from_result(ast)
 
@@ -94,7 +105,35 @@ def validate_line(line: str, symtab: dict) -> dict:
     if isinstance(analysis, LiminateResult):
         return {**_from_result(analysis), "canonical": render(ast)}
 
-    return {"status": "success", "canonical": render(ast)}
+    return {"status": "success", "canonical": render(ast), "nodes": node_kinds(ast)}
+
+
+def node_kinds(node: object) -> list[str]:
+    """Every AST node kind in the tree, sorted, with duplicates kept.
+
+    The canonical rendering is not enough to compare on. `require total is
+    large` and `require total is overdue` render identically — the first is a
+    predicate application, the second is string equality against a bareword,
+    and a port that implemented `define` as a no-op would pass a text
+    comparison on both. The AST is where they differ, so the AST is what the
+    corpus records.
+
+    Kind names are the class name here and the `kind` field in TypeScript, and
+    they already agree — `RequireNode` is `RequireNode` on both sides.
+    """
+    found: list[str] = []
+
+    def walk(value: object) -> None:
+        if dataclasses.is_dataclass(value) and not isinstance(value, type):
+            found.append(type(value).__name__)
+            for f in dataclasses.fields(value):
+                walk(getattr(value, f.name))
+        elif isinstance(value, (list, tuple)):
+            for item in value:
+                walk(item)
+
+    walk(node)
+    return sorted(found)
 
 
 def _from_result(result: LiminateResult) -> dict:
@@ -150,7 +189,7 @@ def main() -> None:
         session = Session()
         results = []
         for line in case["source"].splitlines():
-            result = validate_line(line, session.symtab)
+            result = validate_line(line, session.symtab, session)
             results.append(result)
             if result["status"] == "success":
                 session.run_line(line)
