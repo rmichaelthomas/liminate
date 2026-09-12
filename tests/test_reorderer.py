@@ -255,3 +255,101 @@ def test_temporal_prefix_bare_dates_with_inherited_reorders():
     assert node.starting_date == "2025-07-01"
     assert node.until_date == "2025-12-31"
     assert node.inherited is True
+
+
+# `includes` after `where` — the gate that blocked a condition every other
+# layer already handled.
+#
+# The parser produces `op="includes"` / `op="not_includes"` for these, and the
+# analyzer accepts them explicitly as list-membership. Only this two-token
+# shape check stood in front, requiring the second token after `where` to be
+# the operator `is`. So `title includes "ant"` was reported as an unparseable
+# condition by the one stage that never tried to parse it.
+#
+# The gate had already been widened once, for the v25 extrema head. This is
+# the same shape of change.
+
+
+def test_where_includes_passes_through():
+    src = tokenize('filter the orders where title includes "urgent"')
+    out = reorder(src)
+    assert isinstance(out, list), getattr(out, "message", out)
+    assert _values(out) == [
+        "filter", "the", "orders", "where", "title", "includes", "urgent",
+    ]
+
+
+def test_where_not_includes_passes_through():
+    src = tokenize('filter the orders where title not includes "urgent"')
+    out = reorder(src)
+    assert isinstance(out, list), getattr(out, "message", out)
+
+
+def test_keep_where_includes_passes_through():
+    src = tokenize('keep the orders where title includes "urgent"')
+    out = reorder(src)
+    assert isinstance(out, list), getattr(out, "message", out)
+
+
+def test_where_includes_reaches_the_parser_that_handles_it():
+    from liminate.parser import parse
+
+    out = reorder(tokenize('filter the orders where title includes "urgent"'))
+    assert isinstance(out, list), getattr(out, "message", out)
+    assert parse(out).condition.op == "includes"
+
+
+def test_where_includes_filters_a_list_valued_field_correctly():
+    """The reason the gate had to move: this works, and nothing could reach it.
+
+    `includes` is a list-membership probe, so after `where` it is meaningful
+    exactly when the field it names holds a list. That case filters correctly
+    and was unreachable — not because any stage could not do it, but because
+    the one stage that does no parsing said the condition could not be parsed.
+    """
+    from liminate.run import Session
+    from liminate.result import ResultStatus
+
+    session = Session()
+    for line in [
+        'remember a list called roof-tags with "urgent" and "roof"',
+        'remember a list called lawn-tags with "routine" and "lawn"',
+        "remember an order called order1 with total as 75 and tags as roof-tags",
+        "remember an order called order2 with total as 30 and tags as lawn-tags",
+        "remember a list called orders with order1 and order2",
+    ]:
+        assert session.run_line(line).status is ResultStatus.SUCCESS, line
+
+    result = session.run_line('filter the orders where tags includes "urgent"')
+    assert result.status is ResultStatus.SUCCESS, result.message
+    assert len(session.symtab["orders"].value) == 1
+    assert session.run_line("show orders").output == [
+        "total: 75, tags: ['urgent', 'roof']"
+    ]
+
+
+def test_where_includes_over_scalar_items_keeps_the_documented_answer():
+    """The boundary, stated rather than discovered later.
+
+    `each` is an item, not a list, and `includes` over a non-list operand is
+    false by decision — see `test_includes_with_scalar_left_operand_is_false`.
+    So `where each includes "x"` empties the list rather than matching text.
+    Widening the gate does not change that and must not be read as making
+    `includes` a substring test; text-contains is not in the language.
+    """
+    from liminate.run import run
+
+    base = (
+        'remember a list called tags with "urgent-repair"\n'
+        'add "routine-check" to tags\n'
+    )
+    result = run(base + 'filter tags where each includes "urgent"\nshow tags')
+    assert result.results[-1].output == [""]
+
+
+def test_a_genuinely_scrambled_condition_is_still_rejected():
+    """Widening the gate must not turn it off. `includes` is admitted in the
+    comparison position; a condition with nothing in that position is not."""
+    src = tokenize("filter the orders where above 50 total is")
+    out = reorder(src)
+    assert not isinstance(out, list)
