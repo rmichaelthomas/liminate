@@ -47,6 +47,28 @@
       "source": "remember a date called starts-at with 2026-03-15\nrequire starts-at is not below 2026-01-01\nrequire starts-at is not above 2026-12-31"
     },
     {
+      "id": "a date range over a record field, which is the shape a consumer writes",
+      "results": [
+        {
+          "canonical": "remember an event called e1 with title as launch and starts-at as 2026-03-15",
+          "status": "success"
+        },
+        {
+          "canonical": "remember a list called events with e1",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the events where starts-at is not below 2026-01-01",
+          "status": "success"
+        },
+        {
+          "canonical": "filter the events where starts-at is not above 2026-12-31",
+          "status": "success"
+        }
+      ],
+      "source": "remember an event called e1 with title as launch and starts-at as 2026-03-15\nremember a list called events with e1\nfilter the events where starts-at is not below 2026-01-01\nfilter the events where starts-at is not above 2026-12-31"
+    },
+    {
       "id": "a range comparison over text is refused",
       "results": [
         {
