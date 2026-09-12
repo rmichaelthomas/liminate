@@ -129,6 +129,44 @@ jobs:
           name: liminate-windows-x64
           path: dist/liminate-windows-x64.exe
 
+  # `pip install liminate` is the install line in README.md, and
+  # liminate-receipts and liminate-contract-inheritance both depend on the
+  # PyPI distribution — so PyPI is a real release channel for this project.
+  # It was never in this workflow. Through 0.18.1 someone uploaded by hand,
+  # which meant the binaries and the package could drift apart silently, and
+  # 0.18.2 shipped binaries while PyPI stayed on 0.18.1 until this job existed.
+  #
+  # Authentication is trusted publishing (OIDC): PyPI mints a one-time
+  # credential for this workflow. No token is stored and nothing expires.
+  publish-pypi:
+    needs: [build-macos, build-linux, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # mints the OIDC token PyPI exchanges for a credential
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Verify the tag matches pyproject.toml
+        run: |
+          PKG_VERSION="$(python -c "import tomllib,pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")"
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pyproject.toml ${PKG_VERSION}."
+            exit 1
+          fi
+          echo "Publishing ${GITHUB_REF_NAME} (pyproject.toml ${PKG_VERSION})."
+
+      - name: Build sdist and wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
   release:
     needs: [build-macos, build-linux, build-windows]
     runs-on: ubuntu-latest

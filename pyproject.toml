@@ -1,3 +1,15 @@
+# Stated explicitly rather than left to pip's implicit setuptools fallback.
+# There was no [build-system] table at all through 0.18.1: every build worked
+# because pip supplies setuptools when a project names no backend, and
+# setuptools auto-discovers a src/ layout. Both are conveniences, not
+# guarantees, and a release build is the wrong place to rely on either.
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project]
 name = "liminate"
 version = "0.18.2"
