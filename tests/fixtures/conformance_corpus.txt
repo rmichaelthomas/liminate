@@ -11,6 +11,12 @@ remember a date called starts-at with 2026-03-15
 require starts-at is not below 2026-01-01
 require starts-at is not above 2026-12-31
 
+# a date range over a record field, which is the shape a consumer writes
+remember an event called e1 with title as launch and starts-at as 2026-03-15
+remember a list called events with e1
+filter the events where starts-at is not below 2026-01-01
+filter the events where starts-at is not above 2026-12-31
+
 # a range comparison over text is refused
 remember a string called title with "roof"
 require title is above 50
