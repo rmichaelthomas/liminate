@@ -1579,6 +1579,6 @@
     }
   ],
   "generator": "scripts/gen_conformance_corpus.py",
-  "language_version": "0.18.2",
+  "language_version": "0.18.3",
   "surface": "tokenize -> reorder -> parse -> analyze -> render"
 }

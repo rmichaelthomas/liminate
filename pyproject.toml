@@ -12,7 +12,7 @@ where = ["src"]
 
 [project]
 name = "liminate"
-version = "0.18.2"
+version = "0.18.3"
 description = "A prose-as-syntax language designed from the human end."
 requires-python = ">=3.10"
 license = "Apache-2.0"
