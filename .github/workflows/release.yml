@@ -18,9 +18,8 @@ jobs:
       - name: Install build dependencies
         run: pip install ".[build]"
 
-      - name: Build binary with PyInstaller
-        run: pyinstaller --onefile --name liminate --collect-all liminate build/entry.py
-
+      # The certificate comes before the build: PyInstaller signs what it
+      # collects with it (build/build_macos_release.sh says why).
       - name: Import signing certificate
         env:
           APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
@@ -51,11 +50,8 @@ jobs:
           fi
           echo "SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
 
-      - name: Codesign binary
-        run: |
-          codesign --force --options runtime --timestamp \
-            --sign "$SIGNING_IDENTITY" dist/liminate
-          codesign --verify --verbose dist/liminate
+      - name: Build, sign and run the binary
+        run: build/build_macos_release.sh
 
       - name: Notarize binary
         env:
@@ -185,8 +181,13 @@ jobs:
           cp artifacts/liminate-windows-x64/liminate-windows-x64.exe release/
           chmod +x release/liminate-macos-arm64 release/liminate-linux-x64
 
+      # An asset already on the release stays. When Actions can't run, the
+      # macOS binary is built and attached by hand (RELEASING.md), and
+      # downstream builds pin its SHA-256; a later run of this workflow fills
+      # in the rest without replacing it.
       - uses: softprops/action-gh-release@v3
         with:
+          overwrite_files: false
           files: |
             release/liminate-macos-arm64
             release/liminate-linux-x64

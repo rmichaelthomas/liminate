@@ -94,6 +94,38 @@ The binary lands at `dist/liminate`. The `--collect-all liminate` flag
 is required by the src/ layout — without it PyInstaller misses
 submodules like `packs/timer.py`.
 
+The macOS release binary is built by `build/build_macos_release.sh`
+instead, which the workflow also calls. It passes
+`--codesign-identity`, so the Python.framework inside the one-file
+binary is signed with the same team as the binary itself. Without that,
+the hardened runtime's library validation refuses the framework and the
+binary exits before running anything, which is what happened to
+0.18.2's macOS asset. `codesign --verify` passes either way, so the
+script also runs the built binary.
+
+---
+
+## When Actions can't run
+
+The macOS asset can be released by hand with the same recipe:
+
+```bash
+python3.12 -m venv .venv-release && . .venv-release/bin/activate
+pip install ".[build]"
+SIGNING_IDENTITY="Developer ID Application: <Your Name> (<TEAM_ID>)" \
+  build/build_macos_release.sh
+ditto -c -k dist/liminate liminate.zip
+xcrun notarytool submit liminate.zip --keychain-profile <profile> --wait
+mv dist/liminate dist/liminate-macos-arm64
+git tag v0.x.x && git push origin v0.x.x
+gh release create v0.x.x dist/liminate-macos-arm64 --title v0.x.x --notes "…"
+```
+
+When Actions runs again, re-run the tag's `Release` workflow. It builds
+the Linux and Windows binaries, publishes to PyPI, and leaves the
+macOS asset already on the release alone (`overwrite_files: false`),
+so a SHA-256 pinned downstream stays valid.
+
 ---
 
 ## Homebrew tap (manual, future)
