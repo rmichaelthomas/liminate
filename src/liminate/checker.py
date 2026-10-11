@@ -2,9 +2,8 @@
 
 Decidability Step 2 (Trust Infrastructure Addendum v1.0s §91/§92.6).
 Encodes an Agreement's deontic statements (require/forbid/permit/expect
-and the define predicates they reference) into SMT constraints over
-QF_UFLIRA and runs seven authoring-time checks that a human reading the
-file would miss.
+and the define predicates they reference) into SMT constraints and runs
+seven authoring-time checks that a human reading the file would miss.
 
 Scope: the enforcement fragment only. No temporal encoding (starting_date
 / until_date are ignored — v1.0s §91.6), no trace semantics, no CLI verb.
@@ -14,6 +13,14 @@ replace or modify it.
 z3 is an optional dependency (the `check` extra). This module never
 imports z3 at top level — `import liminate.checker` must always succeed.
 The import happens lazily inside the public entry point.
+
+Numeric support is deliberately narrower than the interpreter's full
+`int | float` value domain. Symbolic numeric facts must be known Python
+integers. Finite decimal literals are encoded as their exact binary64
+values, and arithmetic made entirely from literals or literal arithmetic
+definitions is evaluated with Python before encoding. Symbolic operations
+that can round a float, and unknown or float-valued numeric facts, are
+reported as unencodable.
 """
 
 from __future__ import annotations
@@ -22,6 +29,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import date
+from math import isfinite
 
 from .analyzer import SymbolEntry
 from .lexer import LexError, leading_indent, tokenize
@@ -112,9 +120,9 @@ class CheckResult:
 _SANITIZE_RE = re.compile(r"[^A-Za-z0-9_]")
 
 # SymbolEntry.type / SymbolEntry.schema[field] values that map onto a
-# scalar Z3 sort. Dates encode as Int via epoch-day ordinals (§9 fact 9 —
-# never mixed with number's Real sort).
+# scalar Z3 sort. Dates and supported integer-valued numbers encode as Int.
 _LIST_TYPES = frozenset({"list_of_strings", "list_of_numbers", "list_of_dates"})
+_NOT_CONSTANT = object()
 
 
 def _sanitize_base(name: str) -> str:
@@ -162,8 +170,8 @@ class _Encoder:
 
     def _build_constants(self) -> None:
         for name, entry in self.symtab.items():
-            if entry.type == "number":
-                self.constants[name] = self.z3.Real(self._sanitize(name))
+            if entry.type == "number" and type(entry.value) is int:
+                self.constants[name] = self.z3.Int(self._sanitize(name))
             elif entry.type == "string":
                 self.constants[name] = self.z3.String(self._sanitize(name))
             elif entry.type == "date":
@@ -172,8 +180,13 @@ class _Encoder:
                 for field_name, field_type in (entry.schema or {}).items():
                     key = f"{name}__{field_name}"
                     ident = self._sanitize(key)
-                    if field_type == "number":
-                        self.constants[key] = self.z3.Real(ident)
+                    field_value = (
+                        entry.value.get(field_name)
+                        if isinstance(entry.value, dict)
+                        else None
+                    )
+                    if field_type == "number" and type(field_value) is int:
+                        self.constants[key] = self.z3.Int(ident)
                     elif field_type == "string":
                         self.constants[key] = self.z3.String(ident)
                     elif field_type == "date":
@@ -233,8 +246,14 @@ class _Encoder:
             # §3 correction (1): value is the tolerance, value2 is the
             # target — mirrors interpreter._eval_condition exactly.
             field_val = self.encode_field(cond.field)
-            tolerance = self.encode_value(cond.value)
             target = self.encode_value(cond.value2)
+            tolerance = self.encode_value(cond.value)
+            if not self._is_int_sort(field_val) or not self._is_int_sort(target):
+                raise UnencodableConstruct(
+                    "'within' needs an integer-valued field and target for "
+                    "exact subtraction; a floating-point operand can round "
+                    "in the interpreter."
+                )
             return self.z3.And(
                 field_val - target <= tolerance,
                 target - field_val <= tolerance,
@@ -266,7 +285,7 @@ class _Encoder:
         if isinstance(value, bool):
             raise UnencodableConstruct("Boolean list elements can't be encoded.")
         if isinstance(value, (int, float)):
-            return self.z3.RealVal(value)
+            return self._encode_number_literal(value)
         if isinstance(value, str):
             return self.z3.StringVal(value)
         if isinstance(value, date):
@@ -277,11 +296,25 @@ class _Encoder:
         if isinstance(node, NameRef):
             if node.name in self.constants:
                 return self.constants[node.name]
+            entry = self.symtab.get(node.name)
+            if entry is not None and entry.type == "number":
+                raise self._unsupported_number_fact(node.name, entry.value)
             raise UnencodableConstruct(f"'{node.name}' isn't an encodable fact.")
         if isinstance(node, FieldAccessNode):
             key = f"{node.record_name}__{node.field}"
             if key in self.constants:
                 return self.constants[key]
+            entry = self.symtab.get(node.record_name)
+            if (
+                entry is not None
+                and entry.type == "record"
+                and (entry.schema or {}).get(node.field) == "number"
+            ):
+                values = entry.value if isinstance(entry.value, dict) else {}
+                raise self._unsupported_number_fact(
+                    f"{node.field} of {node.record_name}",
+                    values.get(node.field),
+                )
             raise UnencodableConstruct(
                 f"'{node.field} of {node.record_name}' isn't an encodable fact."
             )
@@ -299,7 +332,7 @@ class _Encoder:
 
     def encode_value(self, node, origin_name=None):
         if isinstance(node, NumberLiteral):
-            return self.z3.RealVal(node.value)
+            return self._encode_number_literal(node.value)
         if isinstance(node, DateLiteral):
             return self.z3.IntVal(_date_ordinal(node.value))
         if isinstance(node, QuotedString):
@@ -320,6 +353,10 @@ class _Encoder:
     def _resolve_name_value(self, node):
         name = node.word if isinstance(node, BareWord) else node.name
         defining = self.definitions.get(name)
+        if defining is not None and self._contains_arithmetic(defining):
+            folded = self._evaluate_constant_value(node)
+            if folded is not _NOT_CONSTANT:
+                return self._encode_number_literal(folded)
         if (
             defining is not None
             and self._contains_arithmetic(defining)
@@ -336,6 +373,9 @@ class _Encoder:
                 self._inlining_visited.discard(name)
         if name in self.constants:
             return self.constants[name]
+        entry = self.symtab.get(name)
+        if entry is not None and entry.type == "number":
+            raise self._unsupported_number_fact(name, entry.value)
         if isinstance(node, BareWord):
             # Matches interpreter._eval_value: an unresolved BareWord is
             # a string literal, not an error.
@@ -363,14 +403,111 @@ class _Encoder:
             )
         return False
 
+    def _evaluate_constant_value(self, node, visited=None):
+        """Evaluate literal-only arithmetic with the interpreter's Python
+        operators, including its division result conversion. Arithmetic
+        definitions may be followed, but a name bound directly to a
+        literal remains a symbolic fact for the existing checker model.
+        """
+        if visited is None:
+            visited = set()
+        if isinstance(node, NumberLiteral):
+            return node.value
+        if isinstance(node, ArithmeticNode):
+            left = self._evaluate_constant_value(node.left, visited)
+            right = self._evaluate_constant_value(node.right, visited)
+            if left is _NOT_CONSTANT or right is _NOT_CONSTANT:
+                return _NOT_CONSTANT
+            if (
+                isinstance(left, bool)
+                or not isinstance(left, (int, float))
+                or isinstance(right, bool)
+                or not isinstance(right, (int, float))
+            ):
+                return _NOT_CONSTANT
+            try:
+                if node.op == "plus":
+                    return left + right
+                if node.op == "minus":
+                    return left - right
+                if node.op == "multiplied_by":
+                    return left * right
+                if node.op == "divided_by":
+                    if right == 0:
+                        raise UnencodableConstruct(
+                            "Literal division by zero is a runtime error and "
+                            "cannot be verified."
+                        )
+                    result = left / right
+                    if isinstance(result, float) and result.is_integer():
+                        return int(result)
+                    return result
+            except OverflowError as exc:
+                raise UnencodableConstruct(
+                    "Literal arithmetic overflows the interpreter's "
+                    "floating-point conversion."
+                ) from exc
+            raise UnencodableConstruct(
+                f"Unknown arithmetic operator '{node.op}'."
+            )
+        if isinstance(node, (BareWord, NameRef)):
+            name = node.word if isinstance(node, BareWord) else node.name
+            if name in visited:
+                return _NOT_CONSTANT
+            defining = self.definitions.get(name)
+            if isinstance(defining, ArithmeticNode):
+                return self._evaluate_constant_value(
+                    defining, visited | {name},
+                )
+        return _NOT_CONSTANT
+
+    def _encode_number_literal(self, value):
+        if type(value) is int:
+            return self.z3.IntVal(value)
+        if isinstance(value, float):
+            if not isfinite(value):
+                raise UnencodableConstruct(
+                    "Non-finite floating-point values aren't supported by "
+                    "the mathematical checker."
+                )
+            numerator, denominator = value.as_integer_ratio()
+            return self.z3.RealVal(f"{numerator}/{denominator}")
+        raise UnencodableConstruct(f"Can't encode numeric value {value!r}.")
+
+    def _unsupported_number_fact(self, name, value):
+        if isinstance(value, float):
+            detail = "a floating-point runtime value"
+        else:
+            detail = "an unknown integer or floating-point runtime value"
+        return UnencodableConstruct(
+            f"'{name}' has {detail}; the mathematical checker supports "
+            "only integer-valued symbolic numeric facts."
+        )
+
+    def _is_int_sort(self, expression):
+        return expression.sort().kind() == self.z3.Z3_INT_SORT
+
     def _encode_arithmetic(self, node, origin_name=None):
         if node.op in ("multiplied_by", "divided_by"):
             if not self._is_compile_time_constant(
                 node.left
             ) and not self._is_compile_time_constant(node.right):
                 raise NonlinearArithmetic(self._nonlinear_message(node, origin_name))
+        folded = self._evaluate_constant_value(node)
+        if folded is not _NOT_CONSTANT:
+            return self._encode_number_literal(folded)
+        if node.op == "divided_by":
+            raise UnencodableConstruct(
+                "Division involving a symbolic number is unsupported because "
+                "the interpreter uses floating-point division."
+            )
         left = self.encode_value(node.left, origin_name=origin_name)
         right = self.encode_value(node.right, origin_name=origin_name)
+        if not self._is_int_sort(left) or not self._is_int_sort(right):
+            raise UnencodableConstruct(
+                "Symbolic arithmetic with a floating-point operand is "
+                "unsupported because the interpreter rounds the result."
+            )
         if node.op == "plus":
             return left + right
         if node.op == "minus":
@@ -863,6 +1000,9 @@ def _check_constant_predicate(
         if not isinstance(stmt, DefineNode):
             continue
         text = render(stmt)
+        numeric_subject = (
+            enc._infer_subject_sort(stmt.condition, set()) == "number"
+        )
         try:
             body_formula = enc.encode_predicate_body_standalone(
                 stmt.name, stmt.condition
@@ -870,11 +1010,7 @@ def _check_constant_predicate(
         except UnencodableConstruct as exc:
             findings.append(Finding(
                 kind="inconclusive", severity="info", statements=[text],
-                explanation=(
-                    f"Couldn't determine a subject type for predicate "
-                    f"'{stmt.name}' — check 7 (constant predicate) skipped "
-                    f"for it."
-                ),
+                explanation=f"Check 7 couldn't encode predicate '{stmt.name}': {exc}",
             ))
             unencodable.append(UnencodableStatement(
                 text=text, reason=str(exc), verb="define",
@@ -892,6 +1028,15 @@ def _check_constant_predicate(
             continue
         if contradiction == "unknown":
             findings.append(_inconclusive("constant_predicate", [text]))
+            unencodable.append(UnencodableStatement(
+                text=text,
+                reason=(
+                    "Z3 returned unknown while checking the numeric predicate."
+                    if numeric_subject
+                    else "Z3 returned unknown while checking the predicate."
+                ),
+                verb="define",
+            ))
             continue
 
         tautology, _ = _run_query(
@@ -904,6 +1049,33 @@ def _check_constant_predicate(
             ))
         elif tautology == "unknown":
             findings.append(_inconclusive("constant_predicate", [text]))
+            unencodable.append(UnencodableStatement(
+                text=text,
+                reason=(
+                    "Z3 returned unknown while checking the numeric predicate."
+                    if numeric_subject
+                    else "Z3 returned unknown while checking the predicate."
+                ),
+                verb="define",
+            ))
+        elif numeric_subject:
+            findings.append(Finding(
+                kind="inconclusive", severity="info", statements=[text],
+                explanation=(
+                    f"Predicate '{stmt.name}' varies over mathematical reals; "
+                    "the checker can't determine whether it is constant over "
+                    "Liminate's integer and floating-point number values."
+                ),
+            ))
+            unencodable.append(UnencodableStatement(
+                text=text,
+                reason=(
+                    "Numeric predicate subject may be an integer or a "
+                    "floating-point value; a nonconstant real formula does "
+                    "not establish its runtime behavior."
+                ),
+                verb="define",
+            ))
     return findings, unencodable
 
 

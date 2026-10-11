@@ -1,11 +1,12 @@
 """Differential fuzzer for the Z3 encoder (src/liminate/checker.py).
 
 Decidability Step 2.5 (Trust Infrastructure Addendum v1.0r §88.6) — a
-property-based fuzzer that verifies the encoder produces formulas
-semantically equivalent to what the interpreter computes at runtime.
-Generates random condition ASTs paired with random concrete fact
-bindings, evaluates each through both paths via `_oracle`, and asserts
-they agree.
+property-based fuzzer for the checker's supported symbolic-integer
+fragment. It generates random condition ASTs paired with concrete facts,
+evaluates each through both paths via `_oracle`, and asserts they agree.
+A deterministic numeric corpus separately exercises decimal arithmetic
+and rounding boundaries, requiring either a match or an explicit checker
+refusal.
 
 Read-only against checker.py / interpreter.py / analyzer.py — this file
 is purely additive. See checker.py's module docstring for the encoder's
@@ -18,6 +19,7 @@ import os
 from collections import Counter
 from dataclasses import dataclass, field as dc_field
 from datetime import date, timedelta
+from math import isfinite
 
 import pytest
 
@@ -83,7 +85,7 @@ def _pin_constants(enc, symbol_table):
         if entry.type == "number":
             const = enc.constants.get(name)
             if const is not None:
-                pins.append(const == z3.RealVal(entry.value))
+                pins.append(const == _z3_numeric_value(entry.value))
         elif entry.type == "string":
             const = enc.constants.get(name)
             if const is not None:
@@ -99,7 +101,7 @@ def _pin_constants(enc, symbol_table):
                     continue
                 field_type = (entry.schema or {}).get(field_name)
                 if field_type == "number":
-                    pins.append(const == z3.RealVal(field_value))
+                    pins.append(const == _z3_numeric_value(field_value))
                 elif field_type == "string":
                     pins.append(const == z3.StringVal(field_value))
                 elif field_type == "date":
@@ -107,7 +109,23 @@ def _pin_constants(enc, symbol_table):
     return pins
 
 
-def _oracle(condition_ast, symbol_table):
+def _z3_numeric_value(value):
+    """Encode the concrete runtime number exactly for oracle pins.
+
+    Python floats represent binary fractions. Passing a float directly to
+    RealVal converts its shortest decimal spelling, which is not the exact
+    runtime value and can hide the very rounding differences this oracle
+    needs to find.
+    """
+    if type(value) is int:
+        return z3.IntVal(value)
+    if isinstance(value, float) and isfinite(value):
+        numerator, denominator = value.as_integer_ratio()
+        return z3.RealVal(f"{numerator}/{denominator}")
+    raise ValueError(f"unsupported numeric pin {value!r}")
+
+
+def _oracle(condition_ast, symbol_table, *, record_skip=True):
     """Compare the interpreter's verdict on `condition_ast` against the
     encoder's, both evaluated over the concrete values in `symbol_table`.
 
@@ -119,28 +137,37 @@ def _oracle(condition_ast, symbol_table):
     try:
         interp_result = _eval_condition(condition_ast, None, symbol_table)
     except _InterpRuntimeError:
-        skip_counts["interp_runtime_error"] += 1
+        if record_skip:
+            skip_counts["interp_runtime_error"] += 1
         return SKIPPED, "interp_runtime_error"
     except TypeError:
-        skip_counts["interp_type_error"] += 1
+        if record_skip:
+            skip_counts["interp_type_error"] += 1
         return SKIPPED, "interp_type_error"
 
     enc = _Encoder(z3, symbol_table, {})
     try:
         formula = enc.encode_condition(condition_ast)
-    except (UnencodableConstruct, NonlinearArithmetic):
-        skip_counts["encoder_unencodable"] += 1
-        return SKIPPED, "encoder_unencodable"
-    except z3.Z3Exception:
-        skip_counts["encoder_z3_exception"] += 1
-        return SKIPPED, "encoder_z3_exception"
+    except (UnencodableConstruct, NonlinearArithmetic) as exc:
+        if record_skip:
+            skip_counts["encoder_unencodable"] += 1
+        return SKIPPED, f"encoder_unencodable: {exc}"
+    except z3.Z3Exception as exc:
+        if record_skip:
+            skip_counts["encoder_z3_exception"] += 1
+        return SKIPPED, f"encoder_z3_exception: {exc}"
 
     solver = z3.Solver()
     solver.add(formula if interp_result else z3.Not(formula))
     for pin in _pin_constants(enc, symbol_table):
         solver.add(pin)
 
-    agrees = solver.check() == z3.sat
+    outcome = solver.check()
+    if outcome == z3.unknown:
+        if record_skip:
+            skip_counts["z3_unknown"] += 1
+        return SKIPPED, f"z3_unknown: {solver.reason_unknown()}"
+    agrees = outcome == z3.sat
     return interp_result, agrees
 
 
@@ -263,20 +290,11 @@ def _names_for_kind(schema: FactSchema, kind: str) -> list:
 
 
 def _number_strategy():
-    # Rounded to 2dp (currency-like), not raw doubles: hypothesis's float
-    # strategy otherwise happily generates values like 1.6e-256, and
-    # `x - 1.6e-256 == x` is True under IEEE-754 double rounding but False
-    # under Z3 Real's exact rational arithmetic — a genuine representation
-    # gap between the two arithmetic models, not a bug in either side, and
-    # not a shape any real Liminate program's literals take. Confirmed via
-    # a 2000-example probe before this fix; zero disagreements after it.
-    return st.one_of(
-        st.integers(min_value=-1000, max_value=1000),
-        st.floats(
-            min_value=-1000.0, max_value=1000.0,
-            allow_nan=False, allow_infinity=False,
-        ).map(lambda x: round(x, 2)),
-    )
+    # The symbolic checker subset uses integer-valued numeric facts. Decimal
+    # literals and float arithmetic are exercised by the deterministic
+    # differential corpus below, where each case is either matched or
+    # explicitly classified as unsupported.
+    return st.integers(min_value=-1000, max_value=1000)
 
 
 def _date_strategy():
@@ -599,7 +617,11 @@ def _deontic_oracle(node, symbol_table):
     effect_solver.add(effect_formula if fires else z3.Not(effect_formula))
     for pin in pins:
         effect_solver.add(pin)
-    effect_agrees = effect_solver.check() == z3.sat
+    effect_outcome = effect_solver.check()
+    if effect_outcome == z3.unknown:
+        skip_counts["z3_unknown"] += 1
+        return SKIPPED, f"z3_unknown: {effect_solver.reason_unknown()}"
+    effect_agrees = effect_outcome == z3.sat
 
     allowed_agrees = True
     if allowed_formula is not None:
@@ -607,7 +629,11 @@ def _deontic_oracle(node, symbol_table):
         allowed_solver.add(allowed_formula if allowed else z3.Not(allowed_formula))
         for pin in pins:
             allowed_solver.add(pin)
-        allowed_agrees = allowed_solver.check() == z3.sat
+        allowed_outcome = allowed_solver.check()
+        if allowed_outcome == z3.unknown:
+            skip_counts["z3_unknown"] += 1
+            return SKIPPED, f"z3_unknown: {allowed_solver.reason_unknown()}"
+        allowed_agrees = allowed_outcome == z3.sat
 
     return (fires, allowed), (effect_agrees and allowed_agrees)
 
@@ -656,6 +682,115 @@ def test_predicate_round_trip(data):
 # ---------------------------------------------------------------------------
 # Phase 4 — regression anchors (deterministic)
 # ---------------------------------------------------------------------------
+
+
+def test_numeric_differential_corpus_records_mismatches_and_unsupported():
+    """Exercise source-shaped decimal arithmetic and keep mismatches
+    distinct from checker refusals. A mismatch is accumulated and asserted
+    with both verdicts; it is never sent through Hypothesis assume()."""
+    def arithmetic(left, op, right):
+        return ArithmeticNode(left=left, right=right, op=op)
+
+    cases = [
+        # Python evaluates each of these to a specific binary64 result.
+        ("decimal addition", 0.30000000000000004, "equal_to",
+         arithmetic(NumberLiteral(0.1), "plus", NumberLiteral(0.2)), True, "unsupported"),
+        ("decimal subtraction", 0.19999999999999998, "equal_to",
+         arithmetic(NumberLiteral(0.3), "minus", NumberLiteral(0.1)), True, "unsupported"),
+        ("decimal multiplication", 0.020000000000000004, "equal_to",
+         arithmetic(NumberLiteral(0.1), "multiplied_by", NumberLiteral(0.2)), True, "unsupported"),
+        ("nonterminating division", 0.3333333333333333, "equal_to",
+         arithmetic(NumberLiteral(1), "divided_by", NumberLiteral(3)), True, "unsupported"),
+        ("decimal inequality", 0.3, "not_equal_to",
+         arithmetic(NumberLiteral(0.1), "plus", NumberLiteral(0.2)), True, "unsupported"),
+        ("decimal ordered comparison", 0.3, "below",
+         arithmetic(NumberLiteral(0.1), "plus", NumberLiteral(0.2)), True, "unsupported"),
+        # Integer facts retain exact reasoning, including direct comparison
+        # with decimal thresholds and constant-only floating arithmetic.
+        ("integer equality", 3, "equal_to",
+         arithmetic(NumberLiteral(1), "plus", NumberLiteral(2)), True, "match"),
+        ("decimal threshold", 1, "above", NumberLiteral(0.1), True, "match"),
+        ("decimal sum threshold", 1, "above",
+         arithmetic(NumberLiteral(0.1), "plus", NumberLiteral(0.2)), True, "match"),
+        ("rounding midpoint", 1, "equal_to",
+         arithmetic(NumberLiteral(1), "plus", NumberLiteral(1.1102230246251565e-16)), True, "match"),
+        ("above rounding midpoint", 1, "below",
+         arithmetic(NumberLiteral(1), "plus", NumberLiteral(1.1102230246251567e-16)), True, "match"),
+        # Python compares large ints to floats without first rounding the
+        # integer to binary64. The checker must retain that boundary too.
+        ("integer float precision boundary", 9007199254740993, "equal_to",
+         NumberLiteral(9007199254740992.0), False, "match"),
+        ("division threshold", 1, "above",
+         arithmetic(NumberLiteral(1), "divided_by", NumberLiteral(3)), True, "match"),
+        # Operations that can round a symbolic runtime number are declined.
+        ("mixed int decimal arithmetic", 1, "equal_to",
+         arithmetic(NameRef("amount"), "plus", NumberLiteral(0.1)), False, "unsupported"),
+        ("symbolic division", 1, "above",
+         arithmetic(NameRef("amount"), "divided_by", NumberLiteral(3)), True, "unsupported"),
+        ("within with float target", 1, "within",
+         None, True, "unsupported"),
+    ]
+    observations = []
+    mismatches = []
+    unexpected_statuses = []
+
+    for name, amount, op, rhs, expected_interpreter, expected_status in cases:
+        symbol_table = _entries(amount=amount)
+        if op == "within":
+            condition = ConditionNode(
+                field=NameRef("amount"), op=op,
+                value=NumberLiteral(0.1), value2=NumberLiteral(0.9),
+            )
+        else:
+            condition = ConditionNode(
+                field=NameRef("amount"), op=op, value=rhs,
+            )
+        interpreter_result = _eval_condition(condition, None, symbol_table)
+        oracle_result, checker_agrees = _oracle(
+            condition, symbol_table, record_skip=False,
+        )
+
+        if oracle_result is SKIPPED:
+            status = "unsupported"
+            observations.append({
+                "case": name, "status": status,
+                "interpreter": interpreter_result, "reason": checker_agrees,
+            })
+        elif checker_agrees:
+            status = "match"
+            observations.append({
+                "case": name, "status": status,
+                "interpreter": interpreter_result,
+                "checker": interpreter_result,
+            })
+        else:
+            status = "mismatch"
+            checker_result = not interpreter_result
+            observations.append({
+                "case": name, "status": status,
+                "interpreter": interpreter_result,
+                "checker": checker_result,
+            })
+            mismatches.append(observations[-1])
+
+        if interpreter_result is not expected_interpreter:
+            unexpected_statuses.append({
+                "case": name,
+                "expected_interpreter": expected_interpreter,
+                "actual_interpreter": interpreter_result,
+            })
+        if status != expected_status:
+            unexpected_statuses.append({
+                "case": name,
+                "expected_checker_status": expected_status,
+                "actual_checker_status": status,
+            })
+
+    assert not mismatches, f"Actual numerical mismatches: {mismatches!r}"
+    assert not unexpected_statuses, (
+        f"Unexpected numerical classifications: {unexpected_statuses!r}; "
+        f"all observations: {observations!r}"
+    )
 
 
 def test_within_operand_order():

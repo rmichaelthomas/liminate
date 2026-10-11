@@ -5,82 +5,95 @@
   "finding_kinds": [
     {
       "kind": "inconclusive",
-      "source": "checker.py:671"
+      "source": "checker.py:808"
     },
     {
       "kind": "inconclusive",
-      "source": "checker.py:683"
+      "source": "checker.py:820"
     },
     {
       "kind": "always_deny",
-      "source": "checker.py:703"
+      "source": "checker.py:840"
     },
     {
       "kind": "dead_forbid",
-      "source": "checker.py:726"
+      "source": "checker.py:863"
     },
     {
       "kind": "require_forbid_conflict",
-      "source": "checker.py:754"
+      "source": "checker.py:891"
     },
     {
       "kind": "unless_swallows_rule",
-      "source": "checker.py:783"
+      "source": "checker.py:920"
     },
     {
       "kind": "redundant_forbid",
-      "source": "checker.py:813"
+      "source": "checker.py:950"
     },
     {
       "kind": "dead_permit",
-      "source": "checker.py:842"
+      "source": "checker.py:979"
     },
     {
       "kind": "inconclusive",
-      "source": "checker.py:871"
+      "source": "checker.py:1011"
     },
     {
       "kind": "constant_predicate",
-      "source": "checker.py:888"
+      "source": "checker.py:1024"
     },
     {
       "kind": "constant_predicate",
-      "source": "checker.py:901"
+      "source": "checker.py:1046"
+    },
+    {
+      "kind": "inconclusive",
+      "source": "checker.py:1062"
     }
   ],
   "finding_kinds_missing_from_source": [],
   "encoder_exceptions": [
     {
       "class": "UnencodableConstruct",
-      "defined_at": "checker.py:59",
+      "defined_at": "checker.py:67",
       "raised_at": [
-        "checker.py:207",
-        "checker.py:214",
-        "checker.py:218",
-        "checker.py:251",
-        "checker.py:267",
-        "checker.py:274",
-        "checker.py:280",
-        "checker.py:285",
-        "checker.py:291",
+        "checker.py:220",
+        "checker.py:227",
+        "checker.py:231",
+        "checker.py:252",
+        "checker.py:270",
+        "checker.py:286",
+        "checker.py:293",
+        "checker.py:302",
         "checker.py:318",
-        "checker.py:343",
-        "checker.py:382",
-        "checker.py:431",
-        "checker.py:452",
-        "checker.py:593"
+        "checker.py:324",
+        "checker.py:351",
+        "checker.py:383",
+        "checker.py:437",
+        "checker.py:446",
+        "checker.py:450",
+        "checker.py:469",
+        "checker.py:475",
+        "checker.py:482",
+        "checker.py:500",
+        "checker.py:507",
+        "checker.py:519",
+        "checker.py:568",
+        "checker.py:589",
+        "checker.py:730"
       ]
     },
     {
       "class": "NonlinearArithmetic",
-      "defined_at": "checker.py:63",
+      "defined_at": "checker.py:71",
       "raised_at": [
-        "checker.py:371"
+        "checker.py:495"
       ]
     }
   ],
   "unencodable_reason_is_not_a_bounded_vocabulary": {
-    "source": "checker.py:90",
+    "source": "checker.py:98",
     "explanation": "checker.py's own UnencodableStatement.reason field is declared `reason: str  # str(exc) from the caught exception` -- the reason recorded for a statement the checker could not encode is a stringified Python exception message, not a value drawn from a fixed set. This file cannot enumerate the possible reasons because the source does not define a bounded set of them: every `raised_at` site below constructs its message from an f-string built at the point of failure (interpolating the actual node, name, or operator involved), so the same raise site produces a different reason string for every different unencodable construct it sees. An agent consuming this file should treat `reason` as free text to display, never as a value to match against a known list."
   }
 }
