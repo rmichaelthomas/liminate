@@ -1421,6 +1421,36 @@ def test_check_source_folds_repeated_float_intermediate_arithmetic():
     assert any(f.kind == "always_deny" for f in result.findings)
 
 
+@pytest.mark.parametrize(("definitions", "total"), [
+    ([
+        "remember a value called first from 2 plus 3",
+        "remember a value called second from 4 plus 5",
+        "remember a value called combined from first multiplied by second",
+        "require total is equal to combined",
+    ], 45),
+    ([
+        "remember a value called numerator from 6 multiplied by 3",
+        "remember a value called denominator from 2 plus 1",
+        "remember a value called quotient from numerator divided by denominator",
+        "require total is equal to quotient",
+    ], 6),
+])
+def test_check_source_folds_named_integer_arithmetic_intermediates(
+    definitions, total,
+):
+    source = "\n".join([
+        *definitions[:-1],
+        f"remember a number called total with {total}",
+        definitions[-1],
+    ])
+    _, runtime = run_lines(source.splitlines())
+
+    assert all(result.status.name == "SUCCESS" for result in runtime)
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.unencodable == []
+
+
 def test_check_source_declines_float_domain_that_hides_runtime_conflict():
     """The two runtime conditions name the same float value. A Real model
     admits exact decimal 0.3 as a witness that is not a Python int or
