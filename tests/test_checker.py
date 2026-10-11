@@ -129,10 +129,10 @@ def test_constant_map_number_string_date_record_and_string_list():
     }
     enc = checker._Encoder(z3, symtab, {})
 
-    assert enc.constants["amount"].sort() == z3.RealSort()
+    assert enc.constants["amount"].sort() == z3.IntSort()
     assert enc.constants["status"].sort() == z3.StringSort()
     assert enc.constants["due"].sort() == z3.IntSort()
-    assert enc.constants["order1__total"].sort() == z3.RealSort()
+    assert enc.constants["order1__total"].sort() == z3.IntSort()
     assert enc.constants["order1__label"].sort() == z3.StringSort()
 
     # No constant is allocated for a list — membership expands to a
@@ -895,7 +895,9 @@ def test_check7_constant_predicate_negative_resolves_outer_symbol():
         "define big: is above cutoff",
     ])
     findings, _ = checker._check_constant_predicate(enc, statements)
-    assert findings == []
+    assert len(findings) == 1
+    assert findings[0].kind == "inconclusive"
+    assert findings[0].severity == "info"
 
 
 def test_pairwise_cap_finding_helper():
@@ -1247,7 +1249,11 @@ def test_check_source_threads_predicate_names_matches_hand_built_ast():
     assert [(f.kind, f.severity, f.statements) for f in actual.findings] == [
         (f.kind, f.severity, f.statements) for f in expected.findings
     ]
-    assert [f.kind for f in actual.findings] == ["require_forbid_conflict"]
+    assert [f.kind for f in actual.findings] == [
+        "require_forbid_conflict", "inconclusive",
+    ]
+    assert actual.unencodable
+    assert any(item.verb == "define" for item in actual.unencodable)
 
 
 def test_check_source_out_of_fragment_nonlinear_via_remembered_name():
@@ -1287,31 +1293,25 @@ def test_check_source_unparseable_source_returns_checked_zero_no_raise():
 # ---------------------------------------------------------------------------
 
 
-def test_check_source_encodes_unbound_template_and_finds_violation():
-    """Regression test for the whole stage: before the type-inference
-    pre-pass, check_source(source) passed run()'s symbol table straight to
-    check_agreement, and a field no `remember` ever bound (here, `amount`)
-    raised UnencodableConstruct at encode_field, reported as
-    encodable=False. `amount` is only ever referenced, never bound — the
-    inference pass must type it from the literal `5000` and the check must
-    still find the genuine unless_swallows_rule violation."""
+def test_check_source_declines_unbound_numeric_template():
+    """An unbound numeric field may be a Python int or float at runtime.
+    The mathematical checker must decline rather than treating it as an
+    unconstrained exact Real and certifying a result over the wrong domain."""
     source = 'forbid amount is above 5000 unless amount is above 0 because "policy"'
     result = checker.check_source(source)
     assert isinstance(result, checker.CheckResult)
-    assert result.encodable is True
-    assert result.skipped_reason is None
-    kinds = [f.kind for f in result.findings]
-    assert "unless_swallows_rule" in kinds
+    assert result.encodable is False
+    assert result.checked == 0
+    assert result.unencodable
+    assert any("integer-valued symbolic" in item.reason for item in result.unencodable)
 
 
-def test_check_source_encodes_real_shipped_vendor_invoice_review_template():
+def test_check_source_partially_checks_real_shipped_vendor_invoice_review_template():
     """The exact template shipped in liminate-dev's
     app/agreement_templates.py (AGREEMENT_TEMPLATES, id
     'vendor_invoice_review'), copied verbatim rather than imported across
-    repos. Every evidence field it references — amount, manager-approval,
-    purchase-order, approval-status — has no `remember` binding it
-    anywhere in the source; this is the exact document finding 1 verified
-    against and must be encodable now."""
+    repos. Its unbound numeric `amount` evidence must now be explicitly
+    declined; the remaining string-valued rules can still be checked."""
     source = "\n".join([
         'remember a string called agreement-purpose with "vendor invoice review"',
         "define large: is above 5000",
@@ -1327,6 +1327,8 @@ def test_check_source_encodes_real_shipped_vendor_invoice_review_template():
     assert isinstance(result, checker.CheckResult)
     assert result.encodable is True
     assert result.skipped_reason is None
+    assert result.unencodable
+    assert any("integer-valued symbolic" in item.reason for item in result.unencodable)
 
 
 def test_check_source_real_remember_not_overwritten_by_inference():
@@ -1336,7 +1338,7 @@ def test_check_source_real_remember_not_overwritten_by_inference():
     comparing `amount` against a quoted string would infer 'string'). If
     the placeholder ever overwrote the real binding, this program would
     encode cleanly as a same-sort string comparison; because the real
-    number binding takes precedence, comparing a Real constant against a
+    number binding takes precedence, comparing an Int constant against a
     StringVal is a genuine sort mismatch and must be reported as
     encodable=False, not silently swallowed (invariant 8)."""
     source = "\n".join([
@@ -1360,9 +1362,125 @@ def test_check_source_field_typed_only_via_predicate_application():
     ])
     result = checker.check_source(source)
     assert isinstance(result, checker.CheckResult)
+    assert result.encodable is False
+    assert result.checked == 0
+    assert result.unencodable
+    assert any("integer-valued symbolic" in item.reason for item in result.unencodable)
+
+
+def _assert_integer_numeric_support_declined(result):
+    assert result.encodable is False
+    assert result.checked == 0
+    assert result.unencodable
+    assert all(
+        "integer" in item.reason.lower()
+        or "floating-point" in item.reason.lower()
+        for item in result.unencodable
+    )
+
+
+def test_check_source_declines_float_result_from_decimal_arithmetic():
+    """The interpreter rounds 0.1 + 0.2 to 0.30000000000000004. The
+    checker must not analyze the resulting float-valued field as an
+    unconstrained mathematical Real."""
+    source = "\n".join([
+        "remember a value called total from 0.1 plus 0.2",
+        "require total is equal to 0.3",
+    ])
+    session, runtime = run_lines(source.splitlines())
+
+    assert runtime[0].status.name == "SUCCESS"
+    assert runtime[1].status.name == "REQUIREMENT_NOT_MET"
+    assert session.symtab["total"].value == 0.30000000000000004
+
+    result = checker.check_source(source)
+    _assert_integer_numeric_support_declined(result)
+
+
+def test_check_source_folds_repeated_float_intermediate_arithmetic():
+    """Constant arithmetic definitions are evaluated in sequence with
+    Python's float rounding before the checker reasons about the final
+    integer comparison."""
+    source = "\n".join([
+        "remember a value called first from 0.1 plus 0.2",
+        "remember a value called second from first minus 0.3",
+        "remember a number called total with 0",
+        "require total is equal to second",
+    ])
+    session, runtime = run_lines(source.splitlines())
+
+    assert [result.status.name for result in runtime] == [
+        "SUCCESS", "SUCCESS", "SUCCESS", "REQUIREMENT_NOT_MET",
+    ]
+    assert session.symtab["first"].value == 0.30000000000000004
+    assert session.symtab["second"].value == 5.551115123125783e-17
+
+    result = checker.check_source(source)
     assert result.encodable is True
-    assert result.skipped_reason is None
-    assert result.checked == 1
+    assert result.unencodable == []
+    assert any(f.kind == "always_deny" for f in result.findings)
+
+
+def test_check_source_declines_float_domain_that_hides_runtime_conflict():
+    """The two runtime conditions name the same float value. A Real model
+    admits exact decimal 0.3 as a witness that is not a Python int or
+    float, so the checker must decline rather than miss the conflict."""
+    source = "\n".join([
+        "remember a number called total with 0.30000000000000004",
+        "require total is equal to 0.1 plus 0.2",
+        "forbid total is equal to 0.30000000000000004",
+    ])
+    session, runtime = run_lines(source.splitlines())
+
+    assert [result.status.name for result in runtime] == [
+        "SUCCESS", "SUCCESS", "PROHIBITION_VIOLATED",
+    ]
+    assert session.symtab["total"].value == 0.30000000000000004
+
+    result = checker.check_source(source)
+    _assert_integer_numeric_support_declined(result)
+    assert not any(f.kind == "require_forbid_conflict" for f in result.findings)
+
+
+def test_check_source_preserves_integer_arithmetic_and_float_thresholds():
+    """Integer arithmetic remains exact, and direct int-vs-float
+    comparisons use the exact binary value of the decimal literal."""
+    source = "\n".join([
+        "remember a number called total with 1",
+        "require total is equal to 1 plus 0.00000000000000011102230246251565",
+        "require total is above 0.1",
+    ])
+    session, runtime = run_lines(source.splitlines())
+
+    assert [result.status.name for result in runtime] == [
+        "SUCCESS", "SUCCESS", "SUCCESS",
+    ]
+    result = checker.check_source(source)
+    assert result.encodable is True
+    assert result.unencodable == []
+    assert not any(f.kind == "always_deny" for f in result.findings)
+
+
+@pytest.mark.parametrize("source", [
+    "\n".join([
+        "remember a number called amount with 1",
+        "require amount is equal to amount plus 0.1",
+    ]),
+    "\n".join([
+        "remember a number called amount with 1",
+        "require amount is equal to amount divided by 3",
+    ]),
+    "\n".join([
+        "remember a number called amount with 1",
+        "require amount is within 0.1 of 0.9",
+    ]),
+])
+def test_check_source_declines_symbolic_float_rounding_operations(source):
+    """Mixed int/decimal arithmetic, variable division, and within with a
+    floating target need IEEE-754 behavior that the Real encoder does not
+    model."""
+    result = checker.check_source(source)
+    _assert_integer_numeric_support_declined(result)
 
 
 def test_check_source_untypeable_field_stays_encodable_false_no_raise():
@@ -1391,14 +1509,20 @@ def test_check_source_untypeable_field_stays_encodable_false_no_raise():
 def test_check_source_starting_prefixed_forbid_is_checked():
     """The regression test for the whole stage: before the fix, checked
     was 0, not 1 — the statement never reached check_agreement at all."""
-    source = 'starting "2025-01-01" forbid amount is above 5000 because "policy"'
+    source = '\n'.join([
+        "remember a number called amount with 6000",
+        'starting "2025-01-01" forbid amount is above 5000 because "policy"',
+    ])
     result = checker.check_source(source)
     assert result.encodable is True
     assert result.checked == 1
 
 
 def test_check_source_until_prefixed_forbid_is_checked():
-    source = 'until "2025-12-31" forbid amount is above 5000 because "policy"'
+    source = '\n'.join([
+        "remember a number called amount with 6000",
+        'until "2025-12-31" forbid amount is above 5000 because "policy"',
+    ])
     result = checker.check_source(source)
     assert result.encodable is True
     assert result.checked == 1
@@ -1407,6 +1531,7 @@ def test_check_source_until_prefixed_forbid_is_checked():
 def test_check_source_starting_until_prefixed_forbid_is_checked():
     """Canonical order: starting before until, both before the verb."""
     source = (
+        "remember a number called amount with 6000\n"
         'starting "2025-01-01" until "2025-12-31" '
         'forbid amount is above 5000 because "policy"'
     )
@@ -1419,7 +1544,10 @@ def test_check_source_inherited_prefixed_forbid_is_checked():
     """The untested sibling: `inherited` is TokenType.OPERATOR, consumed
     statement-initial exactly like starting/until, and shared the same
     first-token-dispatch defect — never exercised by any corpus."""
-    source = 'inherited forbid amount is above 5000 because "policy"'
+    source = '\n'.join([
+        "remember a number called amount with 6000",
+        'inherited forbid amount is above 5000 because "policy"',
+    ])
     result = checker.check_source(source)
     assert result.encodable is True
     assert result.checked == 1
@@ -1428,6 +1556,7 @@ def test_check_source_inherited_prefixed_forbid_is_checked():
 def test_check_source_full_canonical_prefix_stack_is_checked():
     """starting ... until ... inherited <verb> ... — the full stack."""
     source = (
+        "remember a number called amount with 6000\n"
         'starting "2025-01-01" until "2025-12-31" inherited '
         'forbid amount is above 5000 because "policy"'
     )
@@ -1441,6 +1570,7 @@ def test_check_source_temporally_prefixed_statement_reaches_findings():
     list: a starting-prefixed forbid whose own unless swallows it must
     still produce unless_swallows_rule."""
     source = (
+        "remember a number called amount with 6000\n"
         'starting "2025-01-01" forbid amount is above 5000 '
         'unless amount is above 0 because "policy"'
     )
@@ -1456,7 +1586,8 @@ def test_check_source_define_on_temporally_prefixed_line_registers_predicate():
     next line misparses as a string-equality comparison against the
     bareword "large" instead of a PredicateApplicationNode."""
     source = "\n".join([
-        'starting "2025-01-01" define large: is above 5000',
+        "remember a number called amount with 6000",
+        'starting "2025-01-01" define large: is above 0 or is below 1000000',
         'forbid amount is large because "policy"',
     ])
     result = checker.check_source(source)
