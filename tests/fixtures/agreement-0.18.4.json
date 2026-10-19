@@ -1,0 +1,895 @@
+{
+  "cases": [
+    {
+      "crossed": [
+        {
+          "because": "equals five",
+          "condition": "n is 5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number is: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is 5 because \"equals five\"\n",
+      "stdout": "Error: Prohibition violated: n is 5. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number is: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is 4 because \"equals four\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule above",
+          "condition": "n is above 4",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number above: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 4 because \"rule above\"\n",
+      "stdout": "Error: Prohibition violated: n is above 4. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number above: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is above 5 because \"rule above\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule below",
+          "condition": "n is below 6",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number below: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is below 6 because \"rule below\"\n",
+      "stdout": "Error: Prohibition violated: n is below 6. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number below: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is below 5 because \"rule below\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule equal to",
+          "condition": "n is equal to 5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number equal to: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is equal to 5 because \"rule equal to\"\n",
+      "stdout": "Error: Prohibition violated: n is equal to 5. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number equal to: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is equal to 4 because \"rule equal to\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule not above",
+          "condition": "n is not above 5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number not above: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is not above 5 because \"rule not above\"\n",
+      "stdout": "Error: Prohibition violated: n is not above 5. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number not above: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is not above 4 because \"rule not above\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule not below",
+          "condition": "n is not below 5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number not below: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is not below 5 because \"rule not below\"\n",
+      "stdout": "Error: Prohibition violated: n is not below 5. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number not below: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is not below 6 because \"rule not below\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "rule not equal to",
+          "condition": "n is not equal to 4",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "number not equal to: crosses",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is not equal to 4 because \"rule not equal to\"\n",
+      "stdout": "Error: Prohibition violated: n is not equal to 4. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "number not equal to: does not cross",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is not equal to 5 because \"rule not equal to\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "boundary: equal to the limit is not above it",
+      "outcome": "pass",
+      "program": "remember a number called n with 3.0\nforbid n is above 3 because \"limit\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "limit",
+          "condition": "n is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "boundary: just past the limit is above it",
+      "outcome": "crossed",
+      "program": "remember a number called n with 3.1\nforbid n is above 3 because \"limit\"\n",
+      "stdout": "Error: Prohibition violated: n is above 3. n is 3.1.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "boundary: zero against above zero",
+      "outcome": "pass",
+      "program": "remember a number called n with 0\nforbid n is above 0 because \"any\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "negative",
+          "condition": "n is below 0",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "negative numbers",
+      "outcome": "crossed",
+      "program": "remember a number called n with -5\nforbid n is below 0 because \"negative\"\n",
+      "stdout": "Error: Prohibition violated: n is below 0. n is -5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "at or past",
+          "condition": "n is not below 2.5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "decimals compare as numbers",
+      "outcome": "crossed",
+      "program": "remember a number called n with 2.5\nforbid n is above 2.5 because \"not past\"\nforbid n is not below 2.5 because \"at or past\"\n",
+      "stdout": "Error: Prohibition violated: n is not below 2.5. n is 2.5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "same number",
+          "condition": "n is equal to 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "integer and decimal are equal",
+      "outcome": "crossed",
+      "program": "remember a number called n with 3\nforbid n is equal to 3.0 because \"same number\"\n",
+      "stdout": "Error: Prohibition violated: n is equal to 3. n is 3.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "large",
+          "condition": "n is above 999999",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "a large number",
+      "outcome": "crossed",
+      "program": "remember a number called n with 1000000\nforbid n is above 999999 because \"large\"\n",
+      "stdout": "Error: Prohibition violated: n is above 999999. n is 1000000.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "near four",
+          "condition": "n is within 1 of 4",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "within: inside the tolerance",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is within 1 of 4 because \"near four\"\n",
+      "stdout": "Error: Prohibition violated: n is within 1 of 4. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "within: outside the tolerance",
+      "outcome": "pass",
+      "program": "remember a number called n with 9\nforbid n is within 1 of 4 because \"near four\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "calm is forbidden",
+          "condition": "mood is calm",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "text equality: crosses",
+      "outcome": "crossed",
+      "program": "remember a text called mood with \"calm\"\nforbid mood is \"calm\" because \"calm is forbidden\"\n",
+      "stdout": "Error: Prohibition violated: mood is calm. mood is calm.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "text equality: does not cross",
+      "outcome": "pass",
+      "program": "remember a text called mood with \"calm\"\nforbid mood is \"angry\" because \"angry is forbidden\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "anything but angry",
+          "condition": "mood is not equal to angry",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "text not equal to",
+      "outcome": "crossed",
+      "program": "remember a text called mood with \"calm\"\nforbid mood is not equal to \"angry\" because \"anything but angry\"\n",
+      "stdout": "Error: Prohibition violated: mood is not equal to angry. mood is calm.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "bareword compares as text",
+          "condition": "mood is calm",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "text against a bareword",
+      "outcome": "crossed",
+      "program": "remember a text called mood with \"calm\"\nforbid mood is calm because \"bareword compares as text\"\n",
+      "stdout": "Error: Prohibition violated: mood is calm. mood is calm.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "a space inside the value",
+          "condition": "city is \"new york\"",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "text with a space",
+      "outcome": "crossed",
+      "program": "remember a text called city with \"new york\"\nforbid city is \"new york\" because \"a space inside the value\"\n",
+      "stdout": "Error: Prohibition violated: city is \"new york\". city is new york.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "text is case sensitive",
+      "outcome": "pass",
+      "program": "remember a text called mood with \"Calm\"\nforbid mood is \"calm\" because \"case\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "flag set",
+          "condition": "flag is true",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "truth is true: crosses",
+      "outcome": "crossed",
+      "program": "remember a truth called flag with true\nforbid flag is true because \"flag set\"\n",
+      "stdout": "Error: Prohibition violated: flag is true. flag is true.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "truth is true: does not cross",
+      "outcome": "pass",
+      "program": "remember a truth called flag with false\nforbid flag is true because \"flag set\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "must be ready",
+          "condition": "ready is true",
+          "verb": "require"
+        }
+      ],
+      "exit": 1,
+      "id": "require a truth",
+      "outcome": "crossed",
+      "program": "remember a truth called ready with false\nrequire ready is true because \"must be ready\"\n",
+      "stdout": "Error: Requirement not met: ready is true. ready is false.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "require: met",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nrequire n is above 1 because \"at least two\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "under two",
+          "condition": "n is below 2",
+          "verb": "require"
+        }
+      ],
+      "exit": 1,
+      "id": "require: unmet",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nrequire n is below 2 because \"under two\"\n",
+      "stdout": "Error: Requirement not met: n is below 2. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "permit: never crosses",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\npermit n is above 1 because \"allowed\"\n",
+      "stdout": "Permitted: n is above 1. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "permit: true condition",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\npermit n is above 4 because \"allowed\"\npermit n is below 1 because \"not applicable\"\n",
+      "stdout": "Permitted: n is above 4. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "in the band",
+          "condition": "n is above 1 and n is below 9",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "and: both true",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 1 and n is below 9 because \"in the band\"\n",
+      "stdout": "Error: Prohibition violated: n is above 1 and n is below 9. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "and: one false",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is above 1 and n is below 3 because \"in the band\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "either side",
+          "condition": "n is above 9 or n is below 6",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "or: one true",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 9 or n is below 6 because \"either side\"\n",
+      "stdout": "Error: Prohibition violated: n is above 9 or n is below 6. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "or: both false",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is above 9 or n is below 1 because \"either side\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "both counts high",
+          "condition": "a-count is above 1 and b-count is above 6",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "and across two facts",
+      "outcome": "crossed",
+      "program": "remember a number called a-count with 2\nremember a number called b-count with 7\nforbid a-count is above 1 and b-count is above 6 because \"both counts high\"\n",
+      "stdout": "Error: Prohibition violated: a-count is above 1 and b-count is above 6. b-count is 7.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "unless: excuses the rule",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is above 3 unless n is above 4 because \"excused\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "not excused",
+          "condition": "n is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "unless: does not excuse",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 3 unless n is above 9 because \"not excused\"\n",
+      "stdout": "Error: Prohibition violated: n is above 3. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "require with unless",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nrequire n is below 2 unless n is above 4 because \"excused\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "over the allowance",
+          "condition": "used is above allowed",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "a rule that compares two facts",
+      "outcome": "crossed",
+      "program": "remember a number called used with 8\nremember a number called allowed with 5\nforbid used is above allowed because \"over the allowance\"\n",
+      "stdout": "Error: Prohibition violated: used is above allowed. used is 8.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "last value wins",
+          "condition": "n is above 5",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "a fact remembered twice keeps the last value",
+      "outcome": "crossed",
+      "program": "remember a number called n with 1\nremember a number called n with 9\nforbid n is above 5 because \"last value wins\"\n",
+      "stdout": "Error: Prohibition violated: n is above 5. n is 9.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "a fact remembered after the rule is not seen by it",
+      "outcome": "pass",
+      "program": "remember a number called n with 1\nforbid n is above 5 because \"uses what is known at this point\"\nremember a number called n with 9\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "first",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        },
+        {
+          "because": "third",
+          "condition": "n is above 2",
+          "verb": "forbid"
+        },
+        {
+          "because": "fourth",
+          "condition": "n is below 3",
+          "verb": "require"
+        }
+      ],
+      "exit": 1,
+      "id": "several rules crossing are reported in program order",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 1 because \"first\"\nforbid n is below 1 because \"second, does not cross\"\nforbid n is above 2 because \"third\"\nrequire n is below 3 because \"fourth\"\n",
+      "stdout": "Error: Prohibition violated: n is above 1. n is 5.\nError: Prohibition violated: n is above 2. n is 5.\nError: Requirement not met: n is below 3. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "no rule crossing",
+      "outcome": "pass",
+      "program": "remember a number called n with 5\nforbid n is above 9 because \"one\"\nforbid n is below 1 because \"two\"\nrequire n is above 0 because \"three\"\npermit n is above 0 because \"four\"\n",
+      "stdout": "Permitted: n is above 0. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "unmet",
+          "condition": "n is below 2",
+          "verb": "require"
+        }
+      ],
+      "exit": 1,
+      "id": "only a required rule is unmet",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 9 because \"fine\"\nrequire n is below 2 because \"unmet\"\n",
+      "stdout": "Error: Requirement not met: n is below 2. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "first reason",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        },
+        {
+          "because": "second reason",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "the same condition twice reports twice, each with its own because",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 1 because \"first reason\"\nforbid n is above 1 because \"second reason\"\n",
+      "stdout": "Error: Prohibition violated: n is above 1. n is 5.\nError: Prohibition violated: n is above 1. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "comments do not matter",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "comments and blank lines are not statements",
+      "outcome": "crossed",
+      "program": "-- A header comment.\nabout \"comment-case\"\n\n-- another comment\nremember a number called n with 5\n\nforbid n is above 1 because \"comments do not matter\"\n-- a trailing comment\n",
+      "stdout": "\n\n\n\nError: Prohibition violated: n is above 1. n is 5.\n\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "about alone",
+      "outcome": "pass",
+      "program": "about \"nothing-else\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "an empty-looking program of comments",
+      "outcome": "pass",
+      "program": "-- only a comment\n",
+      "stdout": "\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "more than one (WCAG 2.3.1), see: the rule; it's firm",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "because text with punctuation",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 1 because \"more than one (WCAG 2.3.1), see: the rule; it's firm\"\n",
+      "stdout": "Error: Prohibition violated: n is above 1. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "",
+          "condition": "n is above 1",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "a rule without a because",
+      "outcome": "crossed",
+      "program": "remember a number called n with 5\nforbid n is above 1\n",
+      "stdout": "Error: Prohibition violated: n is above 1. n is 5.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "hyphens are fine",
+          "condition": "flashes-in-worst-second is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "a hyphenated and digit-bearing name",
+      "outcome": "crossed",
+      "program": "remember a number called flashes-in-worst-second with 4\nremember a number called count2 with 1\nforbid flashes-in-worst-second is above 3 because \"hyphens are fine\"\nforbid count2 is above 3 because \"digits are fine\"\n",
+      "stdout": "Error: Prohibition violated: flashes-in-worst-second is above 3. flashes-in-worst-second is 4.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a fact that was never remembered",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid missing is above 1 because \"no such fact\"\n",
+      "stdout": "Error: I can't find 'missing'. You might need to 'remember' it first.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a missing fact does not hide a crossing elsewhere",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid n is above 1 because \"crosses\"\nforbid missing is above 1 because \"no such fact\"\n",
+      "stdout": "Error: Prohibition violated: n is above 1. n is 5.\nError: I can't find 'missing'. You might need to 'remember' it first.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a range comparison over text",
+      "outcome": "error",
+      "program": "remember a text called mood with \"calm\"\nforbid mood is above 3 because \"text has no order\"\n",
+      "stdout": "Error: 'above' requires numbers or dates, but 'mood' is text.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: with and no value",
+      "outcome": "error",
+      "program": "remember a number called n with\nforbid n is above 1 because \"the fact never existed\"\n",
+      "stdout": "Error: I expected a value after 'with'.\nError: I can't find 'n'. You might need to 'remember' it first.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a reserved word as a name",
+      "outcome": "error",
+      "program": "remember a number called and with 5\nforbid and is above 1 because \"reserved\"\n",
+      "stdout": "Error: The word 'and' is reserved in Liminate — it's used as a connective. Please choose a different name.\nError: The word 'and' is reserved in Liminate — it's used as a connective and can't be used as a field name.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a rule with no condition",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid because \"nothing to test\"\n",
+      "stdout": "Error: The word 'because' is reserved in Liminate — it's used as a connective and can't be used as a field name.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: an unterminated because",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid n is above 1 because \"never closed\n",
+      "stdout": "Error: I see an opening quote mark but no closing one on this line. Each quoted phrase needs both opening and closing marks.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a sentence that is not a statement",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nthe quick brown fox\nforbid n is above 1 because \"after the noise\"\n",
+      "stdout": "Error: I didn't expect 'the' at the start of an operation.\nError: Prohibition violated: n is above 1. n is 5.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: an unknown comparison word",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid n is around 5 because \"not a comparison\"\n",
+      "stdout": "Error: I didn't expect '5' here.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 1,
+      "id": "error: a number written as text compared by order",
+      "outcome": "error",
+      "program": "remember a number called n with 5\nforbid n is above \"3\" because \"quoted number\"\n",
+      "stdout": "Error: 'above' requires numbers or dates, but '3' is text.\n"
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "cuecue: nothing crossed",
+      "outcome": "pass",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 0.0\nremember a number called flashes-in-worst-second with 0\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [],
+      "exit": 0,
+      "id": "cuecue: boundaries exactly at the limits pass",
+      "outcome": "pass",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 3.0\nremember a number called flashes-in-worst-second with 3\nremember a number called dead-picture-seconds with 10.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": ""
+    },
+    {
+      "crossed": [
+        {
+          "because": "a phone number spoken in a public cue",
+          "condition": "phone-numbers is above 0",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: a phone number",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 1\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 0.0\nremember a number called flashes-in-worst-second with 0\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: phone-numbers is above 0. phone-numbers is 1.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "an email address spoken in a public cue",
+          "condition": "email-addresses is above 0",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: an email address",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 1\nremember a number called loud-seconds with 0.0\nremember a number called flashes-in-worst-second with 0\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: email-addresses is above 0. email-addresses is 1.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "sustained volume past the floor",
+          "condition": "loud-seconds is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: sustained volume",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 3.1\nremember a number called flashes-in-worst-second with 0\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: loud-seconds is above 3. loud-seconds is 3.1.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "more than three flashes in one second (WCAG 2.3.1)",
+          "condition": "flashes-in-worst-second is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: four flashes in a second",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 0.0\nremember a number called flashes-in-worst-second with 4\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: flashes-in-worst-second is above 3. flashes-in-worst-second is 4.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "more than ten seconds of black or frozen picture",
+          "condition": "dead-picture-seconds is above 10",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: dead picture past ten seconds",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 0.0\nremember a number called flashes-in-worst-second with 0\nremember a number called dead-picture-seconds with 10.1\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: dead-picture-seconds is above 10. dead-picture-seconds is 10.1.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "sustained volume past the floor",
+          "condition": "loud-seconds is above 3",
+          "verb": "forbid"
+        },
+        {
+          "because": "more than three flashes in one second (WCAG 2.3.1)",
+          "condition": "flashes-in-worst-second is above 3",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: three and four crossed together",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 0\nremember a number called email-addresses with 0\nremember a number called loud-seconds with 3.1\nremember a number called flashes-in-worst-second with 4\nremember a number called dead-picture-seconds with 0.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: loud-seconds is above 3. loud-seconds is 3.1.\nError: Prohibition violated: flashes-in-worst-second is above 3. flashes-in-worst-second is 4.\n"
+    },
+    {
+      "crossed": [
+        {
+          "because": "a phone number spoken in a public cue",
+          "condition": "phone-numbers is above 0",
+          "verb": "forbid"
+        },
+        {
+          "because": "an email address spoken in a public cue",
+          "condition": "email-addresses is above 0",
+          "verb": "forbid"
+        },
+        {
+          "because": "sustained volume past the floor",
+          "condition": "loud-seconds is above 3",
+          "verb": "forbid"
+        },
+        {
+          "because": "more than three flashes in one second (WCAG 2.3.1)",
+          "condition": "flashes-in-worst-second is above 3",
+          "verb": "forbid"
+        },
+        {
+          "because": "more than ten seconds of black or frozen picture",
+          "condition": "dead-picture-seconds is above 10",
+          "verb": "forbid"
+        }
+      ],
+      "exit": 1,
+      "id": "cuecue: every rule crossed",
+      "outcome": "crossed",
+      "program": "about \"cuecue-floor-v1\"\nremember a number called phone-numbers with 2\nremember a number called email-addresses with 1\nremember a number called loud-seconds with 9.5\nremember a number called flashes-in-worst-second with 7\nremember a number called dead-picture-seconds with 30.0\nforbid phone-numbers is above 0 because \"a phone number spoken in a public cue\"\nforbid email-addresses is above 0 because \"an email address spoken in a public cue\"\nforbid loud-seconds is above 3 because \"sustained volume past the floor\"\nforbid flashes-in-worst-second is above 3 because \"more than three flashes in one second (WCAG 2.3.1)\"\nforbid dead-picture-seconds is above 10 because \"more than ten seconds of black or frozen picture\"\n",
+      "stdout": "Error: Prohibition violated: phone-numbers is above 0. phone-numbers is 2.\nError: Prohibition violated: email-addresses is above 0. email-addresses is 1.\nError: Prohibition violated: loud-seconds is above 3. loud-seconds is 9.5.\nError: Prohibition violated: flashes-in-worst-second is above 3. flashes-in-worst-second is 7.\nError: Prohibition violated: dead-picture-seconds is above 10. dead-picture-seconds is 30.\n"
+    }
+  ],
+  "generator": "scripts/gen_agreement_corpus.py",
+  "language_version": "0.18.4",
+  "surface": "about, comments, remember number|text|truth, forbid|require|permit [unless] because"
+}
