@@ -1,0 +1,421 @@
+## Liminate agreement corpus.
+##
+## The subset: `about`, `--` comments, `remember a number|text|truth called ...`,
+## and `forbid|require|permit <condition> [unless <condition>] because "..."`.
+## Every program here is run through the reference interpreter by
+## scripts/gen_agreement_corpus.py; what it did is written to
+## tests/fixtures/agreement-<version>.json, and the TypeScript and Swift
+## evaluators must reproduce it exactly. Nothing outside the subset belongs here:
+## a port rejects those on purpose, and the reference would accept them.
+##
+## Mixed `and` / `or` in one condition is out of the subset for the same reason:
+## the reference stops to ask which way to read it (an amber outcome), and an
+## agreement that depends on that reading is not one a floor should rest on.
+##
+
+# number is: crosses
+remember a number called n with 5
+forbid n is 5 because "equals five"
+
+# number is: does not cross
+remember a number called n with 5
+forbid n is 4 because "equals four"
+
+# number above: crosses
+remember a number called n with 5
+forbid n is above 4 because "rule above"
+
+# number above: does not cross
+remember a number called n with 5
+forbid n is above 5 because "rule above"
+
+# number below: crosses
+remember a number called n with 5
+forbid n is below 6 because "rule below"
+
+# number below: does not cross
+remember a number called n with 5
+forbid n is below 5 because "rule below"
+
+# number equal to: crosses
+remember a number called n with 5
+forbid n is equal to 5 because "rule equal to"
+
+# number equal to: does not cross
+remember a number called n with 5
+forbid n is equal to 4 because "rule equal to"
+
+# number not above: crosses
+remember a number called n with 5
+forbid n is not above 5 because "rule not above"
+
+# number not above: does not cross
+remember a number called n with 5
+forbid n is not above 4 because "rule not above"
+
+# number not below: crosses
+remember a number called n with 5
+forbid n is not below 5 because "rule not below"
+
+# number not below: does not cross
+remember a number called n with 5
+forbid n is not below 6 because "rule not below"
+
+# number not equal to: crosses
+remember a number called n with 5
+forbid n is not equal to 4 because "rule not equal to"
+
+# number not equal to: does not cross
+remember a number called n with 5
+forbid n is not equal to 5 because "rule not equal to"
+
+# boundary: equal to the limit is not above it
+remember a number called n with 3.0
+forbid n is above 3 because "limit"
+
+# boundary: just past the limit is above it
+remember a number called n with 3.1
+forbid n is above 3 because "limit"
+
+# boundary: zero against above zero
+remember a number called n with 0
+forbid n is above 0 because "any"
+
+# negative numbers
+remember a number called n with -5
+forbid n is below 0 because "negative"
+
+# decimals compare as numbers
+remember a number called n with 2.5
+forbid n is above 2.5 because "not past"
+forbid n is not below 2.5 because "at or past"
+
+# integer and decimal are equal
+remember a number called n with 3
+forbid n is equal to 3.0 because "same number"
+
+# a large number
+remember a number called n with 1000000
+forbid n is above 999999 because "large"
+
+# within: inside the tolerance
+remember a number called n with 5
+forbid n is within 1 of 4 because "near four"
+
+# within: outside the tolerance
+remember a number called n with 9
+forbid n is within 1 of 4 because "near four"
+
+# text equality: crosses
+remember a text called mood with "calm"
+forbid mood is "calm" because "calm is forbidden"
+
+# text equality: does not cross
+remember a text called mood with "calm"
+forbid mood is "angry" because "angry is forbidden"
+
+# text not equal to
+remember a text called mood with "calm"
+forbid mood is not equal to "angry" because "anything but angry"
+
+# text against a bareword
+remember a text called mood with "calm"
+forbid mood is calm because "bareword compares as text"
+
+# text with a space
+remember a text called city with "new york"
+forbid city is "new york" because "a space inside the value"
+
+# text is case sensitive
+remember a text called mood with "Calm"
+forbid mood is "calm" because "case"
+
+# truth is true: crosses
+remember a truth called flag with true
+forbid flag is true because "flag set"
+
+# truth is true: does not cross
+remember a truth called flag with false
+forbid flag is true because "flag set"
+
+# require a truth
+remember a truth called ready with false
+require ready is true because "must be ready"
+
+# require: met
+remember a number called n with 5
+require n is above 1 because "at least two"
+
+# require: unmet
+remember a number called n with 5
+require n is below 2 because "under two"
+
+# permit: never crosses
+remember a number called n with 5
+permit n is above 1 because "allowed"
+
+# permit: true condition
+remember a number called n with 5
+permit n is above 4 because "allowed"
+permit n is below 1 because "not applicable"
+
+# and: both true
+remember a number called n with 5
+forbid n is above 1 and n is below 9 because "in the band"
+
+# and: one false
+remember a number called n with 5
+forbid n is above 1 and n is below 3 because "in the band"
+
+# or: one true
+remember a number called n with 5
+forbid n is above 9 or n is below 6 because "either side"
+
+# or: both false
+remember a number called n with 5
+forbid n is above 9 or n is below 1 because "either side"
+
+# and across two facts
+remember a number called a-count with 2
+remember a number called b-count with 7
+forbid a-count is above 1 and b-count is above 6 because "both counts high"
+
+# unless: excuses the rule
+remember a number called n with 5
+forbid n is above 3 unless n is above 4 because "excused"
+
+# unless: does not excuse
+remember a number called n with 5
+forbid n is above 3 unless n is above 9 because "not excused"
+
+# require with unless
+remember a number called n with 5
+require n is below 2 unless n is above 4 because "excused"
+
+# a rule that compares two facts
+remember a number called used with 8
+remember a number called allowed with 5
+forbid used is above allowed because "over the allowance"
+
+# a fact remembered twice keeps the last value
+remember a number called n with 1
+remember a number called n with 9
+forbid n is above 5 because "last value wins"
+
+# a fact remembered after the rule is not seen by it
+remember a number called n with 1
+forbid n is above 5 because "uses what is known at this point"
+remember a number called n with 9
+
+# several rules crossing are reported in program order
+remember a number called n with 5
+forbid n is above 1 because "first"
+forbid n is below 1 because "second, does not cross"
+forbid n is above 2 because "third"
+require n is below 3 because "fourth"
+
+# no rule crossing
+remember a number called n with 5
+forbid n is above 9 because "one"
+forbid n is below 1 because "two"
+require n is above 0 because "three"
+permit n is above 0 because "four"
+
+# only a required rule is unmet
+remember a number called n with 5
+forbid n is above 9 because "fine"
+require n is below 2 because "unmet"
+
+# the same condition twice reports twice, each with its own because
+remember a number called n with 5
+forbid n is above 1 because "first reason"
+forbid n is above 1 because "second reason"
+
+# comments and blank lines are not statements
+-- A header comment.
+about "comment-case"
+
+-- another comment
+remember a number called n with 5
+
+forbid n is above 1 because "comments do not matter"
+-- a trailing comment
+
+# about alone
+about "nothing-else"
+
+# an empty-looking program of comments
+-- only a comment
+
+# because text with punctuation
+remember a number called n with 5
+forbid n is above 1 because "more than one (WCAG 2.3.1), see: the rule; it's firm"
+
+# a rule without a because
+remember a number called n with 5
+forbid n is above 1
+
+# a hyphenated and digit-bearing name
+remember a number called flashes-in-worst-second with 4
+remember a number called count2 with 1
+forbid flashes-in-worst-second is above 3 because "hyphens are fine"
+forbid count2 is above 3 because "digits are fine"
+
+# error: a fact that was never remembered
+remember a number called n with 5
+forbid missing is above 1 because "no such fact"
+
+# error: a missing fact does not hide a crossing elsewhere
+remember a number called n with 5
+forbid n is above 1 because "crosses"
+forbid missing is above 1 because "no such fact"
+
+# error: a range comparison over text
+remember a text called mood with "calm"
+forbid mood is above 3 because "text has no order"
+
+# error: with and no value
+remember a number called n with
+forbid n is above 1 because "the fact never existed"
+
+# error: a reserved word as a name
+remember a number called and with 5
+forbid and is above 1 because "reserved"
+
+# error: a rule with no condition
+remember a number called n with 5
+forbid because "nothing to test"
+
+# error: an unterminated because
+remember a number called n with 5
+forbid n is above 1 because "never closed
+
+# error: a sentence that is not a statement
+remember a number called n with 5
+the quick brown fox
+forbid n is above 1 because "after the noise"
+
+# error: an unknown comparison word
+remember a number called n with 5
+forbid n is around 5 because "not a comparison"
+
+# error: a number written as text compared by order
+remember a number called n with 5
+forbid n is above "3" because "quoted number"
+
+# cuecue: nothing crossed
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 0.0
+remember a number called flashes-in-worst-second with 0
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: boundaries exactly at the limits pass
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 3.0
+remember a number called flashes-in-worst-second with 3
+remember a number called dead-picture-seconds with 10.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: a phone number
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 1
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 0.0
+remember a number called flashes-in-worst-second with 0
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: an email address
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 1
+remember a number called loud-seconds with 0.0
+remember a number called flashes-in-worst-second with 0
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: sustained volume
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 3.1
+remember a number called flashes-in-worst-second with 0
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: four flashes in a second
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 0.0
+remember a number called flashes-in-worst-second with 4
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: dead picture past ten seconds
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 0.0
+remember a number called flashes-in-worst-second with 0
+remember a number called dead-picture-seconds with 10.1
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: three and four crossed together
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 0
+remember a number called email-addresses with 0
+remember a number called loud-seconds with 3.1
+remember a number called flashes-in-worst-second with 4
+remember a number called dead-picture-seconds with 0.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
+
+# cuecue: every rule crossed
+about "cuecue-floor-v1"
+remember a number called phone-numbers with 2
+remember a number called email-addresses with 1
+remember a number called loud-seconds with 9.5
+remember a number called flashes-in-worst-second with 7
+remember a number called dead-picture-seconds with 30.0
+forbid phone-numbers is above 0 because "a phone number spoken in a public cue"
+forbid email-addresses is above 0 because "an email address spoken in a public cue"
+forbid loud-seconds is above 3 because "sustained volume past the floor"
+forbid flashes-in-worst-second is above 3 because "more than three flashes in one second (WCAG 2.3.1)"
+forbid dead-picture-seconds is above 10 because "more than ten seconds of black or frozen picture"
